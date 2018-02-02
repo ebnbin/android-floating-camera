@@ -19,6 +19,7 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application
+        android:name=".AppApplication"
         android:label="Floating Camera">
         <activity
             android:name=".MainActivity">

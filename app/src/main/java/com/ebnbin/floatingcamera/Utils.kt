@@ -5,3 +5,8 @@ package com.ebnbin.floatingcamera
 
 typealias BaseException = Exception
 typealias BaseRuntimeException = RuntimeException
+
+//*********************************************************************************************************************
+// 单例.
+
+val app by lazy { AppApplication.instance }
