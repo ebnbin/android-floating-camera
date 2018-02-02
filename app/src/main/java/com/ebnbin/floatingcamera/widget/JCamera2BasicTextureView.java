@@ -74,7 +74,7 @@ import java.util.concurrent.TimeUnit;
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
 public class JCamera2BasicTextureView extends /*Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback*/TextureView {
+        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback*/CameraView {
 
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);

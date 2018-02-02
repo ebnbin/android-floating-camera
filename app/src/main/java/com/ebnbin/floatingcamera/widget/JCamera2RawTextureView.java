@@ -118,7 +118,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ul>
  */
 public class JCamera2RawTextureView extends /*Fragment
-        implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback*/TextureView {
+        implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback*/CameraView {
 
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);

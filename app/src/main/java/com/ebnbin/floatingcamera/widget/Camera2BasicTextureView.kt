@@ -67,7 +67,7 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
         context: Context,
         attrs: AttributeSet? = null,
         defStyle: Int = 0
-) : TextureView(context, attrs, defStyle) {
+) : CameraView(context, attrs, defStyle) {
 
     private val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
