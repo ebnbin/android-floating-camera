@@ -14,6 +14,7 @@
     <eat-comment/>
 
     <attr name="colorIcon" format="color"/>
+    <attr name="colorCard" format="color"/>
 
     <!-- ********************************************************************************************************** -->
     <!-- 亮色主题. -->
@@ -32,6 +33,7 @@
         <item name="colorAccent">@color/light_color_accent</item>
         <item name="android:navigationBarColor">?attr/colorPrimaryDark</item>
         <item name="colorIcon">@color/light_icon</item>
+        <item name="colorCard">@color/cardview_light_background</item>
     </style>
 
     <!-- ********************************************************************************************************** -->
@@ -51,5 +53,6 @@
         <item name="colorAccent">@color/dark_color_accent</item>
         <item name="android:navigationBarColor">?attr/colorPrimaryDark</item>
         <item name="colorIcon">@color/dark_icon</item>
+        <item name="colorCard">@color/cardview_dark_background</item>
     </style>
 </resources>

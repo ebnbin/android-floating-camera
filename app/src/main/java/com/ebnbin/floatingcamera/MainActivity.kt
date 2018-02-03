@@ -2,7 +2,6 @@ package com.ebnbin.floatingcamera
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.widget.Button
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -11,9 +10,8 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        val button = Button(this)
-        button.setOnClickListener { CameraService.start() }
+        if (savedInstanceState != null) return
 
-        setContentView(button)
+        supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
     }
 }
