@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ********************************************************************************************************** -->
+    <!-- Application 主题. -->
+    <eat-comment/>
+
+    <style name="ApplicationTheme" parent="Theme.Design.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/application_window_background</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>
+
+    <!-- ********************************************************************************************************** -->
+    <eat-comment/>
+
+    <attr name="colorIcon" format="color"/>
+
+    <!-- ********************************************************************************************************** -->
+    <!-- 亮色主题. -->
+    <eat-comment/>
+
+    <color name="light_window_background">#eceff1</color>
+    <color name="light_color_primary">#00bcd4</color>
+    <color name="light_color_primary_dark">#0097a7</color>
+    <color name="light_color_accent">#ff4081</color>
+    <color name="light_icon">#8a000000</color>
+
+    <style name="LightTheme" parent="Theme.Design.Light.NoActionBar">
+        <item name="android:windowBackground">@color/light_window_background</item>
+        <item name="colorPrimary">@color/light_color_primary</item>
+        <item name="colorPrimaryDark">@color/light_color_primary_dark</item>
+        <item name="colorAccent">@color/light_color_accent</item>
+        <item name="android:navigationBarColor">?attr/colorPrimaryDark</item>
+        <item name="colorIcon">@color/light_icon</item>
+    </style>
+
+    <!-- ********************************************************************************************************** -->
+    <!-- 暗色主题. -->
+    <eat-comment/>
+
+    <color name="dark_window_background">#263238</color>
+    <color name="dark_color_primary">#0097a7</color>
+    <color name="dark_color_primary_dark">#006064</color>
+    <color name="dark_color_accent">#ff80ab</color>
+    <color name="dark_icon">#fff</color>
+
+    <style name="DarkTheme" parent="Theme.Design.NoActionBar">
+        <item name="android:windowBackground">@color/dark_window_background</item>
+        <item name="colorPrimary">@color/dark_color_primary</item>
+        <item name="colorPrimaryDark">@color/dark_color_primary_dark</item>
+        <item name="colorAccent">@color/dark_color_accent</item>
+        <item name="android:navigationBarColor">?attr/colorPrimaryDark</item>
+        <item name="colorIcon">@color/dark_icon</item>
+    </style>
+</resources>
