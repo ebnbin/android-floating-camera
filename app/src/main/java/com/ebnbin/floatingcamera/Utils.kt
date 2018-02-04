@@ -1,7 +1,9 @@
 package com.ebnbin.floatingcamera
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.support.annotation.StringRes
@@ -56,3 +58,39 @@ val taskDescription by lazy {
 
     ActivityManager.TaskDescription(label, icon, colorPrimary)
 }
+
+//*********************************************************************************************************************
+// SharedPreferences.
+
+@Suppress("IMPLICIT_CAST_TO_ANY", "UNCHECKED_CAST")
+fun <T> SharedPreferences.get(key: String, defValue: T) = when (defValue) {
+    is String -> getString(key, defValue)
+    is Int -> getInt(key, defValue)
+    is Long -> getLong(key, defValue)
+    is Float -> getFloat(key, defValue)
+    is Boolean -> getBoolean(key, defValue)
+    else -> throw BaseRuntimeException()
+} as T
+
+@SuppressLint("CommitPrefEdits")
+fun <T> SharedPreferences.put(key: String, value: T) = with(edit()) {
+    when (value) {
+        is String -> putString(key, value)
+        is Int -> putInt(key, value)
+        is Long -> putLong(key, value)
+        is Float -> putFloat(key, value)
+        is Boolean -> putBoolean(key, value)
+        else -> throw RuntimeException()
+    }.apply()
+}
+
+/**
+ * 默认 [SharedPreferences].
+ */
+val defaultSharedPreferences = getSharedPreferences()
+
+/**
+ * 获取 [SharedPreferences].
+ */
+fun getSharedPreferences(name: String = "${app.packageName}_preferences", mode: Int = Context.MODE_PRIVATE) =
+        app.getSharedPreferences(name, mode)!!

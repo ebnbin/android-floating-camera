@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="is_dark_theme_title">主题</string>
+    <string name="is_dark_theme_summary_off">亮色主题</string>
+    <string name="is_dark_theme_summary_on">暗色主题</string>
+</resources>
