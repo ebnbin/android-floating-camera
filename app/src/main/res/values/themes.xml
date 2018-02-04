@@ -32,6 +32,7 @@
         <item name="colorPrimaryDark">@color/light_color_primary_dark</item>
         <item name="colorAccent">@color/light_color_accent</item>
         <item name="android:navigationBarColor">?attr/colorPrimaryDark</item>
+        <item name="preferenceTheme">@style/PreferenceTheme</item>
         <item name="colorIcon">@color/light_icon</item>
         <item name="colorCard">@color/cardview_light_background</item>
     </style>
@@ -52,7 +53,19 @@
         <item name="colorPrimaryDark">@color/dark_color_primary_dark</item>
         <item name="colorAccent">@color/dark_color_accent</item>
         <item name="android:navigationBarColor">?attr/colorPrimaryDark</item>
+        <item name="preferenceTheme">@style/PreferenceTheme</item>
         <item name="colorIcon">@color/dark_icon</item>
         <item name="colorCard">@color/cardview_dark_background</item>
+    </style>
+
+    <!-- ********************************************************************************************************** -->
+    <!-- 偏好主题. -->
+    
+    <style name="PreferenceTheme" parent="PreferenceThemeOverlay.v14.Material">
+        <item name="android:divider">@null</item>
+        <item name="android:dividerHeight">0dp</item>
+        <item name="allowDividerAfterLastItem">false</item>
+        <item name="allowDividerAbove">false</item>
+        <item name="allowDividerBelow">false</item>
     </style>
 </resources>

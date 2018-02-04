@@ -2,6 +2,7 @@ package com.ebnbin.floatingcamera
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
