@@ -4,6 +4,8 @@
     <string name="is_front_summary_off">后置摄像头</string>
     <string name="is_front_summary_on">前置摄像头</string>
 
+    <string name="is_photo_title">视频/照片</string>
+
     <string name="preview_resolution_summary">%dx%d (%d:%d)</string>
 
     <string name="video_resolution_summary_quality_2160p">2160p</string>
@@ -18,6 +20,20 @@
     <string name="video_resolution_summary">%dx%d (%d:%d, %.2f 百万像素%s)</string>
 
     <string name="photo_resolution_summary">%dx%d (%d:%d, %.2f 百万像素)</string>
+
+    <string name="back_is_photo_summary_off">后置摄像头视频</string>
+    <string name="back_is_photo_summary_on">后置摄像头照片</string>
+
+    <string name="back_video_resolution_title">后置摄像头视频分辨率</string>
+
+    <string name="back_photo_resolution_title">后置摄像头照片分辨率</string>
+
+    <string name="front_is_photo_summary_off">前置摄像头视频</string>
+    <string name="front_is_photo_summary_on">前置摄像头照片</string>
+
+    <string name="front_video_resolution_title">前置摄像头视频分辨率</string>
+
+    <string name="front_photo_resolution_title">前置摄像头照片分辨率</string>
 
     <string name="is_dark_theme_title">主题</string>
     <string name="is_dark_theme_summary_off">亮色主题</string>

@@ -317,6 +317,15 @@ class CameraHelper private constructor() {
         }
 
         /**
+         * 视频分辨率摘要列表.
+         */
+        val videoResolutionSummaries = Array(videoResolutions.size) { videoResolutions[it].summary }
+        /**
+         * 照片分辨率摘要列表.
+         */
+        val photoResolutionSummaries = Array(photoResolutions.size) { photoResolutions[it].summary }
+
+        /**
          * 视频配置列表. 从大到小排序.
          */
         private val videoProfiles: Array<VideoProfile>

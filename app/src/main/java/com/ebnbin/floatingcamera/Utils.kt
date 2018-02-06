@@ -7,8 +7,10 @@ import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.hardware.camera2.CameraManager
+import android.os.Parcel
 import android.support.annotation.StringRes
 import android.support.v4.util.ArrayMap
+import android.support.v7.preference.ListPreference
 import android.view.WindowManager
 import com.ebnbin.floatingcamera.util.CameraHelper
 
@@ -110,4 +112,26 @@ tailrec infix fun Int.gcd(other: Int): Int {
     if (other == 0) return 0
 
     return if (this % other == 0) other else other gcd this % other
+}
+
+//*********************************************************************************************************************
+// Parcel.
+
+fun Parcel.readBoolean(): Boolean {
+    return readByte() != 0.toByte()
+}
+
+fun Parcel.writeBoolean(value: Boolean) {
+    writeByte(if (value) 1 else 0)
+}
+
+//*********************************************************************************************************************
+// Preference.
+
+/**
+ * 设置 [ListPreference.mEntries] 并以 index 字符串设置 [ListPreference.mEntryValues].
+ */
+fun ListPreference.setEntriesAndEntryValues(entries: Array<out CharSequence>) {
+    this.entries = entries
+    entryValues = Array(this.entries.size) { it.toString() }
 }

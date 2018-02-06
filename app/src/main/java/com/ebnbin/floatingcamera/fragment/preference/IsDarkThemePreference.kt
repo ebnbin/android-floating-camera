@@ -2,7 +2,6 @@ package com.ebnbin.floatingcamera.fragment.preference
 
 import android.content.SharedPreferences
 import android.support.v14.preference.SwitchPreference
-import android.support.v7.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.defaultSharedPreferences
 import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
@@ -12,7 +11,7 @@ import org.greenrobot.eventbus.EventBus
 /**
  * 主题偏好.
  */
-class IsDarkThemePreference(preferenceGroup: PreferenceGroup) : SwitchPreference(preferenceGroup.context),
+class IsDarkThemePreference(rootPreferenceGroup: RootPreferenceGroup) : SwitchPreference(rootPreferenceGroup.context),
         SharedPreferences.OnSharedPreferenceChangeListener {
     init {
         key = KEY
@@ -21,7 +20,7 @@ class IsDarkThemePreference(preferenceGroup: PreferenceGroup) : SwitchPreference
         setSummaryOff(R.string.is_dark_theme_summary_off)
         setSummaryOn(R.string.is_dark_theme_summary_on)
 
-        preferenceGroup.addPreference(this)
+        rootPreferenceGroup.addPreferenceToGroup(this)
 
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
     }
