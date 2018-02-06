@@ -50,6 +50,8 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
+import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -614,7 +616,9 @@ public class JCamera2VideoTextureView extends /*Fragment
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            String cameraId = /*manager*/mCameraManager.getCameraIdList()[0];
+
+            CameraHelper.Device device = PreferenceHelper.INSTANCE.getDevice();
+            String cameraId = device.getId2();
 
             // Choose the sizes for camera preview and video recording
             CameraCharacteristics characteristics = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);

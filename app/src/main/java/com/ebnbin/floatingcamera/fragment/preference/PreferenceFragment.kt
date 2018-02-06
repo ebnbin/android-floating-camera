@@ -13,6 +13,7 @@ class PreferenceFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preference, rootKey)
 
+        IsFrontPreference(preferenceScreen)
         IsDarkThemePreference(preferenceScreen)
         FooterPreference(preferenceScreen)
     }

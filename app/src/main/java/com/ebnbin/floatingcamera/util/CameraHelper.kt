@@ -129,7 +129,7 @@ class CameraHelper private constructor() {
      *
      * @param hasFrontDevice 是否已检测到前置摄像头. 如果为 `true` 且当前摄像头也是前置摄像头则抛出 [CameraException].
      */
-    class Device(private val id2: String, private val id1: Int, camera1: Camera, hasBackDevice: Boolean,
+    class Device(val id2: String, private val id1: Int, camera1: Camera, hasBackDevice: Boolean,
             hasFrontDevice: Boolean) {
         /**
          * Camera2 [CameraCharacteristics].

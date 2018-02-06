@@ -49,6 +49,7 @@ import android.view.TextureView
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
+import com.ebnbin.floatingcamera.util.PreferenceHelper
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -434,70 +435,60 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
     private fun setUpCameraOutputs(width: Int, height: Int) {
 //        val manager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
-            for (cameraId in /*manager*/cameraManager.cameraIdList) {
-                val characteristics = /*manager*/cameraManager.getCameraCharacteristics(cameraId)
+            val device = PreferenceHelper.device
+            val cameraId = device.id2
 
-                // We don't use a front facing camera in this sample.
-                val cameraDirection = characteristics.get(CameraCharacteristics.LENS_FACING)
-                if (cameraDirection != null &&
-                        cameraDirection == CameraCharacteristics.LENS_FACING_FRONT) {
-                    continue
-                }
+            val characteristics = /*manager*/cameraManager.getCameraCharacteristics(cameraId)
 
-                val map = characteristics.get(
-                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) ?: continue
+            val map = characteristics.get(
+                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)/* ?: continue*/
 
-                // For still image captures, we use the largest available size.
-                val largest = Collections.max(
-                        Arrays.asList(*map.getOutputSizes(ImageFormat.JPEG)),
-                        CompareSizesByArea())
-                imageReader = ImageReader.newInstance(largest.width, largest.height,
-                        ImageFormat.JPEG, /*maxImages*/ 2).apply {
-                    setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
-                }
-
-                // Find out if we need to swap dimension to get the preview size relative to sensor
-                // coordinate.
-                val displayRotation = /*activity.*/windowManager.defaultDisplay.rotation
-
-                sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
-                val swappedDimensions = areDimensionsSwapped(displayRotation)
-
-                val displaySize = Point()
-                /*activity.*/windowManager.defaultDisplay.getSize(displaySize)
-                val rotatedPreviewWidth = if (swappedDimensions) height else width
-                val rotatedPreviewHeight = if (swappedDimensions) width else height
-                var maxPreviewWidth = if (swappedDimensions) displaySize.y else displaySize.x
-                var maxPreviewHeight = if (swappedDimensions) displaySize.x else displaySize.y
-
-                if (maxPreviewWidth > MAX_PREVIEW_WIDTH) maxPreviewWidth = MAX_PREVIEW_WIDTH
-                if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) maxPreviewHeight = MAX_PREVIEW_HEIGHT
-
-                // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-                // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-                // garbage capture data.
-                previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java),
-                        rotatedPreviewWidth, rotatedPreviewHeight,
-                        maxPreviewWidth, maxPreviewHeight,
-                        largest)
-
-                // We fit the aspect ratio of TextureView to the size of preview we picked.
-                if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    textureView.setAspectRatio(previewSize.width, previewSize.height)
-                } else {
-                    textureView.setAspectRatio(previewSize.height, previewSize.width)
-                }
-
-                // Check if the flash is supported.
-                flashSupported =
-                        characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-
-                this.cameraId = cameraId
-
-                // We've found a viable camera and finished setting up member variables,
-                // so we don't need to iterate through other available cameras.
-                return
+            // For still image captures, we use the largest available size.
+            val largest = Collections.max(
+                    Arrays.asList(*map.getOutputSizes(ImageFormat.JPEG)),
+                    CompareSizesByArea())
+            imageReader = ImageReader.newInstance(largest.width, largest.height,
+                    ImageFormat.JPEG, /*maxImages*/ 2).apply {
+                setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
             }
+
+            // Find out if we need to swap dimension to get the preview size relative to sensor
+            // coordinate.
+            val displayRotation = /*activity.*/windowManager.defaultDisplay.rotation
+
+            sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+            val swappedDimensions = areDimensionsSwapped(displayRotation)
+
+            val displaySize = Point()
+            /*activity.*/windowManager.defaultDisplay.getSize(displaySize)
+            val rotatedPreviewWidth = if (swappedDimensions) height else width
+            val rotatedPreviewHeight = if (swappedDimensions) width else height
+            var maxPreviewWidth = if (swappedDimensions) displaySize.y else displaySize.x
+            var maxPreviewHeight = if (swappedDimensions) displaySize.x else displaySize.y
+
+            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) maxPreviewWidth = MAX_PREVIEW_WIDTH
+            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) maxPreviewHeight = MAX_PREVIEW_HEIGHT
+
+            // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
+            // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
+            // garbage capture data.
+            previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java),
+                    rotatedPreviewWidth, rotatedPreviewHeight,
+                    maxPreviewWidth, maxPreviewHeight,
+                    largest)
+
+            // We fit the aspect ratio of TextureView to the size of preview we picked.
+            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                textureView.setAspectRatio(previewSize.width, previewSize.height)
+            } else {
+                textureView.setAspectRatio(previewSize.height, previewSize.width)
+            }
+
+            // Check if the flash is supported.
+            flashSupported =
+                    characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+
+            this.cameraId = cameraId
         } catch (e: CameraAccessException) {
             Log.e(TAG, e.toString())
         } catch (e: NullPointerException) {

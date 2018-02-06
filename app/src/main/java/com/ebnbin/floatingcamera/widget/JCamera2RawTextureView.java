@@ -62,6 +62,8 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
+import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -894,54 +896,57 @@ public class JCamera2RawTextureView extends /*Fragment
         }
         try {
             // Find a CameraDevice that supports RAW captures, and configure state.
-            for (String cameraId : /*manager*/mCameraManager.getCameraIdList()) {
-                CameraCharacteristics characteristics
-                        = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
 
-                // We only use a camera that supports RAW in this sample.
-                if (!contains(characteristics.get(
-                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES),
-                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                    continue;
-                }
+            CameraHelper.Device device = PreferenceHelper.INSTANCE.getDevice();
+            String cameraId = device.getId2();
 
-                StreamConfigurationMap map = characteristics.get(
-                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            // Find a CameraDevice that supports RAW captures, and configure state.
+            CameraCharacteristics characteristics
+                    = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
 
-                // For still image captures, we use the largest available size.
-                Size largestJpeg = Collections.max(
-                        Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                        new CompareSizesByArea());
-
-                Size largestRaw = Collections.max(
-                        Arrays.asList(map.getOutputSizes(ImageFormat.RAW_SENSOR)),
-                        new CompareSizesByArea());
-
-                synchronized (mCameraStateLock) {
-                    // Set up ImageReaders for JPEG and RAW outputs.  Place these in a reference
-                    // counted wrapper to ensure they are only closed when all background tasks
-                    // using them are finished.
-                    if (mJpegImageReader == null || mJpegImageReader.getAndRetain() == null) {
-                        mJpegImageReader = new RefCountedAutoCloseable<>(
-                                ImageReader.newInstance(largestJpeg.getWidth(),
-                                        largestJpeg.getHeight(), ImageFormat.JPEG, /*maxImages*/5));
-                    }
-                    mJpegImageReader.get().setOnImageAvailableListener(
-                            mOnJpegImageAvailableListener, mBackgroundHandler);
-
-                    if (mRawImageReader == null || mRawImageReader.getAndRetain() == null) {
-                        mRawImageReader = new RefCountedAutoCloseable<>(
-                                ImageReader.newInstance(largestRaw.getWidth(),
-                                        largestRaw.getHeight(), ImageFormat.RAW_SENSOR, /*maxImages*/ 5));
-                    }
-                    mRawImageReader.get().setOnImageAvailableListener(
-                            mOnRawImageAvailableListener, mBackgroundHandler);
-
-                    mCharacteristics = characteristics;
-                    mCameraId = cameraId;
-                }
-                return true;
+            // We only use a camera that supports RAW in this sample.
+            if (!contains(characteristics.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES),
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
+//                continue;
             }
+
+            StreamConfigurationMap map = characteristics.get(
+                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+            // For still image captures, we use the largest available size.
+            Size largestJpeg = Collections.max(
+                    Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
+                    new CompareSizesByArea());
+
+            Size largestRaw = Collections.max(
+                    Arrays.asList(map.getOutputSizes(ImageFormat.RAW_SENSOR)),
+                    new CompareSizesByArea());
+
+            synchronized (mCameraStateLock) {
+                // Set up ImageReaders for JPEG and RAW outputs.  Place these in a reference
+                // counted wrapper to ensure they are only closed when all background tasks
+                // using them are finished.
+                if (mJpegImageReader == null || mJpegImageReader.getAndRetain() == null) {
+                    mJpegImageReader = new RefCountedAutoCloseable<>(
+                            ImageReader.newInstance(largestJpeg.getWidth(),
+                                    largestJpeg.getHeight(), ImageFormat.JPEG, /*maxImages*/5));
+                }
+                mJpegImageReader.get().setOnImageAvailableListener(
+                        mOnJpegImageAvailableListener, mBackgroundHandler);
+
+                if (mRawImageReader == null || mRawImageReader.getAndRetain() == null) {
+                    mRawImageReader = new RefCountedAutoCloseable<>(
+                            ImageReader.newInstance(largestRaw.getWidth(),
+                                    largestRaw.getHeight(), ImageFormat.RAW_SENSOR, /*maxImages*/ 5));
+                }
+                mRawImageReader.get().setOnImageAvailableListener(
+                        mOnRawImageAvailableListener, mBackgroundHandler);
+
+                mCharacteristics = characteristics;
+                mCameraId = cameraId;
+            }
+            return true;
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
