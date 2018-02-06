@@ -99,3 +99,15 @@ val defaultSharedPreferences = getSharedPreferences()
  */
 fun getSharedPreferences(name: String = "${app.packageName}_preferences", mode: Int = Context.MODE_PRIVATE) =
         app.getSharedPreferences(name, mode)!!
+
+//*********************************************************************************************************************
+// Math.
+
+/**
+ * 最大公约数. 如果 [other] 为 `0` 则返回 `0`.
+ */
+tailrec infix fun Int.gcd(other: Int): Int {
+    if (other == 0) return 0
+
+    return if (this % other == 0) other else other gcd this % other
+}

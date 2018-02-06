@@ -1,11 +1,19 @@
 package com.ebnbin.floatingcamera.util
 
+import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.params.StreamConfigurationMap
+import android.media.CamcorderProfile
+import android.util.Size
 import com.ebnbin.floatingcamera.BaseRuntimeException
+import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.cameraManager
+import com.ebnbin.floatingcamera.gcd
+import com.ebnbin.floatingcamera.getString
+import com.ebnbin.floatingcamera.resources
 import kotlin.math.min
 
 /**
@@ -113,6 +121,8 @@ class CameraHelper private constructor() {
 
         this.hasBackDevice = hasBackDevice
         this.hasFrontDevice = hasFrontDevice
+        if (!hasBackDevice && !hasFrontDevice) throw BaseRuntimeException()
+
         hasBothDevices = this.hasBackDevice && this.hasFrontDevice
     }
 
@@ -157,6 +167,11 @@ class CameraHelper private constructor() {
         }
 
         /**
+         * Camera1 [Camera.Parameters].
+         */
+        private val parameters1 = camera1.parameters ?: throw CameraException("Camera1 Parameters 获取失败.")
+
+        /**
          * Camera2 朝向.
          */
         private val lensFacing2 = cameraCharacteristics2.get(CameraCharacteristics.LENS_FACING)
@@ -192,6 +207,319 @@ class CameraHelper private constructor() {
          * 是否为前置摄像头.
          */
         val isFront = lensFacing2 == CameraMetadata.LENS_FACING_FRONT
+
+        /**
+         * Camera2 [StreamConfigurationMap].
+         */
+        private val scalerStreamConfigurationMap2 = cameraCharacteristics2.get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                ?: throw CameraException("Camera2 StreamConfigurationMap 获取失败.")
+
+        /**
+         * Camera2 [SurfaceTexture] 输出尺寸列表.
+         */
+        private val surfaceTextureSizes2: Array<Size> = scalerStreamConfigurationMap2.getOutputSizes(
+                SurfaceTexture::class.java) ?: throw CameraException("Camera2 SurfaceTexture 输出尺寸列表获取失败.")
+
+        /**
+         * Camera1 预览尺寸列表.
+         */
+        private val supportedPreviewSizes1: List<Camera.Size> = parameters1.supportedPreviewSizes
+                ?: throw CameraException("Camera1 预览尺寸列表获取失败.")
+        /**
+         * Camera1 视频尺寸列表.
+         */
+        private val supportedVideoSizes1: List<Camera.Size>? = parameters1.supportedVideoSizes
+        /**
+         * Camera1 照片尺寸列表.
+         */
+        private val supportedPictureSizes1: List<Camera.Size> = parameters1.supportedPictureSizes
+                ?: throw CameraException("Camera1 照片尺寸列表获取失败.")
+
+        /**
+         * [CamcorderProfile] 列表.
+         */
+        private val camcorderProfiles: Array<CamcorderProfile>
+        init {
+            val camcorderProfileList = ArrayList<CamcorderProfile>()
+            CAMCORDER_PROFILE_QUALITIES
+                    .filter { CamcorderProfile.hasProfile(id1, it) }
+                    .mapTo(camcorderProfileList) { CamcorderProfile.get(id1, it)!! }
+
+            if (camcorderProfileList.isEmpty()) throw CameraException("CamcorderProfile 数量为 0.")
+
+            camcorderProfiles = camcorderProfileList.toTypedArray()
+        }
+
+        /**
+         * 预览分辨率列表.
+         */
+        private val previewResolutions = createResolutions(
+                { width, height -> PreviewResolution(width, height) },
+                { throw CameraException("预览分辨率数量为 0.") },
+                surfaceTextureSizes2,
+                supportedPreviewSizes1)
+        /**
+         * 视频分辨率列表.
+         */
+        private val videoResolutions = createResolutions(
+                { width, height -> VideoResolution(width, height, camcorderProfiles) },
+                { throw CameraException("视频分辨率数量为 0.") },
+                surfaceTextureSizes2,
+                supportedVideoSizes1,
+                supportedPreviewSizes1)
+        /**
+         * 照片分辨率列表.
+         */
+        private val photoResolutions = createResolutions(
+                { width, height -> PhotoResolution(width, height) },
+                { throw CameraException("照片分辨率数量为 0.") },
+                surfaceTextureSizes2,
+                supportedPictureSizes1)
+
+        /**
+         * 创建分辨率数组. 取 [sizes2] 与 [sizes1] 分辨率交集, 如果 [sizes1] 为 `null` 则使用 [alternativeSizes1].
+         * 从大到小排序.
+         *
+         * @param createResolution 创建分辨率. 参数 `width`, `height`.
+         *
+         * @param onEmpty 分辨率数量为 0 的回调.
+         *
+         * @param sizes2 Camera2 尺寸列表.
+         *
+         * @param sizes1 Camera1 尺寸列表.
+         *
+         * @param alternativeSizes1 如果 [sizes1] 为 `null`, 使用这个参数.
+         */
+        private fun <T : Resolution> createResolutions(
+                createResolution: (Int, Int) -> T,
+                onEmpty: () -> Unit,
+                sizes2: Array<Size>,
+                sizes1: List<Camera.Size>?,
+                alternativeSizes1: List<Camera.Size>? = null): Array<Resolution> {
+            val resolutionList2 = ArrayList<Resolution>()
+            sizes2.forEach { resolutionList2.add(createResolution(it.width, it.height)) }
+
+            val resolutionList1 = ArrayList<Resolution>()
+            if (sizes1 == null) {
+                alternativeSizes1?.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
+            } else {
+                sizes1.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
+            }
+
+            resolutionList2.retainAll(resolutionList1)
+
+            if (resolutionList2.isEmpty()) onEmpty()
+
+            resolutionList2.sortDescending()
+
+            return resolutionList2.toTypedArray()
+        }
+
+        /**
+         * 视频配置列表. 从大到小排序.
+         */
+        private val videoProfiles: Array<VideoProfile>
+        init {
+            val videoProfileList = ArrayList<VideoProfile>()
+            for (camcorderProfile in camcorderProfiles) {
+                try {
+                    val videoProfile = VideoProfile(camcorderProfile, camcorderProfiles, videoResolutions)
+                    if (!videoProfileList.contains(videoProfile)) videoProfileList.add(videoProfile)
+                } catch (e: CameraException) {
+                    e.printStackTrace()
+                }
+            }
+
+            if (videoProfileList.isEmpty()) throw CameraException("视频配置数量为 0.")
+
+            videoProfileList.sortDescending()
+
+            videoProfiles = videoProfileList.toTypedArray()
+        }
+
+        /**
+         * 分辨率.
+         *
+         * @param width 宽.
+         *
+         * @param height 高.
+         */
+        abstract class Resolution(val width: Int, val height: Int) : Comparable<Resolution> {
+            /**
+             * 宽高最大公约数.
+             */
+            private val gcd = width gcd height
+
+            /**
+             * 宽比.
+             */
+            protected val ratioWidth = if (gcd == 0) width else width / gcd
+            /**
+             * 高比.
+             */
+            protected val ratioHeight = if (gcd == 0) height else height / gcd
+
+            /**
+             * 面积.
+             */
+            private val area = width.toLong() * height
+
+            /**
+             * 百万像素.
+             */
+            protected val megapixels = area.toFloat() / 1_000_000f
+
+            /**
+             * 摘要.
+             */
+            abstract val summary: String
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+
+                if (javaClass != other?.javaClass) return false
+
+                other as Resolution
+
+                return width == other.width && height == other.height
+            }
+
+            override fun hashCode(): Int {
+                var result = width
+                result = 31 * result + height
+                return result
+            }
+
+            /**
+             * 面积优先, 宽度其次.
+             */
+            override fun compareTo(other: Resolution) = compareValuesBy(this, other, Resolution::area,
+                    Resolution::width)
+        }
+
+        /**
+         * 预览分辨率.
+         */
+        class PreviewResolution(width: Int, height: Int) : Resolution(width, height) {
+            override val summary = resources.getString(R.string.preview_resolution_summary, this.width, this.height,
+                    ratioWidth, ratioHeight)!!
+        }
+
+        /**
+         * 视频分辨率.
+         */
+        class VideoResolution(width: Int, height: Int, camcorderProfiles: Array<CamcorderProfile>) :
+                Resolution(width, height) {
+            override val summary: String
+            init {
+                val qualityString = camcorderProfiles
+                        .firstOrNull { width == it.videoFrameWidth && height == it.videoFrameHeight }
+                        ?.let {
+                            getString(when (it.quality) {
+                                CamcorderProfile.QUALITY_2160P -> R.string.video_resolution_summary_quality_2160p
+                                CamcorderProfile.QUALITY_1080P -> R.string.video_resolution_summary_quality_1080p
+                                CamcorderProfile.QUALITY_720P -> R.string.video_resolution_summary_quality_720p
+                                CamcorderProfile.QUALITY_480P -> R.string.video_resolution_summary_quality_480p
+                                CamcorderProfile.QUALITY_CIF -> R.string.video_resolution_summary_quality_cif
+                                CamcorderProfile.QUALITY_QVGA -> R.string.video_resolution_summary_quality_qvga
+                                CamcorderProfile.QUALITY_QCIF -> R.string.video_resolution_summary_quality_qcif
+                                CamcorderProfile.QUALITY_HIGH, CamcorderProfile.QUALITY_LOW -> {
+                                    R.string.video_resolution_summary_quality_else
+                                }
+                                else -> throw BaseRuntimeException()
+                            })
+                        }
+                        ?: getString(R.string.video_resolution_summary_quality_else)
+                val qualitySummary = if (qualityString.isEmpty())
+                    "" else
+                    resources.getString(R.string.video_resolution_summary_quality, qualityString)
+
+                summary = resources.getString(R.string.video_resolution_summary, this.width, this.height, ratioWidth,
+                        ratioHeight, megapixels, qualitySummary)!!
+            }
+        }
+
+        /**
+         * 照片分辨率.
+         */
+        class PhotoResolution(width: Int, height: Int) : Resolution(width, height) {
+            override val summary = resources.getString(R.string.photo_resolution_summary, this.width, this.height,
+                    ratioWidth, ratioHeight, megapixels)!!
+        }
+
+        /**
+         * 视频配置. [CamcorderProfile] 的帮助类.
+         *
+         * @param camcorderProfile [CamcorderProfile].
+         *
+         * @param camcorderProfiles [CamcorderProfile] 列表.
+         *
+         * @param videoResolutions 视频分辨率列表.
+         *
+         * @throws CameraException
+         */
+        class VideoProfile(private val camcorderProfile: CamcorderProfile, camcorderProfiles: Array<CamcorderProfile>,
+                videoResolutions: Array<Resolution>): Comparable<VideoProfile> {
+            private val videoResolution = VideoResolution(camcorderProfile.videoFrameWidth,
+                    camcorderProfile.videoFrameHeight, camcorderProfiles)
+            init {
+                if (!videoResolutions.contains(videoResolution)) throw CameraException("CamcorderProfile 分辨率不支持.")
+            }
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+
+                if (javaClass != other?.javaClass) return false
+
+                other as VideoProfile
+
+                return camcorderProfile.duration == other.camcorderProfile.duration &&
+                        camcorderProfile.fileFormat == other.camcorderProfile.fileFormat &&
+                        camcorderProfile.videoCodec == other.camcorderProfile.videoCodec &&
+                        camcorderProfile.videoBitRate == other.camcorderProfile.videoBitRate &&
+                        camcorderProfile.videoFrameRate == other.camcorderProfile.videoFrameRate &&
+                        camcorderProfile.videoFrameWidth == other.camcorderProfile.videoFrameWidth &&
+                        camcorderProfile.videoFrameHeight == other.camcorderProfile.videoFrameHeight &&
+                        camcorderProfile.audioCodec == other.camcorderProfile.audioCodec &&
+                        camcorderProfile.audioBitRate == other.camcorderProfile.audioBitRate &&
+                        camcorderProfile.audioSampleRate == other.camcorderProfile.audioSampleRate &&
+                        camcorderProfile.audioChannels == other.camcorderProfile.audioChannels
+            }
+
+            override fun hashCode(): Int {
+                var result = camcorderProfile.duration.hashCode()
+                result = 31 * result + camcorderProfile.fileFormat.hashCode()
+                result = 31 * result + camcorderProfile.videoCodec.hashCode()
+                result = 31 * result + camcorderProfile.videoBitRate.hashCode()
+                result = 31 * result + camcorderProfile.videoFrameRate.hashCode()
+                result = 31 * result + camcorderProfile.videoFrameWidth.hashCode()
+                result = 31 * result + camcorderProfile.videoFrameHeight.hashCode()
+                result = 31 * result + camcorderProfile.audioCodec.hashCode()
+                result = 31 * result + camcorderProfile.audioBitRate.hashCode()
+                result = 31 * result + camcorderProfile.audioSampleRate.hashCode()
+                result = 31 * result + camcorderProfile.audioChannels.hashCode()
+                return result
+            }
+
+            override fun compareTo(other: VideoProfile) = videoResolution.compareTo(other.videoResolution)
+        }
+
+        companion object {
+            /**
+             * [CamcorderProfile] 质量列表.
+             */
+            private val CAMCORDER_PROFILE_QUALITIES = arrayOf(
+                    CamcorderProfile.QUALITY_2160P,
+                    CamcorderProfile.QUALITY_1080P,
+                    CamcorderProfile.QUALITY_720P,
+                    CamcorderProfile.QUALITY_480P,
+                    CamcorderProfile.QUALITY_CIF,
+                    CamcorderProfile.QUALITY_QVGA,
+                    CamcorderProfile.QUALITY_QCIF,
+                    CamcorderProfile.QUALITY_HIGH,
+                    CamcorderProfile.QUALITY_LOW)
+        }
     }
 
     companion object {

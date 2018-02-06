@@ -4,6 +4,21 @@
     <string name="is_front_summary_off">后置摄像头</string>
     <string name="is_front_summary_on">前置摄像头</string>
 
+    <string name="preview_resolution_summary">%dx%d (%d:%d)</string>
+
+    <string name="video_resolution_summary_quality_2160p">2160p</string>
+    <string name="video_resolution_summary_quality_1080p">1080p</string>
+    <string name="video_resolution_summary_quality_720p">720p</string>
+    <string name="video_resolution_summary_quality_480p">480p</string>
+    <string name="video_resolution_summary_quality_cif">cif</string>
+    <string name="video_resolution_summary_quality_qvga">QVGA</string>
+    <string name="video_resolution_summary_quality_qcif">qcif</string>
+    <string name="video_resolution_summary_quality_else"/>
+    <string name="video_resolution_summary_quality">, %s</string>
+    <string name="video_resolution_summary">%dx%d (%d:%d, %.2f 百万像素%s)</string>
+
+    <string name="photo_resolution_summary">%dx%d (%d:%d, %.2f 百万像素)</string>
+
     <string name="is_dark_theme_title">主题</string>
     <string name="is_dark_theme_summary_off">亮色主题</string>
     <string name="is_dark_theme_summary_on">暗色主题</string>
