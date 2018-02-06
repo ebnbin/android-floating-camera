@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity
 import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 import com.ebnbin.floatingcamera.fragment.preference.IsDarkThemePreference
+import com.ebnbin.floatingcamera.util.CameraHelper
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -18,6 +19,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         EventBus.getDefault().register(this)
+
+        if (!CameraHelper.detect()) {
+            finish()
+            return
+        }
 
         if (savedInstanceState != null) return
 

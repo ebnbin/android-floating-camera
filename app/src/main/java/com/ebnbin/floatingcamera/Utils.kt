@@ -6,9 +6,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.hardware.camera2.CameraManager
 import android.support.annotation.StringRes
 import android.support.v4.util.ArrayMap
 import android.view.WindowManager
+import com.ebnbin.floatingcamera.util.CameraHelper
 
 //*********************************************************************************************************************
 // 异常.
@@ -21,9 +23,12 @@ typealias BaseRuntimeException = RuntimeException
 
 val app by lazy { AppApplication.instance }
 
+val cameraHelper get() = CameraHelper.instance
+
 //*********************************************************************************************************************
 // System services.
 
+val cameraManager by lazy { app.getSystemService(Context.CAMERA_SERVICE) as CameraManager }
 val windowManager by lazy { app.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
 
 //*********************************************************************************************************************
