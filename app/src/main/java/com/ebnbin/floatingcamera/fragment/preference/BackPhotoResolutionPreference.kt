@@ -2,8 +2,8 @@ package com.ebnbin.floatingcamera.fragment.preference
 
 import android.support.v7.preference.ListPreference
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.cameraHelper
-import com.ebnbin.floatingcamera.setEntriesAndEntryValues
+import com.ebnbin.floatingcamera.util.cameraHelper
+import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 
 /**
  * 后置摄像头照片分辨率偏好.

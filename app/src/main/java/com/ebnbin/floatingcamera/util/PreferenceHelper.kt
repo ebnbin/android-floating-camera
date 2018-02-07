@@ -1,6 +1,5 @@
 package com.ebnbin.floatingcamera.util
 
-import com.ebnbin.floatingcamera.cameraHelper
 import com.ebnbin.floatingcamera.fragment.preference.IsDarkThemePreference
 import com.ebnbin.floatingcamera.fragment.preference.IsFrontPreference
 

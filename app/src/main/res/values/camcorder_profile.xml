@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="camcorder_profile_quality_2160p">2160p</string>
+    <string name="camcorder_profile_quality_1080p">1080p</string>
+    <string name="camcorder_profile_quality_720p">720p</string>
+    <string name="camcorder_profile_quality_480p">480p</string>
+    <string name="camcorder_profile_quality_cif">cif</string>
+    <string name="camcorder_profile_quality_qvga">QVGA</string>
+    <string name="camcorder_profile_quality_qcif">qcif</string>
+    <string name="camcorder_profile_quality_high">Highest</string>
+    <string name="camcorder_profile_quality_low">Lowest</string>
+</resources>

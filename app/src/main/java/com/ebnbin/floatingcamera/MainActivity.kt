@@ -6,6 +6,7 @@ import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.taskDescription
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -35,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(event: IsDarkThemeEvent) {
+    fun onEvent(@Suppress("UNUSED_PARAMETER") event: IsDarkThemeEvent) {
         recreate()
     }
 

@@ -1,6 +1,7 @@
 package com.ebnbin.floatingcamera
 
 import android.app.Application
+import com.ebnbin.floatingcamera.util.BaseRuntimeException
 
 /**
  * 应用 [Application] 类.

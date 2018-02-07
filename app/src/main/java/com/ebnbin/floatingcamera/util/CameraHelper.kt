@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.ebnbin.floatingcamera.util
 
 import android.graphics.SurfaceTexture
@@ -8,12 +10,11 @@ import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
 import android.util.Size
-import com.ebnbin.floatingcamera.BaseRuntimeException
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.cameraManager
-import com.ebnbin.floatingcamera.gcd
-import com.ebnbin.floatingcamera.getString
-import com.ebnbin.floatingcamera.resources
+import com.ebnbin.floatingcamera.util.extension.extensionEquals
+import com.ebnbin.floatingcamera.util.extension.extensionHashCode
+import com.ebnbin.floatingcamera.util.extension.gcd
+import com.ebnbin.floatingcamera.util.extension.qualityString
 import kotlin.math.min
 
 /**
@@ -21,7 +22,6 @@ import kotlin.math.min
  *
  * @throws CameraException
  */
-@Suppress("DEPRECATION")
 class CameraHelper private constructor() {
     /**
      * Camera2 id.
@@ -424,22 +424,8 @@ class CameraHelper private constructor() {
             init {
                 val qualityString = camcorderProfiles
                         .firstOrNull { width == it.videoFrameWidth && height == it.videoFrameHeight }
-                        ?.let {
-                            getString(when (it.quality) {
-                                CamcorderProfile.QUALITY_2160P -> R.string.video_resolution_summary_quality_2160p
-                                CamcorderProfile.QUALITY_1080P -> R.string.video_resolution_summary_quality_1080p
-                                CamcorderProfile.QUALITY_720P -> R.string.video_resolution_summary_quality_720p
-                                CamcorderProfile.QUALITY_480P -> R.string.video_resolution_summary_quality_480p
-                                CamcorderProfile.QUALITY_CIF -> R.string.video_resolution_summary_quality_cif
-                                CamcorderProfile.QUALITY_QVGA -> R.string.video_resolution_summary_quality_qvga
-                                CamcorderProfile.QUALITY_QCIF -> R.string.video_resolution_summary_quality_qcif
-                                CamcorderProfile.QUALITY_HIGH, CamcorderProfile.QUALITY_LOW -> {
-                                    R.string.video_resolution_summary_quality_else
-                                }
-                                else -> throw BaseRuntimeException()
-                            })
-                        }
-                        ?: getString(R.string.video_resolution_summary_quality_else)
+                        ?.qualityString
+                        ?: ""
                 val qualitySummary = if (qualityString.isEmpty())
                     "" else
                     resources.getString(R.string.video_resolution_summary_quality, qualityString)
@@ -483,33 +469,10 @@ class CameraHelper private constructor() {
 
                 other as VideoProfile
 
-                return camcorderProfile.duration == other.camcorderProfile.duration &&
-                        camcorderProfile.fileFormat == other.camcorderProfile.fileFormat &&
-                        camcorderProfile.videoCodec == other.camcorderProfile.videoCodec &&
-                        camcorderProfile.videoBitRate == other.camcorderProfile.videoBitRate &&
-                        camcorderProfile.videoFrameRate == other.camcorderProfile.videoFrameRate &&
-                        camcorderProfile.videoFrameWidth == other.camcorderProfile.videoFrameWidth &&
-                        camcorderProfile.videoFrameHeight == other.camcorderProfile.videoFrameHeight &&
-                        camcorderProfile.audioCodec == other.camcorderProfile.audioCodec &&
-                        camcorderProfile.audioBitRate == other.camcorderProfile.audioBitRate &&
-                        camcorderProfile.audioSampleRate == other.camcorderProfile.audioSampleRate &&
-                        camcorderProfile.audioChannels == other.camcorderProfile.audioChannels
+                return camcorderProfile.extensionEquals(other.camcorderProfile)
             }
 
-            override fun hashCode(): Int {
-                var result = camcorderProfile.duration.hashCode()
-                result = 31 * result + camcorderProfile.fileFormat.hashCode()
-                result = 31 * result + camcorderProfile.videoCodec.hashCode()
-                result = 31 * result + camcorderProfile.videoBitRate.hashCode()
-                result = 31 * result + camcorderProfile.videoFrameRate.hashCode()
-                result = 31 * result + camcorderProfile.videoFrameWidth.hashCode()
-                result = 31 * result + camcorderProfile.videoFrameHeight.hashCode()
-                result = 31 * result + camcorderProfile.audioCodec.hashCode()
-                result = 31 * result + camcorderProfile.audioBitRate.hashCode()
-                result = 31 * result + camcorderProfile.audioSampleRate.hashCode()
-                result = 31 * result + camcorderProfile.audioChannels.hashCode()
-                return result
-            }
+            override fun hashCode() = camcorderProfile.extensionHashCode()
 
             override fun compareTo(other: VideoProfile) = videoResolution.compareTo(other.videoResolution)
         }

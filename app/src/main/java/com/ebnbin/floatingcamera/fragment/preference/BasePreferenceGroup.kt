@@ -5,8 +5,8 @@ import android.os.Parcelable
 import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceCategory
 import android.support.v7.preference.PreferenceGroup
-import com.ebnbin.floatingcamera.readBoolean
-import com.ebnbin.floatingcamera.writeBoolean
+import com.ebnbin.floatingcamera.util.extension.readBoolean
+import com.ebnbin.floatingcamera.util.extension.writeBoolean
 
 /**
  * 基础偏好组. 用于管理 [Preference], 没有可显示的内容, 可以嵌套添加.

@@ -1,7 +1,5 @@
 package com.ebnbin.floatingcamera.util
 
-import com.ebnbin.floatingcamera.BaseException
-
 /**
  * 相机异常.
  */

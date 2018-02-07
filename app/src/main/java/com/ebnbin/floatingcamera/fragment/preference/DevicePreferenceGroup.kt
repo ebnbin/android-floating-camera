@@ -1,6 +1,6 @@
 package com.ebnbin.floatingcamera.fragment.preference
 
-import com.ebnbin.floatingcamera.cameraHelper
+import com.ebnbin.floatingcamera.util.cameraHelper
 
 /**
  * 摄像头偏好组.

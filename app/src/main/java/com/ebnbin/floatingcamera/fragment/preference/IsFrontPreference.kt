@@ -2,9 +2,9 @@ package com.ebnbin.floatingcamera.fragment.preference
 
 import android.support.v14.preference.SwitchPreference
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.cameraHelper
-import com.ebnbin.floatingcamera.defaultSharedPreferences
-import com.ebnbin.floatingcamera.get
+import com.ebnbin.floatingcamera.util.cameraHelper
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.extension.get
 
 /**
  * 后置/前置摄像头偏好.

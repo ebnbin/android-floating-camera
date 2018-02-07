@@ -4,6 +4,8 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.view.WindowManager
+import com.ebnbin.floatingcamera.util.app
+import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.CameraView
 import com.ebnbin.floatingcamera.widget.JCamera2VideoTextureView
 
