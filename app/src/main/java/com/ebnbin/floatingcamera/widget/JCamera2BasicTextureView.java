@@ -57,8 +57,8 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
-import com.ebnbin.floatingcamera.util.CameraHelper;
-import com.ebnbin.floatingcamera.util.PreferenceHelper;
+
+import com.ebnbin.floatingcamera.util.SingletonsKt;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -658,8 +658,7 @@ public class JCamera2BasicTextureView extends /*Fragment
 //        Activity activity = getActivity();
 //        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
-            CameraHelper.Device device = PreferenceHelper.INSTANCE.getDevice();
-            String cameraId = device.getId2();
+            String cameraId = SingletonsKt.getCameraHelper().currentDevice().getId2();
 
             CameraCharacteristics characteristics
                     = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
@@ -670,10 +669,8 @@ public class JCamera2BasicTextureView extends /*Fragment
 //                continue;
             }
 
-            // For still image captures, we use the largest available size.
-            Size largest = Collections.max(
-                    Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                    new CompareSizesByArea());
+            Size largest = SingletonsKt.getCameraHelper().currentResolution().getSize();
+
             mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
                     ImageFormat.JPEG, /*maxImages*/2);
             mImageReader.setOnImageAvailableListener(

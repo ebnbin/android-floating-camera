@@ -5,9 +5,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Point
 import android.hardware.camera2.CameraManager
 import android.support.annotation.StringRes
 import android.support.v4.util.ArrayMap
+import android.view.Surface
 import android.view.WindowManager
 import com.ebnbin.floatingcamera.AppApplication
 import com.ebnbin.floatingcamera.R
@@ -57,10 +59,43 @@ val taskDescription by lazy {
 /**
  * 默认 [SharedPreferences].
  */
-val defaultSharedPreferences = getSharedPreferences()
+val defaultSharedPreferences by lazy { getSharedPreferences() }
 
 /**
  * 获取 [SharedPreferences].
  */
 fun getSharedPreferences(name: String = "${app.packageName}_preferences", mode: Int = Context.MODE_PRIVATE) =
         app.getSharedPreferences(name, mode)!!
+
+//*********************************************************************************************************************
+// Display.
+
+/**
+ * [WindowManager.getDefaultDisplay].
+ */
+val display by lazy { windowManager.defaultDisplay!! }
+
+/**
+ * 屏幕旋转方向为 [Surface.ROTATION_0] 时的宽高.
+ */
+private val displaySize by lazy {
+    val outSize = Point()
+    display.getRealSize(outSize)
+    val x = outSize.x
+    val y = outSize.y
+    val rotation = display.rotation
+    val rotated = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
+    object {
+        val width = if (rotated) y else x
+        val height = if (rotated) x else y
+    }
+}
+
+/**
+ * 屏幕旋转方向为 [Surface.ROTATION_0] 时的宽度.
+ */
+val displayWidth by lazy { displaySize.width }
+/**
+ * 屏幕旋转方向为 [Surface.ROTATION_0] 时的高度.
+ */
+val displayHeight by lazy { displaySize.height }

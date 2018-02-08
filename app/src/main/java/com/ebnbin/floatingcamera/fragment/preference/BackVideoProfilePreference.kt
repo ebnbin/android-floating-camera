@@ -3,6 +3,8 @@ package com.ebnbin.floatingcamera.fragment.preference
 import android.support.v7.preference.ListPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.cameraHelper
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.getValueSize
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndValues
 
@@ -35,5 +37,7 @@ class BackVideoProfilePreference(backVideoProfilePreferenceGroup: BackVideoProfi
     companion object {
         private const val KEY = "back_video_profile"
         private const val DEF_VALUE = "0"
+
+        val value get() = defaultSharedPreferences.get(KEY, DEF_VALUE)
     }
 }

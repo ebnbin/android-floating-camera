@@ -50,8 +50,8 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
-import com.ebnbin.floatingcamera.util.CameraHelper;
-import com.ebnbin.floatingcamera.util.PreferenceHelper;
+
+import com.ebnbin.floatingcamera.util.SingletonsKt;
 
 import java.io.File;
 import java.io.IOException;
@@ -402,23 +402,6 @@ public class JCamera2VideoTextureView extends /*Fragment
 //    }
 
     /**
-     * In this sample, we choose a video size with 3x4 aspect ratio. Also, we don't use sizes
-     * larger than 1080p, since MediaRecorder cannot handle such a high-resolution video.
-     *
-     * @param choices The list of available sizes
-     * @return The video size
-     */
-    private static Size chooseVideoSize(Size[] choices) {
-        for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
-                return size;
-            }
-        }
-        Log.e(TAG, "Couldn't find any suitable video size");
-        return choices[choices.length - 1];
-    }
-
-    /**
      * Given {@code choices} of {@code Size}s supported by a camera, chooses the smallest one whose
      * width and height are at least as large as the respective requested values, and whose aspect
      * ratio matches with the specified value.
@@ -617,8 +600,7 @@ public class JCamera2VideoTextureView extends /*Fragment
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
-            CameraHelper.Device device = PreferenceHelper.INSTANCE.getDevice();
-            String cameraId = device.getId2();
+            String cameraId = SingletonsKt.getCameraHelper().currentDevice().getId2();
 
             // Choose the sizes for camera preview and video recording
             CameraCharacteristics characteristics = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
@@ -628,7 +610,9 @@ public class JCamera2VideoTextureView extends /*Fragment
             if (map == null) {
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
-            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+
+            mVideoSize = SingletonsKt.getCameraHelper().currentResolution().getSize();
+
             mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                     width, height, mVideoSize);
 
@@ -772,18 +756,19 @@ public class JCamera2VideoTextureView extends /*Fragment
         if (/*null == activity*/isFinishing()) {
             return;
         }
+
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+//        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         if (mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty()) {
             mNextVideoAbsolutePath = getVideoFilePath(/*getActivity()*/getContext());
         }
         mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
-        mMediaRecorder.setVideoEncodingBitRate(10000000);
-        mMediaRecorder.setVideoFrameRate(30);
-        mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
-        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+//        mMediaRecorder.setVideoEncodingBitRate(10000000);
+//        mMediaRecorder.setVideoFrameRate(30);
+//        mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+//        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+//        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         int rotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
         switch (mSensorOrientation) {
             case SENSOR_ORIENTATION_DEFAULT_DEGREES:
@@ -793,6 +778,33 @@ public class JCamera2VideoTextureView extends /*Fragment
                 mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
                 break;
         }
+
+        if (SingletonsKt.getCameraHelper().currentIsVideoProfile()) {
+            mMediaRecorder.setProfile(SingletonsKt.getCameraHelper().currentVideoProfile().getCamcorderProfile());
+        } else {
+//            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+//            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+//            if (mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty()) {
+//                mNextVideoAbsolutePath = getVideoFilePath(/*getActivity()*/getContext());
+//            }
+//            mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
+            mMediaRecorder.setVideoEncodingBitRate(10000000);
+            mMediaRecorder.setVideoFrameRate(30);
+            mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+//            int rotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
+//            switch (mSensorOrientation) {
+//                case SENSOR_ORIENTATION_DEFAULT_DEGREES:
+//                    mMediaRecorder.setOrientationHint(DEFAULT_ORIENTATIONS.get(rotation));
+//                    break;
+//                case SENSOR_ORIENTATION_INVERSE_DEGREES:
+//                    mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
+//                    break;
+//            }
+        }
+
         mMediaRecorder.prepare();
     }
 

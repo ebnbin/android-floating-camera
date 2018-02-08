@@ -2,6 +2,8 @@ package com.ebnbin.floatingcamera.fragment.preference
 
 import android.support.v14.preference.SwitchPreference
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.extension.get
 
 /**
  * 前置摄像头视频/照片偏好.
@@ -29,5 +31,7 @@ class FrontIsPhotoPreference(frontPreferenceGroup: FrontPreferenceGroup) :
     companion object {
         private const val KEY = "front_is_photo"
         private const val DEF_VALUE = false
+
+        val value get() = defaultSharedPreferences.get(KEY, DEF_VALUE)
     }
 }

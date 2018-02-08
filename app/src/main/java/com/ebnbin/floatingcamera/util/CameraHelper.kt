@@ -11,6 +11,15 @@ import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
 import android.util.Size
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.fragment.preference.BackIsPhotoPreference
+import com.ebnbin.floatingcamera.fragment.preference.BackPhotoResolutionPreference
+import com.ebnbin.floatingcamera.fragment.preference.BackVideoProfilePreference
+import com.ebnbin.floatingcamera.fragment.preference.BackVideoResolutionPreference
+import com.ebnbin.floatingcamera.fragment.preference.FrontIsPhotoPreference
+import com.ebnbin.floatingcamera.fragment.preference.FrontPhotoResolutionPreference
+import com.ebnbin.floatingcamera.fragment.preference.FrontVideoProfilePreference
+import com.ebnbin.floatingcamera.fragment.preference.FrontVideoResolutionPreference
+import com.ebnbin.floatingcamera.fragment.preference.IsFrontPreference
 import com.ebnbin.floatingcamera.util.extension.audioCodecString
 import com.ebnbin.floatingcamera.util.extension.extensionEquals
 import com.ebnbin.floatingcamera.util.extension.extensionHashCode
@@ -130,6 +139,137 @@ class CameraHelper private constructor() {
     }
 
     /**
+     * 当前摄像头.
+     */
+    fun currentDevice() = if (IsFrontPreference.value) frontDevice else backDevice
+
+    /**
+     * 当前是否为照片 (or 视频).
+     */
+    fun currentIsPhoto(): Boolean {
+        if (IsFrontPreference.value) {
+            // 前置摄像头.
+            return FrontIsPhotoPreference.value
+        } else {
+            // 后置摄像头.
+            return BackIsPhotoPreference.value
+        }
+    }
+
+    /**
+     * 当前是否使用 [Device.VideoProfile].
+     */
+    fun currentIsVideoProfile(): Boolean {
+        if (IsFrontPreference.value) {
+            // 前置摄像头.
+            if (FrontIsPhotoPreference.value) {
+                // 前置摄像头照片.
+                return false
+            } else {
+                // 前置摄像头视频.
+                if (FrontVideoProfilePreference.value.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
+                    // 前置摄像头视频自定义配置.
+                    return false
+                } else {
+                    // 前置摄像头视频配置.
+                    return true
+                }
+            }
+        } else {
+            // 后置摄像头.
+            if (BackIsPhotoPreference.value) {
+                // 后置摄像头照片.
+                return false
+            } else {
+                // 后置摄像头视频.
+                if (BackVideoProfilePreference.value.toInt() == backDevice.videoProfiles.size/* - 1*/) {
+                    // 后置摄像头视频自定义配置.
+                    return false
+                } else {
+                    // 后置摄像头视频配置.
+                    return true
+                }
+            }
+        }
+    }
+
+    /**
+     * 当前 [Device.VideoProfile].
+     */
+    fun currentVideoProfile(): Device.VideoProfile {
+        if (IsFrontPreference.value) {
+            // 前置摄像头.
+            if (FrontIsPhotoPreference.value) {
+                // 前置摄像头照片.
+                throw BaseRuntimeException()
+            } else {
+                // 前置摄像头视频.
+                if (FrontVideoProfilePreference.value.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
+                    // 前置摄像头视频自定义配置.
+                    throw BaseRuntimeException()
+                } else {
+                    // 前置摄像头视频配置.
+                    return frontDevice.videoProfiles[FrontVideoProfilePreference.value.toInt()]
+                }
+            }
+        } else {
+            // 后置摄像头.
+            if (BackIsPhotoPreference.value) {
+                // 后置摄像头照片.
+                throw BaseRuntimeException()
+            } else {
+                // 后置摄像头视频.
+                if (BackVideoProfilePreference.value.toInt() == backDevice.videoProfiles.size/* - 1*/) {
+                    // 后置摄像头视频自定义配置.
+                    throw BaseRuntimeException()
+                } else {
+                    // 后置摄像头视频配置.
+                    return backDevice.videoProfiles[BackVideoProfilePreference.value.toInt()]
+                }
+            }
+        }
+    }
+
+    /**
+     * 当前分辨率.
+     */
+    fun currentResolution(): Device.Resolution {
+        if (IsFrontPreference.value) {
+            // 前置摄像头.
+            if (FrontIsPhotoPreference.value) {
+                // 前置摄像头照片.
+                return frontDevice.photoResolutions[FrontPhotoResolutionPreference.value.toInt()]
+            } else {
+                // 前置摄像头视频.
+                if (FrontVideoProfilePreference.value.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
+                    // 前置摄像头视频自定义配置.
+                    return frontDevice.videoResolutions[FrontVideoResolutionPreference.value.toInt()]
+                } else {
+                    // 前置摄像头视频配置.
+                    return frontDevice.videoProfiles[FrontVideoProfilePreference.value.toInt()].videoResolution
+//                    throw BaseRuntimeException()
+                }
+            }
+        } else {
+            // 后置摄像头.
+            if (BackIsPhotoPreference.value) {
+                // 后置摄像头照片.
+                return backDevice.photoResolutions[BackPhotoResolutionPreference.value.toInt()]
+            } else {
+                // 后置摄像头视频.
+                if (BackVideoProfilePreference.value.toInt() == backDevice.videoProfiles.size/* - 1*/) {
+                    // 后置摄像头视频自定义配置.
+                    return backDevice.videoResolutions[BackVideoResolutionPreference.value.toInt()]
+                } else {
+                    // 后置摄像头视频配置.
+                    return backDevice.videoProfiles[BackVideoProfilePreference.value.toInt()].videoResolution
+//                    throw BaseRuntimeException()
+                }
+            }
+        }
+    }
+
+    /**
      * 摄像头.
      *
      * @param id2 Camera2 id.
@@ -212,6 +352,22 @@ class CameraHelper private constructor() {
         val isFront = lensFacing2 == CameraMetadata.LENS_FACING_FRONT
 
         /**
+         * Camera2 传感器方向.
+         */
+        private val sensorOrientation2 = cameraCharacteristics2.get(CameraCharacteristics.SENSOR_ORIENTATION)
+                ?: throw CameraException("Camera2 传感器方向获取失败.")
+
+        /**
+         * 传感器方向.
+         */
+        private val sensorOrientation = sensorOrientation2
+
+        /**
+         * 传感器方向是否为水平方向.
+         */
+        private val isSensorOrientationHorizontal = sensorOrientation != 0 && sensorOrientation != 180
+
+        /**
          * Camera2 [StreamConfigurationMap].
          */
         private val scalerStreamConfigurationMap2 = cameraCharacteristics2.get(
@@ -265,7 +421,7 @@ class CameraHelper private constructor() {
         /**
          * 视频分辨率列表.
          */
-        private val videoResolutions = createResolutions(
+        val videoResolutions = createResolutions(
                 { width, height -> VideoResolution(width, height, camcorderProfiles) },
                 { throw CameraException("视频分辨率数量为 0.") },
                 surfaceTextureSizes2,
@@ -274,50 +430,11 @@ class CameraHelper private constructor() {
         /**
          * 照片分辨率列表.
          */
-        private val photoResolutions = createResolutions(
+        val photoResolutions = createResolutions(
                 { width, height -> PhotoResolution(width, height) },
                 { throw CameraException("照片分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedPictureSizes1)
-
-        /**
-         * 创建分辨率数组. 取 [sizes2] 与 [sizes1] 分辨率交集, 如果 [sizes1] 为 `null` 则使用 [alternativeSizes1].
-         * 从大到小排序.
-         *
-         * @param createResolution 创建分辨率. 参数 `width`, `height`.
-         *
-         * @param onEmpty 分辨率数量为 0 的回调.
-         *
-         * @param sizes2 Camera2 尺寸列表.
-         *
-         * @param sizes1 Camera1 尺寸列表.
-         *
-         * @param alternativeSizes1 如果 [sizes1] 为 `null`, 使用这个参数.
-         */
-        private fun <T : Resolution> createResolutions(
-                createResolution: (Int, Int) -> T,
-                onEmpty: () -> Unit,
-                sizes2: Array<Size>,
-                sizes1: List<Camera.Size>?,
-                alternativeSizes1: List<Camera.Size>? = null): Array<Resolution> {
-            val resolutionList2 = ArrayList<Resolution>()
-            sizes2.forEach { resolutionList2.add(createResolution(it.width, it.height)) }
-
-            val resolutionList1 = ArrayList<Resolution>()
-            if (sizes1 == null) {
-                alternativeSizes1?.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
-            } else {
-                sizes1.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
-            }
-
-            resolutionList2.retainAll(resolutionList1)
-
-            if (resolutionList2.isEmpty()) onEmpty()
-
-            resolutionList2.sortDescending()
-
-            return resolutionList2.toTypedArray()
-        }
 
         /**
          * 视频分辨率摘要列表.
@@ -329,9 +446,51 @@ class CameraHelper private constructor() {
         val photoResolutionSummaries = Array(photoResolutions.size) { photoResolutions[it].summary }
 
         /**
+         * 最大分辨率. 取照片分辨率最大值.
+         */
+        private val maxResolution = photoResolutions.first()
+
+        /**
+         * 预览分辨率.
+         *
+         * 1. 与 [maxResolution] 宽高比相同.
+         * 2. 小等于 `1920x1080` 与屏幕宽高取小值.
+         */
+        private val previewResolution: PreviewResolution
+        init {
+            fun getPreviewResolution(): PreviewResolution {
+                val previewResolutionList = ArrayList<PreviewResolution>()
+                previewResolutions.filterTo(previewResolutionList) { it.isRatioEquals(maxResolution) }
+
+                val maxWidth = min(1080, displayWidth)
+                val maxHeight = min(1920, displayHeight)
+                val previewResolutionList2 = ArrayList<PreviewResolution>()
+                if (previewResolutionList.isEmpty()) {
+                    previewResolutions.filterTo(previewResolutionList2) {
+                        it.isLessOrEquals(maxWidth, maxHeight, isSensorOrientationHorizontal)
+                    }
+
+                    return if (previewResolutionList2.isEmpty())
+                        previewResolutions.first() else
+                        previewResolutionList2.first()
+                } else {
+                    previewResolutionList.filterTo(previewResolutionList2) {
+                        it.isLessOrEquals(maxWidth, maxHeight, isSensorOrientationHorizontal)
+                    }
+
+                    return if (previewResolutionList2.isEmpty())
+                        previewResolutionList.first() else
+                        previewResolutionList2.first()
+                }
+            }
+
+            previewResolution = getPreviewResolution()
+        }
+
+        /**
          * 视频配置列表. 从大到小排序.
          */
-        private val videoProfiles: Array<VideoProfile>
+        val videoProfiles: Array<VideoProfile>
         init {
             val videoProfileList = ArrayList<VideoProfile>()
             for (camcorderProfile in camcorderProfiles) {
@@ -398,6 +557,27 @@ class CameraHelper private constructor() {
              * 摘要.
              */
             abstract val summary: String
+
+            /**
+             * [Size].
+             */
+            val size = Size(width, height)
+
+            /**
+             * 宽高比是否相同.
+             */
+            fun isRatioEquals(other: Resolution) = ratioWidth == other.ratioWidth && ratioHeight == other.ratioHeight
+
+            /**
+             * 小等于.
+             */
+            fun isLessOrEquals(width: Int, height: Int, isSensorOrientationHorizontal: Boolean): Boolean {
+                return if (isSensorOrientationHorizontal) {
+                    this.width <= height && this.height <= width
+                } else {
+                    this.width <= width && this.height <= height
+                }
+            }
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -469,9 +649,9 @@ class CameraHelper private constructor() {
          *
          * @throws CameraException
          */
-        class VideoProfile(private val camcorderProfile: CamcorderProfile, camcorderProfiles: Array<CamcorderProfile>,
-                videoResolutions: Array<Resolution>): Comparable<VideoProfile> {
-            private val videoResolution = VideoResolution(camcorderProfile.videoFrameWidth,
+        class VideoProfile(val camcorderProfile: CamcorderProfile, camcorderProfiles: Array<CamcorderProfile>,
+                videoResolutions: Array<VideoResolution>): Comparable<VideoProfile> {
+            val videoResolution = VideoResolution(camcorderProfile.videoFrameWidth,
                     camcorderProfile.videoFrameHeight, camcorderProfiles)
             init {
                 if (!videoResolutions.contains(videoResolution)) throw CameraException("CamcorderProfile 分辨率不支持.")
@@ -522,6 +702,45 @@ class CameraHelper private constructor() {
                     CamcorderProfile.QUALITY_QCIF,
                     CamcorderProfile.QUALITY_HIGH,
                     CamcorderProfile.QUALITY_LOW)
+
+            /**
+             * 创建分辨率数组. 取 [sizes2] 与 [sizes1] 分辨率交集, 如果 [sizes1] 为 `null` 则使用 [alternativeSizes1].
+             * 从大到小排序.
+             *
+             * @param createResolution 创建分辨率. 参数 `width`, `height`.
+             *
+             * @param onEmpty 分辨率数量为 0 的回调.
+             *
+             * @param sizes2 Camera2 尺寸列表.
+             *
+             * @param sizes1 Camera1 尺寸列表.
+             *
+             * @param alternativeSizes1 如果 [sizes1] 为 `null`, 使用这个参数.
+             */
+            private inline fun <reified T : Resolution> createResolutions(
+                    createResolution: (Int, Int) -> T,
+                    onEmpty: () -> Unit,
+                    sizes2: Array<Size>,
+                    sizes1: List<Camera.Size>?,
+                    alternativeSizes1: List<Camera.Size>? = null): Array<T> {
+                val resolutionList2 = ArrayList<T>()
+                sizes2.forEach { resolutionList2.add(createResolution(it.width, it.height)) }
+
+                val resolutionList1 = ArrayList<T>()
+                if (sizes1 == null) {
+                    alternativeSizes1?.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
+                } else {
+                    sizes1.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
+                }
+
+                resolutionList2.retainAll(resolutionList1)
+
+                if (resolutionList2.isEmpty()) onEmpty()
+
+                resolutionList2.sortDescending()
+
+                return resolutionList2.toTypedArray()
+            }
         }
     }
 

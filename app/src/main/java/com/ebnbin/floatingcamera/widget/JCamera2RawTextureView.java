@@ -62,8 +62,8 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
-import com.ebnbin.floatingcamera.util.CameraHelper;
-import com.ebnbin.floatingcamera.util.PreferenceHelper;
+
+import com.ebnbin.floatingcamera.util.SingletonsKt;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -897,8 +897,7 @@ public class JCamera2RawTextureView extends /*Fragment
         try {
             // Find a CameraDevice that supports RAW captures, and configure state.
 
-            CameraHelper.Device device = PreferenceHelper.INSTANCE.getDevice();
-            String cameraId = device.getId2();
+            String cameraId = SingletonsKt.getCameraHelper().currentDevice().getId2();
 
             // Find a CameraDevice that supports RAW captures, and configure state.
             CameraCharacteristics characteristics
@@ -914,11 +913,9 @@ public class JCamera2RawTextureView extends /*Fragment
             StreamConfigurationMap map = characteristics.get(
                     CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
-            // For still image captures, we use the largest available size.
-            Size largestJpeg = Collections.max(
-                    Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                    new CompareSizesByArea());
+            Size largestJpeg = SingletonsKt.getCameraHelper().currentResolution().getSize();
 
+            // TODO
             Size largestRaw = Collections.max(
                     Arrays.asList(map.getOutputSizes(ImageFormat.RAW_SENSOR)),
                     new CompareSizesByArea());

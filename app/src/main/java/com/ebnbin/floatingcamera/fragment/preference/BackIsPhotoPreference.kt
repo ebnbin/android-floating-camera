@@ -2,6 +2,8 @@ package com.ebnbin.floatingcamera.fragment.preference
 
 import android.support.v14.preference.SwitchPreference
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.extension.get
 
 /**
  * 后置摄像头视频/照片偏好.
@@ -28,5 +30,7 @@ class BackIsPhotoPreference(backPreferenceGroup: BackPreferenceGroup) : SwitchPr
     companion object {
         private const val KEY = "back_is_photo"
         private const val DEF_VALUE = false
+
+        val value get() = defaultSharedPreferences.get(KEY, DEF_VALUE)
     }
 }

@@ -3,6 +3,8 @@ package com.ebnbin.floatingcamera.fragment.preference
 import android.support.v7.preference.ListPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.cameraHelper
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndValues
 
 /**
@@ -32,5 +34,7 @@ class BackPhotoResolutionPreference(backPhotoPreferenceGroup: BackPhotoPreferenc
     companion object {
         private const val KEY = "back_photo_resolution"
         private const val DEF_VALUE = "0"
+
+        val value get() = defaultSharedPreferences.get(KEY, DEF_VALUE)
     }
 }

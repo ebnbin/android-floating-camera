@@ -5,7 +5,9 @@ import android.content.Intent
 import android.os.Build
 import android.view.WindowManager
 import com.ebnbin.floatingcamera.util.app
+import com.ebnbin.floatingcamera.util.cameraHelper
 import com.ebnbin.floatingcamera.util.windowManager
+import com.ebnbin.floatingcamera.widget.Camera2BasicTextureView
 import com.ebnbin.floatingcamera.widget.CameraView
 import com.ebnbin.floatingcamera.widget.JCamera2VideoTextureView
 
@@ -18,7 +20,9 @@ class CameraService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        cameraView = JCamera2VideoTextureView(this)
+        cameraView = if (cameraHelper.currentIsPhoto())
+            Camera2BasicTextureView(this) else
+            JCamera2VideoTextureView(this)
         cameraView.setOnClickListener { stopSelf() }
 
         val params = WindowManager.LayoutParams()
