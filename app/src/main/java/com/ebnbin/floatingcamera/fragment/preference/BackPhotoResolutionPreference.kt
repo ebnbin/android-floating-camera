@@ -3,7 +3,7 @@ package com.ebnbin.floatingcamera.fragment.preference
 import android.support.v7.preference.ListPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.cameraHelper
-import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
+import com.ebnbin.floatingcamera.util.extension.setEntriesAndValues
 
 /**
  * 后置摄像头照片分辨率偏好.
@@ -15,7 +15,7 @@ class BackPhotoResolutionPreference(backPhotoPreferenceGroup: BackPhotoPreferenc
         setDefaultValue(DEF_VALUE)
         setTitle(R.string.back_photo_resolution_title)
         dialogTitle = title
-        setEntriesAndEntryValues(cameraHelper.backDevice.photoResolutionSummaries)
+        setEntriesAndValues(cameraHelper.backDevice.photoResolutionSummaries)
         setOnPreferenceChangeListener { _, newValue ->
             newValue as String
 

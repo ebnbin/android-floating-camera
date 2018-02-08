@@ -8,7 +8,7 @@ class BackVideoPreferenceGroup(backPreferenceGroup: BackPreferenceGroup) : BaseP
         backPreferenceGroup.addPreferenceToGroup(this)
     }
 
-    private val backVideoResolutionPreference = BackVideoResolutionPreference(this)
+    private val backVideoProfilePreferenceGroup = BackVideoProfilePreferenceGroup(this)
 
     init {
         isGroupVisible = !backPreferenceGroup.backIsPhotoPreference.isChecked

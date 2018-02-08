@@ -9,7 +9,7 @@ class FrontVideoPreferenceGroup(frontPreferenceGroup: FrontPreferenceGroup) :
         frontPreferenceGroup.addPreferenceToGroup(this)
     }
 
-    private val frontVideoResolutionPreference = FrontVideoResolutionPreference(this)
+    private val frontVideoProfilePreferenceGroup = FrontVideoProfilePreferenceGroup(this)
 
     init {
         isGroupVisible = !frontPreferenceGroup.frontIsPhotoPreference.isChecked

@@ -11,10 +11,13 @@ import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
 import android.util.Size
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.util.extension.audioCodecString
 import com.ebnbin.floatingcamera.util.extension.extensionEquals
 import com.ebnbin.floatingcamera.util.extension.extensionHashCode
+import com.ebnbin.floatingcamera.util.extension.fileFormatString
 import com.ebnbin.floatingcamera.util.extension.gcd
 import com.ebnbin.floatingcamera.util.extension.qualityString
+import com.ebnbin.floatingcamera.util.extension.videoCodecString
 import kotlin.math.min
 
 /**
@@ -348,6 +351,18 @@ class CameraHelper private constructor() {
         }
 
         /**
+         * 视频配置摘要列表. 在底部添加 "自定义配置".
+         */
+        val videoProfileSummaries: Array<String>
+        init {
+            val videoProfileSummaryList = ArrayList<String>()
+            videoProfiles.mapTo(videoProfileSummaryList) { it.summary }
+            videoProfileSummaryList.add(getString(R.string.video_profile_summary_custom))
+
+            videoProfileSummaries = videoProfileSummaryList.toTypedArray()
+        }
+
+        /**
          * 分辨率.
          *
          * @param width 宽.
@@ -461,6 +476,22 @@ class CameraHelper private constructor() {
             init {
                 if (!videoResolutions.contains(videoResolution)) throw CameraException("CamcorderProfile 分辨率不支持.")
             }
+
+            /**
+             * 摘要.
+             */
+            val summary = "duration=${camcorderProfile.duration}, " +
+                    "quality=${camcorderProfile.qualityString}, " +
+                    "fileFormat=${camcorderProfile.fileFormatString}, " +
+                    "videoCodec=${camcorderProfile.videoCodecString}, " +
+                    "videoBitRate=${camcorderProfile.videoBitRate}, " +
+                    "videoFrameRate=${camcorderProfile.videoFrameRate}, " +
+                    "videoFrameWidth=${camcorderProfile.videoFrameWidth}, " +
+                    "videoFrameHeight=${camcorderProfile.videoFrameHeight}, " +
+                    "audioCodec=${camcorderProfile.audioCodecString}, " +
+                    "audioBitRate=${camcorderProfile.audioBitRate}, " +
+                    "audioSampleRate=${camcorderProfile.audioSampleRate}, " +
+                    "audioChannels=${camcorderProfile.audioChannels}"
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true

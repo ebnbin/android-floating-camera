@@ -16,13 +16,19 @@ import com.ebnbin.floatingcamera.R
  *             BackPreferenceGroup?
  *                 BackIsPhotoPreference
  *                 BackVideoPreferenceGroup
- *                     BackVideoResolutionPreference
+ *                     BackVideoProfilePreferenceGroup
+ *                         BackVideoProfilePreference
+ *                         BackVideoProfileCustomPreferenceGroup
+ *                             BackVideoResolutionPreference
  *                 BackPhotoPreferenceGroup
  *                     BackPhotoResolutionPreference
  *             FrontPreferenceGroup?
  *                 FrontIsPhotoPreference
  *                 FrontVideoPreferenceGroup
- *                     FrontVideoResolutionPreference
+ *                     FrontVideoProfilePreferenceGroup
+ *                         FrontVideoProfilePreference
+ *                         FrontVideoProfileCustomPreferenceGroup
+ *                             FrontVideoResolutionPreference
  *                 FrontPhotoPreferenceGroup
  *                     FrontPhotoResolutionPreference
  *         IsDarkThemePreference

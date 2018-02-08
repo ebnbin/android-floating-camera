@@ -3,7 +3,7 @@ package com.ebnbin.floatingcamera.fragment.preference
 import android.support.v7.preference.ListPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.cameraHelper
-import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
+import com.ebnbin.floatingcamera.util.extension.setEntriesAndValues
 
 /**
  * 前置摄像头照片分辨率偏好.
@@ -15,7 +15,7 @@ class FrontPhotoResolutionPreference(frontPhotoPreferenceGroup: FrontPhotoPrefer
         setDefaultValue(DEF_VALUE)
         setTitle(R.string.front_photo_resolution_title)
         dialogTitle = title
-        setEntriesAndEntryValues(cameraHelper.frontDevice.photoResolutionSummaries)
+        setEntriesAndValues(cameraHelper.frontDevice.photoResolutionSummaries)
         setOnPreferenceChangeListener { _, newValue ->
             newValue as String
 
