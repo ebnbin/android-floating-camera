@@ -33,6 +33,22 @@
 
     <string name="front_photo_resolution_title">前置摄像头照片分辨率</string>
 
+    <string name="preview_title">预览模式</string>
+    <string-array name="preview_entries">
+        <item>与拍摄比例相同</item>
+        <item>最大预览比例</item>
+        <item>与屏幕比例相同</item>
+    </string-array>
+
+    <string name="window_size_title">悬浮窗大小</string>
+    <string name="window_size_summary">悬浮窗大小</string>
+
+    <string name="window_x_title">悬浮窗水平方向位置</string>
+    <string name="window_x_summary">悬浮窗水平方向位置</string>
+
+    <string name="window_y_title">悬浮窗垂直方向位置</string>
+    <string name="window_y_summary">悬浮窗垂直方向位置</string>
+
     <string name="is_dark_theme_title">主题</string>
     <string name="is_dark_theme_summary_off">亮色主题</string>
     <string name="is_dark_theme_summary_on">暗色主题</string>

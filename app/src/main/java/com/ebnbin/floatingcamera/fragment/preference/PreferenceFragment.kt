@@ -31,6 +31,10 @@ import com.ebnbin.floatingcamera.R
  *                             FrontVideoResolutionPreference
  *                 FrontPhotoPreferenceGroup
  *                     FrontPhotoResolutionPreference
+ *         PreviewPreference
+ *         WindowSizePreference
+ *         windowXPreference
+ *         windowYPreference
  *         IsDarkThemePreference
  *     FooterPreference
  */

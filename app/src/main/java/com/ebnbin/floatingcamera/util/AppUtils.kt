@@ -73,29 +73,45 @@ fun getSharedPreferences(name: String = "${app.packageName}_preferences", mode: 
 /**
  * [WindowManager.getDefaultDisplay].
  */
-val display by lazy { windowManager.defaultDisplay!! }
+private val display by lazy { windowManager.defaultDisplay!! }
 
 /**
- * 屏幕旋转方向为 [Surface.ROTATION_0] 时的宽高.
+ * 返回屏幕旋转方向.
  */
-private val displaySize by lazy {
-    val outSize = Point()
-    display.getRealSize(outSize)
-    val x = outSize.x
-    val y = outSize.y
-    val rotation = display.rotation
-    val rotated = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
-    object {
-        val width = if (rotated) y else x
-        val height = if (rotated) x else y
-    }
+private fun getDisplayRotation() = display.rotation
+
+/**
+ * 返回屏幕旋转方向是否为横向.
+ */
+private fun isDisplayRotationLandscape(): Boolean {
+    val rotation = getDisplayRotation()
+    return rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
 }
 
 /**
- * 屏幕旋转方向为 [Surface.ROTATION_0] 时的宽度.
+ * 返回屏幕宽高.
  */
-val displayWidth by lazy { displaySize.width }
+private fun getDisplaySize(): Pair<Int, Int> {
+    val outSize = Point()
+    display.getRealSize(outSize)
+    return Pair(outSize.x, outSize.y)
+}
+
 /**
- * 屏幕旋转方向为 [Surface.ROTATION_0] 时的高度.
+ * 屏幕旋转方向为横向时的宽高.
  */
-val displayHeight by lazy { displaySize.height }
+private val displayLandscapeSize by lazy {
+    val isDisplayRotationLandscape = isDisplayRotationLandscape()
+    val displaySize = getDisplaySize()
+    Pair(if (isDisplayRotationLandscape) displaySize.first else displaySize.second,
+            if (isDisplayRotationLandscape) displaySize.second else displaySize.first)
+}
+
+/**
+ * 屏幕旋转方向为横向时的宽.
+ */
+val displayLandscapeWidth by lazy { displayLandscapeSize.first }
+/**
+ * 屏幕旋转方向为横向时的高.
+ */
+val displayLandscapeHeight by lazy { displayLandscapeSize.second }

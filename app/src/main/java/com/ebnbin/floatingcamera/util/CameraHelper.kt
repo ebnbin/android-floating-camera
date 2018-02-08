@@ -363,9 +363,9 @@ class CameraHelper private constructor() {
         private val sensorOrientation = sensorOrientation2
 
         /**
-         * 传感器方向是否为水平方向.
+         * 传感器方向是否为横向.
          */
-        private val isSensorOrientationHorizontal = sensorOrientation != 0 && sensorOrientation != 180
+        private val isSensorOrientationLandscape = sensorOrientation == 90 || sensorOrientation == 270
 
         /**
          * Camera2 [StreamConfigurationMap].
@@ -414,7 +414,7 @@ class CameraHelper private constructor() {
          * 预览分辨率列表.
          */
         private val previewResolutions = createResolutions(
-                { width, height -> PreviewResolution(width, height) },
+                { width, height -> PreviewResolution(width, height, isSensorOrientationLandscape) },
                 { throw CameraException("预览分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedPreviewSizes1)
@@ -422,7 +422,7 @@ class CameraHelper private constructor() {
          * 视频分辨率列表.
          */
         val videoResolutions = createResolutions(
-                { width, height -> VideoResolution(width, height, camcorderProfiles) },
+                { width, height -> VideoResolution(width, height, isSensorOrientationLandscape, camcorderProfiles) },
                 { throw CameraException("视频分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedVideoSizes1,
@@ -431,7 +431,7 @@ class CameraHelper private constructor() {
          * 照片分辨率列表.
          */
         val photoResolutions = createResolutions(
-                { width, height -> PhotoResolution(width, height) },
+                { width, height -> PhotoResolution(width, height, isSensorOrientationLandscape) },
                 { throw CameraException("照片分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedPictureSizes1)
@@ -462,12 +462,12 @@ class CameraHelper private constructor() {
                 val previewResolutionList = ArrayList<PreviewResolution>()
                 previewResolutions.filterTo(previewResolutionList) { it.isRatioEquals(maxResolution) }
 
-                val maxWidth = min(1080, displayWidth)
-                val maxHeight = min(1920, displayHeight)
+                val maxLandscapeWidth = min(1920, displayLandscapeWidth)
+                val maxLandscapeHeight = min(1080, displayLandscapeHeight)
                 val previewResolutionList2 = ArrayList<PreviewResolution>()
                 if (previewResolutionList.isEmpty()) {
                     previewResolutions.filterTo(previewResolutionList2) {
-                        it.isLessOrEquals(maxWidth, maxHeight, isSensorOrientationHorizontal)
+                        it.isLessOrEquals(maxLandscapeWidth, maxLandscapeHeight)
                     }
 
                     return if (previewResolutionList2.isEmpty())
@@ -475,7 +475,7 @@ class CameraHelper private constructor() {
                         previewResolutionList2.first()
                 } else {
                     previewResolutionList.filterTo(previewResolutionList2) {
-                        it.isLessOrEquals(maxWidth, maxHeight, isSensorOrientationHorizontal)
+                        it.isLessOrEquals(maxLandscapeWidth, maxLandscapeHeight)
                     }
 
                     return if (previewResolutionList2.isEmpty())
@@ -495,7 +495,8 @@ class CameraHelper private constructor() {
             val videoProfileList = ArrayList<VideoProfile>()
             for (camcorderProfile in camcorderProfiles) {
                 try {
-                    val videoProfile = VideoProfile(camcorderProfile, camcorderProfiles, videoResolutions)
+                    val videoProfile = VideoProfile(camcorderProfile, camcorderProfiles, isSensorOrientationLandscape,
+                            videoResolutions)
                     if (!videoProfileList.contains(videoProfile)) videoProfileList.add(videoProfile)
                 } catch (e: CameraException) {
                     e.printStackTrace()
@@ -527,8 +528,11 @@ class CameraHelper private constructor() {
          * @param width 宽.
          *
          * @param height 高.
+         *
+         * @param isSensorOrientationLandscape 传感器方向是否为横向.
          */
-        abstract class Resolution(val width: Int, val height: Int) : Comparable<Resolution> {
+        abstract class Resolution(val width: Int, val height: Int, private val isSensorOrientationLandscape: Boolean) :
+                Comparable<Resolution> {
             /**
              * 宽高最大公约数.
              */
@@ -564,6 +568,15 @@ class CameraHelper private constructor() {
             val size = Size(width, height)
 
             /**
+             * 横向宽.
+             */
+            private val landscapeWidth = if (isSensorOrientationLandscape) width else height
+            /**
+             * 横向高.
+             */
+            private val landscapeHeight = if (isSensorOrientationLandscape) height else width
+
+            /**
              * 宽高比是否相同.
              */
             fun isRatioEquals(other: Resolution) = ratioWidth == other.ratioWidth && ratioHeight == other.ratioHeight
@@ -571,13 +584,8 @@ class CameraHelper private constructor() {
             /**
              * 小等于.
              */
-            fun isLessOrEquals(width: Int, height: Int, isSensorOrientationHorizontal: Boolean): Boolean {
-                return if (isSensorOrientationHorizontal) {
-                    this.width <= height && this.height <= width
-                } else {
-                    this.width <= width && this.height <= height
-                }
-            }
+            fun isLessOrEquals(landscapeWidth: Int, landscapeHeight: Int) =
+                    this.landscapeWidth <= landscapeWidth && this.landscapeHeight <= landscapeHeight
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -605,7 +613,8 @@ class CameraHelper private constructor() {
         /**
          * 预览分辨率.
          */
-        class PreviewResolution(width: Int, height: Int) : Resolution(width, height) {
+        class PreviewResolution(width: Int, height: Int, isSensorOrientationLandscape: Boolean) :
+                Resolution(width, height, isSensorOrientationLandscape) {
             override val summary = resources.getString(R.string.preview_resolution_summary, this.width, this.height,
                     ratioWidth, ratioHeight)!!
         }
@@ -613,8 +622,8 @@ class CameraHelper private constructor() {
         /**
          * 视频分辨率.
          */
-        class VideoResolution(width: Int, height: Int, camcorderProfiles: Array<CamcorderProfile>) :
-                Resolution(width, height) {
+        class VideoResolution(width: Int, height: Int, isSensorOrientationLandscape: Boolean,
+                camcorderProfiles: Array<CamcorderProfile>) : Resolution(width, height, isSensorOrientationLandscape) {
             override val summary: String
             init {
                 val qualityString = camcorderProfiles
@@ -633,7 +642,8 @@ class CameraHelper private constructor() {
         /**
          * 照片分辨率.
          */
-        class PhotoResolution(width: Int, height: Int) : Resolution(width, height) {
+        class PhotoResolution(width: Int, height: Int, isSensorOrientationLandscape: Boolean) :
+                Resolution(width, height, isSensorOrientationLandscape) {
             override val summary = resources.getString(R.string.photo_resolution_summary, this.width, this.height,
                     ratioWidth, ratioHeight, megapixels)!!
         }
@@ -645,14 +655,20 @@ class CameraHelper private constructor() {
          *
          * @param camcorderProfiles [CamcorderProfile] 列表.
          *
+         * @param isSensorOrientationLandscape 传感器方向是否为横向.
+         *
          * @param videoResolutions 视频分辨率列表.
          *
          * @throws CameraException
          */
-        class VideoProfile(val camcorderProfile: CamcorderProfile, camcorderProfiles: Array<CamcorderProfile>,
-                videoResolutions: Array<VideoResolution>): Comparable<VideoProfile> {
+        class VideoProfile(
+                val camcorderProfile: CamcorderProfile,
+                camcorderProfiles: Array<CamcorderProfile>,
+                isSensorOrientationLandscape: Boolean,
+                videoResolutions: Array<VideoResolution>):
+                Comparable<VideoProfile> {
             val videoResolution = VideoResolution(camcorderProfile.videoFrameWidth,
-                    camcorderProfile.videoFrameHeight, camcorderProfiles)
+                    camcorderProfile.videoFrameHeight, isSensorOrientationLandscape, camcorderProfiles)
             init {
                 if (!videoResolutions.contains(videoResolution)) throw CameraException("CamcorderProfile 分辨率不支持.")
             }
