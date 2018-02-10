@@ -11,15 +11,7 @@ import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
 import android.util.Size
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.fragment.preference.BackIsPhotoPreference
-import com.ebnbin.floatingcamera.fragment.preference.BackPhotoResolutionPreference
-import com.ebnbin.floatingcamera.fragment.preference.BackVideoProfilePreference
-import com.ebnbin.floatingcamera.fragment.preference.BackVideoResolutionPreference
-import com.ebnbin.floatingcamera.fragment.preference.FrontIsPhotoPreference
-import com.ebnbin.floatingcamera.fragment.preference.FrontPhotoResolutionPreference
-import com.ebnbin.floatingcamera.fragment.preference.FrontVideoProfilePreference
-import com.ebnbin.floatingcamera.fragment.preference.FrontVideoResolutionPreference
-import com.ebnbin.floatingcamera.fragment.preference.IsFrontPreference
+import com.ebnbin.floatingcamera.fragment.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.extension.audioCodecString
 import com.ebnbin.floatingcamera.util.extension.extensionEquals
 import com.ebnbin.floatingcamera.util.extension.extensionHashCode
@@ -136,23 +128,25 @@ class CameraHelper private constructor() {
         if (!hasBackDevice && !hasFrontDevice) throw BaseRuntimeException()
 
         hasBothDevices = this.hasBackDevice && this.hasFrontDevice
+
+        // TODO: 如果摄像头发生变化, 需要删除 "is_front" 偏好.
     }
 
     /**
      * 当前摄像头.
      */
-    fun currentDevice() = if (IsFrontPreference.value) frontDevice else backDevice
+    fun currentDevice() = if (RootPreferenceGroup.isFront) frontDevice else backDevice
 
     /**
      * 当前是否为照片 (or 视频).
      */
     fun currentIsPhoto(): Boolean {
-        if (IsFrontPreference.value) {
+        if (RootPreferenceGroup.isFront) {
             // 前置摄像头.
-            return FrontIsPhotoPreference.value
+            return RootPreferenceGroup.frontIsPhoto
         } else {
             // 后置摄像头.
-            return BackIsPhotoPreference.value
+            return RootPreferenceGroup.backIsPhoto
         }
     }
 
@@ -160,14 +154,14 @@ class CameraHelper private constructor() {
      * 当前是否使用 [Device.VideoProfile].
      */
     fun currentIsVideoProfile(): Boolean {
-        if (IsFrontPreference.value) {
+        if (RootPreferenceGroup.isFront) {
             // 前置摄像头.
-            if (FrontIsPhotoPreference.value) {
+            if (RootPreferenceGroup.frontIsPhoto) {
                 // 前置摄像头照片.
                 return false
             } else {
                 // 前置摄像头视频.
-                if (FrontVideoProfilePreference.value.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
+                if (RootPreferenceGroup.frontVideoProfile.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
                     // 前置摄像头视频自定义配置.
                     return false
                 } else {
@@ -177,12 +171,12 @@ class CameraHelper private constructor() {
             }
         } else {
             // 后置摄像头.
-            if (BackIsPhotoPreference.value) {
+            if (RootPreferenceGroup.backIsPhoto) {
                 // 后置摄像头照片.
                 return false
             } else {
                 // 后置摄像头视频.
-                if (BackVideoProfilePreference.value.toInt() == backDevice.videoProfiles.size/* - 1*/) {
+                if (RootPreferenceGroup.backVideoProfile.toInt() == backDevice.videoProfiles.size/* - 1*/) {
                     // 后置摄像头视频自定义配置.
                     return false
                 } else {
@@ -197,34 +191,34 @@ class CameraHelper private constructor() {
      * 当前 [Device.VideoProfile].
      */
     fun currentVideoProfile(): Device.VideoProfile {
-        if (IsFrontPreference.value) {
+        if (RootPreferenceGroup.isFront) {
             // 前置摄像头.
-            if (FrontIsPhotoPreference.value) {
+            if (RootPreferenceGroup.frontIsPhoto) {
                 // 前置摄像头照片.
                 throw BaseRuntimeException()
             } else {
                 // 前置摄像头视频.
-                if (FrontVideoProfilePreference.value.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
+                if (RootPreferenceGroup.frontVideoProfile.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
                     // 前置摄像头视频自定义配置.
                     throw BaseRuntimeException()
                 } else {
                     // 前置摄像头视频配置.
-                    return frontDevice.videoProfiles[FrontVideoProfilePreference.value.toInt()]
+                    return frontDevice.videoProfiles[RootPreferenceGroup.frontVideoProfile.toInt()]
                 }
             }
         } else {
             // 后置摄像头.
-            if (BackIsPhotoPreference.value) {
+            if (RootPreferenceGroup.backIsPhoto) {
                 // 后置摄像头照片.
                 throw BaseRuntimeException()
             } else {
                 // 后置摄像头视频.
-                if (BackVideoProfilePreference.value.toInt() == backDevice.videoProfiles.size/* - 1*/) {
+                if (RootPreferenceGroup.backVideoProfile.toInt() == backDevice.videoProfiles.size/* - 1*/) {
                     // 后置摄像头视频自定义配置.
                     throw BaseRuntimeException()
                 } else {
                     // 后置摄像头视频配置.
-                    return backDevice.videoProfiles[BackVideoProfilePreference.value.toInt()]
+                    return backDevice.videoProfiles[RootPreferenceGroup.backVideoProfile.toInt()]
                 }
             }
         }
@@ -234,35 +228,35 @@ class CameraHelper private constructor() {
      * 当前分辨率.
      */
     fun currentResolution(): Device.Resolution {
-        if (IsFrontPreference.value) {
+        if (RootPreferenceGroup.isFront) {
             // 前置摄像头.
-            if (FrontIsPhotoPreference.value) {
+            if (RootPreferenceGroup.frontIsPhoto) {
                 // 前置摄像头照片.
-                return frontDevice.photoResolutions[FrontPhotoResolutionPreference.value.toInt()]
+                return frontDevice.photoResolutions[RootPreferenceGroup.frontPhotoResolution.toInt()]
             } else {
                 // 前置摄像头视频.
-                if (FrontVideoProfilePreference.value.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
+                if (RootPreferenceGroup.frontVideoProfile.toInt() == frontDevice.videoProfiles.size/* - 1*/) {
                     // 前置摄像头视频自定义配置.
-                    return frontDevice.videoResolutions[FrontVideoResolutionPreference.value.toInt()]
+                    return frontDevice.videoResolutions[RootPreferenceGroup.frontVideoResolution.toInt()]
                 } else {
                     // 前置摄像头视频配置.
-                    return frontDevice.videoProfiles[FrontVideoProfilePreference.value.toInt()].videoResolution
+                    return frontDevice.videoProfiles[RootPreferenceGroup.frontVideoProfile.toInt()].videoResolution
 //                    throw BaseRuntimeException()
                 }
             }
         } else {
             // 后置摄像头.
-            if (BackIsPhotoPreference.value) {
+            if (RootPreferenceGroup.backIsPhoto) {
                 // 后置摄像头照片.
-                return backDevice.photoResolutions[BackPhotoResolutionPreference.value.toInt()]
+                return backDevice.photoResolutions[RootPreferenceGroup.backPhotoResolution.toInt()]
             } else {
                 // 后置摄像头视频.
-                if (BackVideoProfilePreference.value.toInt() == backDevice.videoProfiles.size/* - 1*/) {
+                if (RootPreferenceGroup.backVideoProfile.toInt() == backDevice.videoProfiles.size/* - 1*/) {
                     // 后置摄像头视频自定义配置.
-                    return backDevice.videoResolutions[BackVideoResolutionPreference.value.toInt()]
+                    return backDevice.videoResolutions[RootPreferenceGroup.backVideoResolution.toInt()]
                 } else {
                     // 后置摄像头视频配置.
-                    return backDevice.videoProfiles[BackVideoProfilePreference.value.toInt()].videoResolution
+                    return backDevice.videoProfiles[RootPreferenceGroup.backVideoProfile.toInt()].videoResolution
 //                    throw BaseRuntimeException()
                 }
             }
