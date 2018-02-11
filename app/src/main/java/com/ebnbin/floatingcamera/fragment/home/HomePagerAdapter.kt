@@ -1,0 +1,28 @@
+package com.ebnbin.floatingcamera.fragment.home
+
+import android.support.annotation.StringRes
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentManager
+import android.support.v4.app.FragmentPagerAdapter
+import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.fragment.preference.camera.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.other.OtherPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.window.WindowPreferenceFragment
+import com.ebnbin.floatingcamera.util.getString
+
+class HomePagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
+    override fun getItem(position: Int) = ITEMS[position].createFragment()
+
+    override fun getCount() = ITEMS.size
+
+    override fun getPageTitle(position: Int) = getString(ITEMS[position].titleStringRes)
+
+    companion object {
+        private val ITEMS = arrayOf(
+                Item({ WindowPreferenceFragment() }, R.string.window_title),
+                Item({ CameraPreferenceFragment() }, R.string.camera_title),
+                Item({ OtherPreferenceFragment() }, R.string.other_title))
+
+        private class Item(val createFragment: () -> Fragment, @StringRes val titleStringRes: Int)
+    }
+}

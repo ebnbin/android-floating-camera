@@ -1,27 +1,56 @@
-package com.ebnbin.floatingcamera.fragment.preference
+package com.ebnbin.floatingcamera.fragment.preference.camera
 
 import android.content.Context
 import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
+import com.ebnbin.floatingcamera.preference.FooterPreference
 import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
-import com.ebnbin.floatingcamera.preference.SeekBarPreference
+import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.preference.SwitchPreference
-import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.cameraHelper
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.getValueIndex
 import com.ebnbin.floatingcamera.util.extension.getValueSize
 import com.ebnbin.floatingcamera.util.getString
-import org.greenrobot.eventbus.EventBus
 
 /**
- * 偏好界面根偏好组.
+ * 相机根偏好组.
+ *
+ *     CameraPreferenceGroup
+ *         DevicePreferenceGroup
+ *             IsFrontPreference
+ *             BackPreferenceGroup?
+ *                 BackIsPhotoPreference
+ *                 BackVideoPreferenceGroup
+ *                     BackVideoProfilePreferenceGroup
+ *                         BackVideoProfilePreference
+ *                         BackVideoProfileCustomPreferenceGroup
+ *                             BackVideoResolutionPreference
+ *                 BackPhotoPreferenceGroup
+ *                     BackPhotoResolutionPreference
+ *             FrontPreferenceGroup?
+ *                 FrontIsPhotoPreference
+ *                 FrontVideoPreferenceGroup
+ *                     FrontVideoProfilePreferenceGroup
+ *                         FrontVideoProfilePreference
+ *                         FrontVideoProfileCustomPreferenceGroup
+ *                             FrontVideoResolutionPreference
+ *                 FrontPhotoPreferenceGroup
+ *                     FrontPhotoResolutionPreference
+ *     FooterPreference
  */
-class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
-        SharedPreferences.OnSharedPreferenceChangeListener {
+class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) {
+    /**
+     * 相机偏好组.
+     */
+    private val cameraPreferenceGroup by lazy {
+        PreferenceGroup(context,
+                preferences = arrayOf(
+                        devicePreferenceGroup))
+    }
+
     /**
      * 摄像头组.
      */
@@ -277,77 +306,15 @@ class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
     }
 
     /**
-     * 预览.
+     * 底部偏好.
      */
-    private val previewPreference by lazy {
-        ListPreference(context,
-                key = KEY_PREVIEW_RESOLUTION,
-                defaultValue = DEF_VALUE_PREVIEW_RESOLUTION,
-                title = getString(R.string.preview_title),
-                entries = Preview.entries,
-                summaries = Preview.entries,
-                dialogTitle = getString(R.string.preview_title))
-    }
-
-    /**
-     * 悬浮窗大小.
-     */
-    private val windowSizePreference by lazy {
-        SeekBarPreference(context,
-                key = KEY_WINDOW_SIZE,
-                defaultValue = DEF_VALUE_WINDOW_SIZE,
-                title = getString(R.string.window_size_title),
-                summary = getString(R.string.window_size_summary),
-                min = 0,
-                max = 100)
-    }
-
-    /**
-     * 悬浮窗水平方向位置.
-     */
-    private val windowXPreference by lazy {
-        SeekBarPreference(context,
-                key = KEY_WINDOW_X,
-                defaultValue = DEF_VALUE_WINDOW_X,
-                title = getString(R.string.window_x_title),
-                summary = getString(R.string.window_x_summary),
-                min = -100,
-                max = 200)
-    }
-
-    /**
-     * 悬浮窗垂直方向位置.
-     */
-    private val windowYPreference by lazy {
-        SeekBarPreference(context,
-                key = KEY_WINDOW_Y,
-                defaultValue = DEF_VALUE_WINDOW_Y,
-                title = getString(R.string.window_y_title),
-                summary = getString(R.string.window_y_summary),
-                min = -100,
-                max = 200)
-    }
-
-    /**
-     * 主题.
-     */
-    private val isDarkThemePreference by lazy {
-        SwitchPreference(context,
-                key = KEY_IS_DARK_THEME,
-                defaultValue = DEF_VALUE_IS_DARK_THEME,
-                isEnabled = null,
-                title = getString(R.string.is_dark_theme_title),
-                summaryOff = getString(R.string.is_dark_theme_summary_off),
-                summaryOn = getString(R.string.is_dark_theme_summary_on))
+    private val footerPreference by lazy {
+        FooterPreference(context)
     }
 
     override fun preferences() = arrayOf(
-            devicePreferenceGroup,
-            previewPreference,
-            windowSizePreference,
-            windowXPreference,
-            windowYPreference,
-            isDarkThemePreference)
+            cameraPreferenceGroup,
+            footerPreference)
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
@@ -383,9 +350,6 @@ class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
                 frontVideoPreferenceGroup.isGroupVisible = !newValue
                 frontPhotoPreferenceGroup.isGroupVisible = newValue
             }
-            KEY_IS_DARK_THEME -> {
-                EventBus.getDefault().post(IsDarkThemeEvent())
-            }
         }
     }
 
@@ -399,11 +363,6 @@ class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
         private const val KEY_FRONT_VIDEO_PROFILE = "front_video_profile"
         private const val KEY_FRONT_VIDEO_RESOLUTION = "front_video_resolution"
         private const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
-        private const val KEY_PREVIEW_RESOLUTION = "preview_resolution"
-        private const val KEY_WINDOW_SIZE = "window_size"
-        private const val KEY_WINDOW_X = "window_x"
-        private const val KEY_WINDOW_Y = "window_y"
-        private const val KEY_IS_DARK_THEME = "is_dark_theme"
 
         private val DEF_VALUE_IS_FRONT get() = !cameraHelper.hasBothDevices && cameraHelper.hasFrontDevice
         private const val DEF_VALUE_BACK_IS_PHOTO = false
@@ -414,11 +373,6 @@ class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
         private const val DEF_VALUE_FRONT_VIDEO_PROFILE = "0"
         private const val DEF_VALUE_FRONT_VIDEO_RESOLUTION = "0"
         private const val DEF_VALUE_FRONT_PHOTO_RESOLUTION = "0"
-        private val DEF_VALUE_PREVIEW_RESOLUTION = Preview.CAPTURE.indexString
-        private const val DEF_VALUE_WINDOW_SIZE = 50
-        private const val DEF_VALUE_WINDOW_X = 50
-        private const val DEF_VALUE_WINDOW_Y = 50
-        private const val DEF_VALUE_IS_DARK_THEME = false
 
         val isFront get() = defaultSharedPreferences.get(KEY_IS_FRONT, DEF_VALUE_IS_FRONT)
         val backIsPhoto get() = defaultSharedPreferences.get(KEY_BACK_IS_PHOTO, DEF_VALUE_BACK_IS_PHOTO)
@@ -434,11 +388,5 @@ class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
                 DEF_VALUE_FRONT_VIDEO_RESOLUTION)
         val frontPhotoResolution get() = defaultSharedPreferences.get(KEY_FRONT_PHOTO_RESOLUTION,
                 DEF_VALUE_FRONT_PHOTO_RESOLUTION)
-        val previewResolution get() = defaultSharedPreferences.get(KEY_PREVIEW_RESOLUTION,
-                DEF_VALUE_PREVIEW_RESOLUTION)
-        val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
-        val windowX get() = defaultSharedPreferences.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
-        val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
-        val isDarkTheme get() = defaultSharedPreferences.get(KEY_IS_DARK_THEME, DEF_VALUE_IS_DARK_THEME)
     }
 }

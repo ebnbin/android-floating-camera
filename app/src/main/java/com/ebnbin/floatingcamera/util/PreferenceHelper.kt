@@ -1,10 +1,10 @@
 package com.ebnbin.floatingcamera.util
 
-import com.ebnbin.floatingcamera.fragment.preference.RootPreferenceGroup
+import com.ebnbin.floatingcamera.fragment.preference.other.OtherRootPreferenceGroup
 
 /**
  * 偏好帮助类.
  */
 object PreferenceHelper {
-    val isDarkTheme get() = RootPreferenceGroup.isDarkTheme
+    val isDarkTheme get() = OtherRootPreferenceGroup.isDarkTheme
 }

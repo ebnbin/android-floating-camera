@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="camera_title">相机</string>
+    <string name="window_title">窗口</string>
+    <string name="other_title">其他</string>
+
     <string name="is_front_title">摄像头</string>
     <string name="is_front_summary_off">后置摄像头</string>
     <string name="is_front_summary_on">前置摄像头</string>

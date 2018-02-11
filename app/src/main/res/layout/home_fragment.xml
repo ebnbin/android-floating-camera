@@ -15,13 +15,18 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:title="@string/app_name"/>
+            app:title="@string/app_name"
+            app:layout_scrollFlags="enterAlways|scroll|snap"/>
+
+        <android.support.design.widget.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
     </android.support.design.widget.AppBarLayout>
 
-    <fragment
-        android:name="com.ebnbin.floatingcamera.fragment.preference.PreferenceFragment"
-        android:tag="com.ebnbin.floatingcamera.fragment.preference.PreferenceFragment"
+    <android.support.v4.view.ViewPager
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
