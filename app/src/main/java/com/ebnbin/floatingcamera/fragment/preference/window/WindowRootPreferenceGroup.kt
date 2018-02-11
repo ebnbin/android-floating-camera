@@ -3,6 +3,9 @@ package com.ebnbin.floatingcamera.fragment.preference.window
 import android.content.Context
 import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.event.WindowSizeEvent
+import com.ebnbin.floatingcamera.event.WindowXEvent
+import com.ebnbin.floatingcamera.event.WindowYEvent
 import com.ebnbin.floatingcamera.preference.FooterPreference
 import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
@@ -10,6 +13,7 @@ import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.getString
 
@@ -80,8 +84,8 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      */
     private val previewPreference by lazy {
         ListPreference(context,
-                key = KEY_PREVIEW_RESOLUTION,
-                defaultValue = DEF_VALUE_PREVIEW_RESOLUTION,
+                key = KEY_PREVIEW,
+                defaultValue = DEF_VALUE_PREVIEW,
                 title = getString(R.string.preview_title),
                 entries = Preview.entries,
                 summaries = Preview.entries,
@@ -100,21 +104,34 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
             footerPreference)
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        when (key) {
+            KEY_WINDOW_SIZE -> {
+                eventBus.post(WindowSizeEvent())
+            }
+            KEY_WINDOW_X -> {
+                eventBus.post(WindowXEvent())
+            }
+            KEY_WINDOW_Y -> {
+                eventBus.post(WindowYEvent())
+            }
+            KEY_PREVIEW -> {
+                eventBus.post(WindowSizeEvent())
+            }
+        }
     }
 
     companion object {
-        private const val KEY_PREVIEW_RESOLUTION = "preview_resolution"
         private const val KEY_WINDOW_SIZE = "window_size"
         private const val KEY_WINDOW_X = "window_x"
         private const val KEY_WINDOW_Y = "window_y"
+        private const val KEY_PREVIEW = "preview"
 
-        private val DEF_VALUE_PREVIEW_RESOLUTION = Preview.CAPTURE.indexString
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
         private const val DEF_VALUE_WINDOW_Y = 50
+        private val DEF_VALUE_PREVIEW = Preview.CAPTURE.indexString
 
-        val previewResolution get() = defaultSharedPreferences.get(KEY_PREVIEW_RESOLUTION,
-                DEF_VALUE_PREVIEW_RESOLUTION)
+        val preview get() = defaultSharedPreferences.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
         val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
         val windowX get() = defaultSharedPreferences.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
         val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)

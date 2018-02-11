@@ -435,14 +435,14 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
     private fun setUpCameraOutputs(width: Int, height: Int) {
 //        val manager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
-            val cameraId = PreferenceHelper.device.id2
+            val cameraId = PreferenceHelper.device().id2
 
             val characteristics = /*manager*/cameraManager.getCameraCharacteristics(cameraId)
 
             val map = characteristics.get(
                     CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)/* ?: continue*/
 
-            val largest = PreferenceHelper.resolution.size
+            val largest = PreferenceHelper.resolution().size
 
             imageReader = ImageReader.newInstance(largest.width, largest.height,
                     ImageFormat.JPEG, /*maxImages*/ 2).apply {

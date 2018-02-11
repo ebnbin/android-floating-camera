@@ -318,7 +318,7 @@ class CameraHelper private constructor() {
          * 1. 与 [maxResolution] 宽高比相同.
          * 2. 小等于 `1920x1080` 与屏幕宽高取小值.
          */
-        private val previewResolution: PreviewResolution
+        val previewResolution: PreviewResolution
         init {
             fun getPreviewResolution(): PreviewResolution {
                 val previewResolutionList = ArrayList<PreviewResolution>()
@@ -432,11 +432,11 @@ class CameraHelper private constructor() {
             /**
              * 横向宽.
              */
-            private val landscapeWidth = if (isSensorOrientationLandscape) width else height
+            val landscapeWidth = if (isSensorOrientationLandscape) width else height
             /**
              * 横向高.
              */
-            private val landscapeHeight = if (isSensorOrientationLandscape) height else width
+            val landscapeHeight = if (isSensorOrientationLandscape) height else width
 
             /**
              * 宽高比是否相同.

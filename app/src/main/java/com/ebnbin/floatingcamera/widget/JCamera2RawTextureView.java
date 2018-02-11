@@ -897,7 +897,7 @@ public class JCamera2RawTextureView extends /*Fragment
         try {
             // Find a CameraDevice that supports RAW captures, and configure state.
 
-            String cameraId = PreferenceHelper.INSTANCE.getDevice().getId2();
+            String cameraId = PreferenceHelper.INSTANCE.device().getId2();
 
             // Find a CameraDevice that supports RAW captures, and configure state.
             CameraCharacteristics characteristics
@@ -913,7 +913,7 @@ public class JCamera2RawTextureView extends /*Fragment
             StreamConfigurationMap map = characteristics.get(
                     CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
-            Size largestJpeg = PreferenceHelper.INSTANCE.getResolution().getSize();
+            Size largestJpeg = PreferenceHelper.INSTANCE.resolution().getSize();
 
             // TODO
             Size largestRaw = Collections.max(

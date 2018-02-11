@@ -83,7 +83,7 @@ private fun getDisplayRotation() = display.rotation
 /**
  * 返回屏幕旋转方向是否为横向.
  */
-private fun isDisplayRotationLandscape(): Boolean {
+fun isDisplayRotationLandscape(): Boolean {
     val rotation = getDisplayRotation()
     return rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
 }

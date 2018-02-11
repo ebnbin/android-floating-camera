@@ -6,8 +6,8 @@ import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.taskDescription
-import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        EventBus.getDefault().register(this)
+        eventBus.register(this)
 
         if (!CameraHelper.detect()) {
             finish()
@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initTheme() {
-        setTheme(if (PreferenceHelper.isDarkTheme) R.style.DarkTheme else R.style.LightTheme)
+        setTheme(if (PreferenceHelper.isDarkTheme()) R.style.DarkTheme else R.style.LightTheme)
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        EventBus.getDefault().unregister(this)
+        eventBus.unregister(this)
 
         super.onDestroy()
     }

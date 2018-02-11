@@ -9,9 +9,9 @@ import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.preference.SwitchPreference
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.getString
-import org.greenrobot.eventbus.EventBus
 
 /**
  * 其他根偏好组.
@@ -57,7 +57,7 @@ class OtherRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
             KEY_IS_DARK_THEME -> {
-                EventBus.getDefault().post(IsDarkThemeEvent())
+                eventBus.post(IsDarkThemeEvent())
             }
         }
     }

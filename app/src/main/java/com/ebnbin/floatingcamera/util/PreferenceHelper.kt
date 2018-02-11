@@ -2,6 +2,7 @@ package com.ebnbin.floatingcamera.util
 
 import com.ebnbin.floatingcamera.fragment.preference.camera.CameraRootPreferenceGroup
 import com.ebnbin.floatingcamera.fragment.preference.other.OtherRootPreferenceGroup
+import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
 
 /**
  * 偏好帮助类.
@@ -10,21 +11,21 @@ object PreferenceHelper {
     /**
      * 摄像头.
      */
-    val device get() = if (CameraRootPreferenceGroup.isFront)
+    fun device() = if (CameraRootPreferenceGroup.isFront)
         cameraHelper.frontDevice else
         cameraHelper.backDevice
 
     /**
      * 是否为照片 (or 视频).
      */
-    val isPhoto get() = if (CameraRootPreferenceGroup.isFront)
+    fun isPhoto() = if (CameraRootPreferenceGroup.isFront)
         CameraRootPreferenceGroup.frontIsPhoto else
         CameraRootPreferenceGroup.backIsPhoto
 
     /**
      * 分辨率.
      */
-    val resolution: CameraHelper.Device.Resolution get() =
+    fun resolution() =
         if (CameraRootPreferenceGroup.isFront) {
             // 前置摄像头.
             val device = cameraHelper.frontDevice
@@ -70,7 +71,7 @@ object PreferenceHelper {
     /**
      * 视频配置.
      */
-    val videoProfile: CameraHelper.Device.VideoProfile? get() {
+    fun videoProfile(): CameraHelper.Device.VideoProfile? {
         if (CameraRootPreferenceGroup.isFront && !CameraRootPreferenceGroup.frontIsPhoto) {
             val frontVideoProfileInt = CameraRootPreferenceGroup.frontVideoProfile.toInt()
             val videoProfiles = cameraHelper.frontDevice.videoProfiles
@@ -89,7 +90,43 @@ object PreferenceHelper {
     }
 
     /**
+     * 窗口大小.
+     */
+    fun windowSize(): WindowSize {
+        val windowSizeValue = WindowRootPreferenceGroup.windowSize
+        var landscapeWidth = displayLandscapeWidth * windowSizeValue / 100f
+        var landscapeHeight = displayLandscapeHeight * windowSizeValue / 100f
+
+        when (Preview.values()[WindowRootPreferenceGroup.preview.toInt()]) {
+            Preview.CAPTURE -> {
+                val resolution = resolution()
+                if (landscapeWidth < landscapeHeight * resolution.landscapeWidth / resolution.landscapeHeight) {
+                    landscapeHeight = landscapeWidth * resolution.landscapeHeight / resolution.landscapeWidth
+                } else {
+                    landscapeWidth = landscapeHeight * resolution.landscapeWidth / resolution.landscapeHeight
+                }
+            }
+            Preview.FULL -> {
+                val previewResolution = device().previewResolution
+                if (landscapeWidth < landscapeHeight * previewResolution.landscapeWidth /
+                        previewResolution.landscapeHeight) {
+                    landscapeHeight = landscapeWidth * previewResolution.landscapeHeight /
+                            previewResolution.landscapeWidth
+                } else {
+                    landscapeWidth = landscapeHeight * previewResolution.landscapeWidth /
+                            previewResolution.landscapeHeight
+                }
+            }
+            Preview.SCREEN -> {
+                // Do nothing.
+            }
+        }
+
+        return WindowSize(landscapeWidth.toInt(), landscapeHeight.toInt())
+    }
+
+    /**
      * 是否为暗色主题 (or 亮色主题).
      */
-    val isDarkTheme get() = OtherRootPreferenceGroup.isDarkTheme
+    fun isDarkTheme() = OtherRootPreferenceGroup.isDarkTheme
 }

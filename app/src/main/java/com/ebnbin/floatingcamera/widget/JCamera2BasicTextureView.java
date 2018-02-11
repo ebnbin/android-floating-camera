@@ -658,7 +658,7 @@ public class JCamera2BasicTextureView extends /*Fragment
 //        Activity activity = getActivity();
 //        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
-            String cameraId = PreferenceHelper.INSTANCE.getDevice().getId2();
+            String cameraId = PreferenceHelper.INSTANCE.device().getId2();
 
             CameraCharacteristics characteristics
                     = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
@@ -669,7 +669,7 @@ public class JCamera2BasicTextureView extends /*Fragment
 //                continue;
             }
 
-            Size largest = PreferenceHelper.INSTANCE.getResolution().getSize();
+            Size largest = PreferenceHelper.INSTANCE.resolution().getSize();
 
             mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
                     ImageFormat.JPEG, /*maxImages*/2);

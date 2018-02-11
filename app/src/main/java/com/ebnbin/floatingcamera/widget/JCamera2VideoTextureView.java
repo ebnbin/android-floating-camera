@@ -601,7 +601,7 @@ public class JCamera2VideoTextureView extends /*Fragment
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
-            String cameraId = PreferenceHelper.INSTANCE.getDevice().getId2();
+            String cameraId = PreferenceHelper.INSTANCE.device().getId2();
 
             // Choose the sizes for camera preview and video recording
             CameraCharacteristics characteristics = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
@@ -612,7 +612,7 @@ public class JCamera2VideoTextureView extends /*Fragment
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
 
-            mVideoSize = PreferenceHelper.INSTANCE.getResolution().getSize();
+            mVideoSize = PreferenceHelper.INSTANCE.resolution().getSize();
 
             mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                     width, height, mVideoSize);
@@ -780,7 +780,7 @@ public class JCamera2VideoTextureView extends /*Fragment
                 break;
         }
 
-        CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.getVideoProfile();
+        CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.videoProfile();
         if (videoProfile == null) {
 //            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 //            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
