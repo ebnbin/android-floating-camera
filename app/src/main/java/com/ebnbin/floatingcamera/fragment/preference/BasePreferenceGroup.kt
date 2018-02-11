@@ -1,10 +1,12 @@
 package com.ebnbin.floatingcamera.fragment.preference
 
+import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceCategory
 import android.support.v7.preference.PreferenceGroup
+import android.support.v7.preference.PreferenceManager
 import com.ebnbin.floatingcamera.util.extension.readBoolean
 import com.ebnbin.floatingcamera.util.extension.writeBoolean
 
@@ -13,7 +15,7 @@ import com.ebnbin.floatingcamera.util.extension.writeBoolean
  *
  * [PreferenceCategory] 作为普通 [Preference] 使用, 不用于添加子 [Preference].
  */
-abstract class BasePreferenceGroup(preferenceGroup: PreferenceGroup) : PreferenceGroup(preferenceGroup.context, null) {
+abstract class BasePreferenceGroup(context: Context) : PreferenceGroup(context, null) {
     init {
         isVisible = false
     }
@@ -48,6 +50,21 @@ abstract class BasePreferenceGroup(preferenceGroup: PreferenceGroup) : Preferenc
                 removeAll()
             }
         }
+
+    private var isFirstAttachedToHierarchy = true
+
+    override fun onAttachedToHierarchy(preferenceManager: PreferenceManager?) {
+        super.onAttachedToHierarchy(preferenceManager)
+
+        if (isFirstAttachedToHierarchy) {
+            isFirstAttachedToHierarchy = false
+
+            onFirstAttachedToHierarchy(preferenceManager)
+        }
+    }
+
+    protected open fun onFirstAttachedToHierarchy(preferenceManager: PreferenceManager?) {
+    }
 
     //*****************************************************************************************************************
     // Instance state.

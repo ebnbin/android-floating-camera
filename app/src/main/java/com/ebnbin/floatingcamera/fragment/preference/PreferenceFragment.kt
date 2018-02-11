@@ -41,8 +41,9 @@ class PreferenceFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preference, rootKey)
 
-        rootPreferenceGroup = RootPreferenceGroup(preferenceScreen)
-        FooterPreference(preferenceScreen)
+        rootPreferenceGroup = RootPreferenceGroup(preferenceScreen.context)
+        preferenceScreen.addPreference(rootPreferenceGroup)
+        preferenceScreen.addPreference(FooterPreference(preferenceScreen.context))
 
         preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(rootPreferenceGroup)
     }

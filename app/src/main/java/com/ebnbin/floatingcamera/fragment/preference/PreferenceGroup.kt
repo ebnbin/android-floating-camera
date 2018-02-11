@@ -1,16 +1,24 @@
 package com.ebnbin.floatingcamera.fragment.preference
 
-open class PreferenceGroup(params: Params) : BasePreferenceGroup(params.preferenceGroup) {
-    init {
-        if (params.preferenceGroup is BasePreferenceGroup) {
-            params.preferenceGroup.addPreferenceToGroup(this)
-        } else {
-            params.preferenceGroup.addPreference(this)
+import android.content.Context
+import android.support.v7.preference.Preference
+import android.support.v7.preference.PreferenceManager
+
+open class PreferenceGroup(context: Context, private val params: Params? = null) : BasePreferenceGroup(context) {
+    override fun onFirstAttachedToHierarchy(preferenceManager: PreferenceManager?) {
+        super.onFirstAttachedToHierarchy(preferenceManager)
+
+        params?.preferences?.forEach {
+            if (it != null) {
+                addPreferenceToGroup(it)
+            }
         }
+        params?.init?.invoke(this)
     }
 
     companion object {
         open class Params(
-                val preferenceGroup: android.support.v7.preference.PreferenceGroup)
+                val preferences: Array<Preference?>? = null,
+                val init: ((PreferenceGroup) -> Unit)? = null)
     }
 }

@@ -1,27 +1,20 @@
 package com.ebnbin.floatingcamera.fragment.preference
 
-import android.support.v7.preference.PreferenceGroup
+import android.content.Context
 
-open class SwitchPreference(params: Params) :
-        android.support.v14.preference.SwitchPreference(params.preferenceGroup.context) {
+open class SwitchPreference(context: Context, params: Params? = null) :
+        android.support.v14.preference.SwitchPreference(context) {
     init {
-        if (params.key != null) key = params.key
-        if (params.defaultValue != null) setDefaultValue(params.defaultValue)
-        if (params.isEnabled != null) isEnabled = params.isEnabled
-        if (params.title != null) title = params.title
-        if (params.summaryOff != null) summaryOff = params.summaryOff
-        if (params.summaryOn != null) summaryOn = params.summaryOn
-
-        if (params.preferenceGroup is BasePreferenceGroup) {
-            params.preferenceGroup.addPreferenceToGroup(this)
-        } else {
-            params.preferenceGroup.addPreference(this)
-        }
+        if (params?.key != null) key = params.key
+        if (params?.defaultValue != null) setDefaultValue(params.defaultValue)
+        if (params?.isEnabled != null) isEnabled = params.isEnabled
+        if (params?.title != null) title = params.title
+        if (params?.summaryOff != null) summaryOff = params.summaryOff
+        if (params?.summaryOn != null) summaryOn = params.summaryOn
     }
 
     companion object {
         open class Params(
-                val preferenceGroup: PreferenceGroup,
                 val key: String? = null,
                 val defaultValue: Boolean? = null,
                 val isEnabled: Boolean? = null,
