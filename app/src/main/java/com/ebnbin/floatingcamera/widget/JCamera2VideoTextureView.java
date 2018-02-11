@@ -51,7 +51,8 @@ import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.ebnbin.floatingcamera.util.SingletonsKt;
+import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -600,7 +601,7 @@ public class JCamera2VideoTextureView extends /*Fragment
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
-            String cameraId = SingletonsKt.getCameraHelper().currentDevice().getId2();
+            String cameraId = PreferenceHelper.INSTANCE.getDevice().getId2();
 
             // Choose the sizes for camera preview and video recording
             CameraCharacteristics characteristics = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
@@ -611,7 +612,7 @@ public class JCamera2VideoTextureView extends /*Fragment
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
 
-            mVideoSize = SingletonsKt.getCameraHelper().currentResolution().getSize();
+            mVideoSize = PreferenceHelper.INSTANCE.getResolution().getSize();
 
             mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                     width, height, mVideoSize);
@@ -779,9 +780,8 @@ public class JCamera2VideoTextureView extends /*Fragment
                 break;
         }
 
-        if (SingletonsKt.getCameraHelper().currentIsVideoProfile()) {
-            mMediaRecorder.setProfile(SingletonsKt.getCameraHelper().currentVideoProfile().getCamcorderProfile());
-        } else {
+        CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.getVideoProfile();
+        if (videoProfile == null) {
 //            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 //            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
             mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
@@ -803,6 +803,8 @@ public class JCamera2VideoTextureView extends /*Fragment
 //                    mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
 //                    break;
 //            }
+        } else {
+            mMediaRecorder.setProfile(videoProfile.getCamcorderProfile());
         }
 
         mMediaRecorder.prepare();

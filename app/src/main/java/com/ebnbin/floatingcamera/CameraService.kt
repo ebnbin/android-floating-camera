@@ -4,8 +4,8 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.view.WindowManager
+import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.app
-import com.ebnbin.floatingcamera.util.cameraHelper
 import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.Camera2BasicTextureView
 import com.ebnbin.floatingcamera.widget.CameraView
@@ -20,7 +20,7 @@ class CameraService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        cameraView = if (cameraHelper.currentIsPhoto())
+        cameraView = if (PreferenceHelper.isPhoto)
             Camera2BasicTextureView(this) else
             JCamera2VideoTextureView(this)
         cameraView.setOnClickListener { stopSelf() }
