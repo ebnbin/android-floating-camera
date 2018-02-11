@@ -1,39 +1,30 @@
-package com.ebnbin.floatingcamera.fragment.preference
+package com.ebnbin.floatingcamera.preference
 
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import android.support.v7.preference.Preference
 import android.support.v7.preference.PreferenceCategory
-import android.support.v7.preference.PreferenceGroup
 import android.support.v7.preference.PreferenceManager
 import com.ebnbin.floatingcamera.util.extension.readBoolean
 import com.ebnbin.floatingcamera.util.extension.writeBoolean
 
 /**
- * 基础偏好组. 用于管理 [Preference], 没有可显示的内容, 可以嵌套添加.
+ * [android.support.v7.preference.PreferenceGroup].
+ *
+ * 用于管理 [Preference], 没有可显示的内容, 可以嵌套添加.
  *
  * [PreferenceCategory] 作为普通 [Preference] 使用, 不用于添加子 [Preference].
  */
-abstract class BasePreferenceGroup(context: Context) : PreferenceGroup(context, null) {
+open class PreferenceGroup(context: Context,
+        /**
+         * 保存所有子 [Preference], 用于恢复可见性.
+         */
+        private val preferences: Array<out Preference?>? = null,
+        private val onFirstAttachedToHierarchy: ((PreferenceGroup) -> Unit)? = null) :
+        android.support.v7.preference.PreferenceGroup(context, null) {
     init {
         isVisible = false
-    }
-
-    /**
-     * 保存所有子 [Preference], 用于恢复可见性.
-     */
-    val preferences = ArrayList<Preference>()
-
-    /**
-     * 调用 [addPreference] 并添加到 [preferences].
-     *
-     * @return 是否添加到 [preferences].
-     */
-    fun addPreferenceToGroup(preference: Preference): Boolean {
-        return if (super.addPreference(preference) && !preferences.contains(preference))
-            preferences.add(preference) else
-            false
     }
 
     /**
@@ -45,7 +36,7 @@ abstract class BasePreferenceGroup(context: Context) : PreferenceGroup(context, 
             field = value
 
             if (field) {
-                preferences.forEach { super.addPreference(it) }
+                addAll()
             } else {
                 removeAll()
             }
@@ -56,14 +47,23 @@ abstract class BasePreferenceGroup(context: Context) : PreferenceGroup(context, 
     override fun onAttachedToHierarchy(preferenceManager: PreferenceManager?) {
         super.onAttachedToHierarchy(preferenceManager)
 
-        if (isFirstAttachedToHierarchy) {
-            isFirstAttachedToHierarchy = false
+        if (!isFirstAttachedToHierarchy) return
 
-            onFirstAttachedToHierarchy(preferenceManager)
-        }
+        isFirstAttachedToHierarchy = false
+
+        addAll()
+
+        onFirstAttachedToHierarchy?.invoke(this)
     }
 
-    protected open fun onFirstAttachedToHierarchy(preferenceManager: PreferenceManager?) {
+    protected open fun preferences(): Array<out Preference?>? = preferences
+
+    private fun addAll() {
+        preferences()?.forEach {
+            if (it != null) {
+                super.addPreference(it)
+            }
+        }
     }
 
     //*****************************************************************************************************************

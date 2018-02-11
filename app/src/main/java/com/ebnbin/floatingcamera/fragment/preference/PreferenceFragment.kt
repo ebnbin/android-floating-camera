@@ -3,6 +3,7 @@ package com.ebnbin.floatingcamera.fragment.preference
 import android.os.Bundle
 import android.support.v7.preference.PreferenceFragmentCompat
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.preference.FooterPreference
 
 /**
  * 偏好界面.

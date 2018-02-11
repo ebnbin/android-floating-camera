@@ -2,9 +2,12 @@ package com.ebnbin.floatingcamera.fragment.preference
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.support.v7.preference.PreferenceManager
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
+import com.ebnbin.floatingcamera.preference.ListPreference
+import com.ebnbin.floatingcamera.preference.PreferenceGroup
+import com.ebnbin.floatingcamera.preference.SeekBarPreference
+import com.ebnbin.floatingcamera.preference.SwitchPreference
 import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.cameraHelper
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
@@ -17,324 +20,334 @@ import org.greenrobot.eventbus.EventBus
 /**
  * 偏好界面根偏好组.
  */
-class RootPreferenceGroup(context: Context) : BaseRootPreferenceGroup(context),
+class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
         SharedPreferences.OnSharedPreferenceChangeListener {
     /**
      * 摄像头组.
      */
     private val devicePreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         isFrontPreference,
                         backPreferenceGroup,
-                        frontPreferenceGroup)))
+                        frontPreferenceGroup))
     }
 
     /**
      * 后置/前置摄像头.
      */
     private val isFrontPreference by lazy {
-        SwitchPreference(context, SwitchPreference.Companion.Params(
+        SwitchPreference(context,
                 key = KEY_IS_FRONT,
                 defaultValue = DEF_VALUE_IS_FRONT,
                 isEnabled = cameraHelper.hasBothDevices,
                 title = getString(R.string.is_front_title),
                 summaryOff = getString(R.string.is_front_summary_off),
-                summaryOn = getString(R.string.is_front_summary_on)))
+                summaryOn = getString(R.string.is_front_summary_on))
     }
 
     /**
      * 后置摄像头组.
      */
     private val backPreferenceGroup by lazy {
-        if (cameraHelper.hasBackDevice) {
-            PreferenceGroup(context, PreferenceGroup.Companion.Params(
-                    preferences = arrayOf(
-                            backIsPhotoPreference,
-                            backVideoPreferenceGroup,
-                            backPhotoPreferenceGroup),
-                    init = {
-                        it.isGroupVisible = !isFrontPreference.isChecked
-                    }))
-        } else {
-            null
-        }
+        if (!cameraHelper.hasBackDevice) return@lazy null
+
+        PreferenceGroup(context,
+                preferences = arrayOf(
+                        backIsPhotoPreference,
+                        backVideoPreferenceGroup,
+                        backPhotoPreferenceGroup),
+                onFirstAttachedToHierarchy = {
+                    it.isGroupVisible = !isFrontPreference.isChecked
+                })
     }
 
     /**
      * 后置摄像头视频/照片.
      */
     private val backIsPhotoPreference by lazy {
-        SwitchPreference(context, SwitchPreference.Companion.Params(
+        SwitchPreference(context,
                 key = KEY_BACK_IS_PHOTO,
                 defaultValue = DEF_VALUE_BACK_IS_PHOTO,
+                isEnabled = null,
                 title = getString(R.string.is_photo_title),
                 summaryOff = getString(R.string.back_is_photo_summary_off),
-                summaryOn = getString(R.string.back_is_photo_summary_on)))
+                summaryOn = getString(R.string.back_is_photo_summary_on))
     }
 
     /**
      * 后置摄像头视频组.
      */
     private val backVideoPreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         backVideoProfilePreferenceGroup),
-                init = {
+                onFirstAttachedToHierarchy = {
                     it.isGroupVisible = !backIsPhotoPreference.isChecked
-                }))
+                })
     }
 
     /**
      * 后置摄像头视频配置组.
      */
     private val backVideoProfilePreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         backVideoProfilePreference,
-                        backVideoProfileCustomPreferenceGroup)))
+                        backVideoProfileCustomPreferenceGroup))
     }
 
     /**
      * 后置摄像头视频配置.
      */
     private val backVideoProfilePreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_BACK_VIDEO_PROFILE,
                 defaultValue = DEF_VALUE_BACK_VIDEO_PROFILE,
                 title = getString(R.string.back_video_profile_title),
-                entries = cameraHelper.backDevice.videoProfileSummaries))
+                entries = cameraHelper.backDevice.videoProfileSummaries,
+                summaries = cameraHelper.backDevice.videoProfileSummaries,
+                dialogTitle = getString(R.string.back_video_profile_title))
     }
 
     /**
      * 后置摄像头视频自定义配置组.
      */
     private val backVideoProfileCustomPreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         backVideoResolutionPreference),
-                init = {
+                onFirstAttachedToHierarchy = {
                     it.isGroupVisible = backVideoProfilePreference.getValueIndex() ==
                             backVideoProfilePreference.getValueSize() - 1
-                }))
+                })
     }
 
     /**
      * 后置摄像头视频分辨率.
      */
     private val backVideoResolutionPreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_BACK_VIDEO_RESOLUTION,
                 defaultValue = DEF_VALUE_BACK_VIDEO_RESOLUTION,
                 title = getString(R.string.back_video_resolution_title),
-                entries = cameraHelper.backDevice.videoResolutionSummaries))
+                entries = cameraHelper.backDevice.videoResolutionSummaries,
+                summaries = cameraHelper.backDevice.videoResolutionSummaries,
+                dialogTitle = getString(R.string.back_video_resolution_title))
     }
 
     /**
      * 后置摄像头照片组.
      */
     private val backPhotoPreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         backPhotoResolutionPreference),
-                init = {
+                onFirstAttachedToHierarchy = {
                     it.isGroupVisible = backIsPhotoPreference.isChecked
-                }))
+                })
     }
 
     /**
      * 后置摄像头照片分辨率.
      */
     private val backPhotoResolutionPreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_BACK_PHOTO_RESOLUTION,
                 defaultValue = DEF_VALUE_BACK_PHOTO_RESOLUTION,
                 title = getString(R.string.back_photo_resolution_title),
-                entries = cameraHelper.backDevice.photoResolutionSummaries))
+                entries = cameraHelper.backDevice.photoResolutionSummaries,
+                summaries = cameraHelper.backDevice.photoResolutionSummaries,
+                dialogTitle = getString(R.string.back_photo_resolution_title))
     }
 
     /**
      * 前置摄像头组.
      */
     private val frontPreferenceGroup by lazy {
-        if (cameraHelper.hasFrontDevice) {
-            PreferenceGroup(context, PreferenceGroup.Companion.Params(
-                    preferences = arrayOf(
-                            frontIsPhotoPreference,
-                            frontVideoPreferenceGroup,
-                            frontPhotoPreferenceGroup),
-                    init = {
-                        it.isGroupVisible = isFrontPreference.isChecked
-                    }))
-        } else {
-            null
-        }
+        if (!cameraHelper.hasFrontDevice) return@lazy null
+
+        PreferenceGroup(context,
+                preferences = arrayOf(
+                        frontIsPhotoPreference,
+                        frontVideoPreferenceGroup,
+                        frontPhotoPreferenceGroup),
+                onFirstAttachedToHierarchy = {
+                    it.isGroupVisible = isFrontPreference.isChecked
+                })
     }
 
     /**
      * 前置摄像头视频/照片.
      */
     private val frontIsPhotoPreference by lazy {
-        SwitchPreference(context, SwitchPreference.Companion.Params(
+        SwitchPreference(context,
                 key = KEY_FRONT_IS_PHOTO,
                 defaultValue = DEF_VALUE_FRONT_IS_PHOTO,
+                isEnabled = null,
                 title = getString(R.string.is_photo_title),
                 summaryOff = getString(R.string.front_is_photo_summary_off),
-                summaryOn = getString(R.string.front_is_photo_summary_on)))
+                summaryOn = getString(R.string.front_is_photo_summary_on))
     }
 
     /**
      * 前置摄像头视频组.
      */
     private val frontVideoPreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         frontVideoProfilePreferenceGroup),
-                init = {
+                onFirstAttachedToHierarchy = {
                     it.isGroupVisible = !frontIsPhotoPreference.isChecked
-                }))
+                })
     }
 
     /**
      * 前置摄像头视频配置组.
      */
     private val frontVideoProfilePreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         frontVideoProfilePreference,
-                        frontVideoProfileCustomPreferenceGroup)))
+                        frontVideoProfileCustomPreferenceGroup))
     }
 
     /**
      * 前置摄像头视频配置.
      */
     private val frontVideoProfilePreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_FRONT_VIDEO_PROFILE,
                 defaultValue = DEF_VALUE_FRONT_VIDEO_PROFILE,
                 title = getString(R.string.front_video_profile_title),
-                entries = cameraHelper.frontDevice.videoProfileSummaries))
+                entries = cameraHelper.frontDevice.videoProfileSummaries,
+                summaries = cameraHelper.frontDevice.videoProfileSummaries,
+                dialogTitle = getString(R.string.front_video_profile_title))
     }
 
     /**
      * 前置摄像头视频自定义配置组.
      */
     private val frontVideoProfileCustomPreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         frontVideoResolutionPreference),
-                init = {
+                onFirstAttachedToHierarchy = {
                     it.isGroupVisible = frontVideoProfilePreference.getValueIndex() ==
                             frontVideoProfilePreference.getValueSize() - 1
-                }))
+                })
     }
 
     /**
      * 前置摄像头视频分辨率.
      */
     private val frontVideoResolutionPreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_FRONT_VIDEO_RESOLUTION,
                 defaultValue = DEF_VALUE_FRONT_VIDEO_RESOLUTION,
                 title = getString(R.string.front_video_resolution_title),
-                entries = cameraHelper.frontDevice.videoResolutionSummaries))
+                entries = cameraHelper.frontDevice.videoResolutionSummaries,
+                summaries = cameraHelper.frontDevice.videoResolutionSummaries,
+                dialogTitle = getString(R.string.front_video_resolution_title))
     }
 
     /**
      * 前置摄像头照片组.
      */
     private val frontPhotoPreferenceGroup by lazy {
-        PreferenceGroup(context, PreferenceGroup.Companion.Params(
+        PreferenceGroup(context,
                 preferences = arrayOf(
                         frontPhotoResolutionPreference),
-                init = {
+                onFirstAttachedToHierarchy = {
                     it.isGroupVisible = frontIsPhotoPreference.isChecked
-                }))
+                })
     }
 
     /**
      * 前置摄像头照片分辨率.
      */
     private val frontPhotoResolutionPreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_FRONT_PHOTO_RESOLUTION,
                 defaultValue = DEF_VALUE_FRONT_PHOTO_RESOLUTION,
                 title = getString(R.string.front_photo_resolution_title),
-                entries = cameraHelper.frontDevice.photoResolutionSummaries))
+                entries = cameraHelper.frontDevice.photoResolutionSummaries,
+                summaries = cameraHelper.frontDevice.photoResolutionSummaries,
+                dialogTitle = getString(R.string.front_photo_resolution_title))
     }
 
     /**
      * 预览.
      */
     private val previewPreference by lazy {
-        ListPreference(context, ListPreference.Companion.Params(
+        ListPreference(context,
                 key = KEY_PREVIEW_RESOLUTION,
                 defaultValue = DEF_VALUE_PREVIEW_RESOLUTION,
                 title = getString(R.string.preview_title),
-                entries = Preview.entries))
+                entries = Preview.entries,
+                summaries = Preview.entries,
+                dialogTitle = getString(R.string.preview_title))
     }
 
     /**
      * 悬浮窗大小.
      */
     private val windowSizePreference by lazy {
-        SeekBarPreference(context, SeekBarPreference.Companion.Params(
+        SeekBarPreference(context,
                 key = KEY_WINDOW_SIZE,
                 defaultValue = DEF_VALUE_WINDOW_SIZE,
                 title = getString(R.string.window_size_title),
                 summary = getString(R.string.window_size_summary),
                 min = 0,
-                max = 100))
+                max = 100)
     }
 
     /**
      * 悬浮窗水平方向位置.
      */
     private val windowXPreference by lazy {
-        SeekBarPreference(context, SeekBarPreference.Companion.Params(
+        SeekBarPreference(context,
                 key = KEY_WINDOW_X,
                 defaultValue = DEF_VALUE_WINDOW_X,
                 title = getString(R.string.window_x_title),
                 summary = getString(R.string.window_x_summary),
                 min = -100,
-                max = 200))
+                max = 200)
     }
 
     /**
      * 悬浮窗垂直方向位置.
      */
     private val windowYPreference by lazy {
-        SeekBarPreference(context, SeekBarPreference.Companion.Params(
+        SeekBarPreference(context,
                 key = KEY_WINDOW_Y,
                 defaultValue = DEF_VALUE_WINDOW_Y,
                 title = getString(R.string.window_y_title),
                 summary = getString(R.string.window_y_summary),
                 min = -100,
-                max = 200))
+                max = 200)
     }
 
     /**
      * 主题.
      */
     private val isDarkThemePreference by lazy {
-        SwitchPreference(context, SwitchPreference.Companion.Params(
+        SwitchPreference(context,
                 key = KEY_IS_DARK_THEME,
                 defaultValue = DEF_VALUE_IS_DARK_THEME,
+                isEnabled = null,
                 title = getString(R.string.is_dark_theme_title),
                 summaryOff = getString(R.string.is_dark_theme_summary_off),
-                summaryOn = getString(R.string.is_dark_theme_summary_on)))
+                summaryOn = getString(R.string.is_dark_theme_summary_on))
     }
 
-    override fun onAttachedToHierarchy(preferenceManager: PreferenceManager?) {
-        super.onAttachedToHierarchy(preferenceManager)
-
-        addPreferenceToGroup(devicePreferenceGroup)
-        addPreferenceToGroup(previewPreference)
-        addPreferenceToGroup(windowSizePreference)
-        addPreferenceToGroup(windowXPreference)
-        addPreferenceToGroup(windowYPreference)
-        addPreferenceToGroup(isDarkThemePreference)
-    }
+    override fun preferences() = arrayOf(
+            devicePreferenceGroup,
+            previewPreference,
+            windowSizePreference,
+            windowXPreference,
+            windowYPreference,
+            isDarkThemePreference)
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
