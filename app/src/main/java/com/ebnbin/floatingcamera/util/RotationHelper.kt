@@ -88,6 +88,8 @@ object RotationHelper {
     }
 
     private fun onRotationChanged(rotation: Int) {
+        DebugHelper.log(rotation, "rotation")
+
         defaultSharedPreferences.put(KEY_ROTATION, rotation)
 
         eventBus.post(RotationEvent(rotation))

@@ -2,6 +2,7 @@ package com.ebnbin.floatingcamera
 
 import android.app.Application
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
+import com.ebnbin.floatingcamera.util.PreferenceHelper
 
 /**
  * 应用 [Application] 类.
@@ -11,6 +12,8 @@ class AppApplication : Application() {
         super.onCreate()
 
         singleton = this
+
+        PreferenceHelper
     }
 
     companion object {
