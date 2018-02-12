@@ -131,7 +131,7 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
             }
         }
 
-        return WindowSize(landscapeWidth.toInt(), landscapeHeight.toInt())
+        return WindowSize(landscapeWidth.toInt(), landscapeHeight.toInt(), true)
     }
 
     /**

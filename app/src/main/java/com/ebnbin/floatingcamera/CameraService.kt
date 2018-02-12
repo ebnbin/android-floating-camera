@@ -7,7 +7,6 @@ import android.view.WindowManager
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
-import com.ebnbin.floatingcamera.util.isDisplayRotationLandscape
 import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.Camera2BasicTextureView
 import com.ebnbin.floatingcamera.widget.CameraView
@@ -31,9 +30,8 @@ class CameraService : Service() {
 
         val params = WindowManager.LayoutParams()
         val windowSize = PreferenceHelper.windowSize()
-        val isDisplayRotationLandscape = isDisplayRotationLandscape()
-        params.width = if (isDisplayRotationLandscape) windowSize.landscapeWidth else windowSize.landscapeHeight
-        params.height = if (isDisplayRotationLandscape) windowSize.landscapeHeight else windowSize.landscapeWidth
+        params.width = windowSize.width()
+        params.height = windowSize.height()
         @Suppress("DEPRECATION")
         params.type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_PHONE else

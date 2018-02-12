@@ -26,10 +26,10 @@ object RotationHelper {
      */
     fun register(context: Context): OrientationEventListener {
         if (orientationEventListeners.isEmpty) {
-            val sharedPreferencesRotation = defaultSharedPreferences.get(KEY_ROTATION, DEF_VALUE_ROTATION)
+            val oldRotation = defaultSharedPreferences.get(KEY_ROTATION, DEF_VALUE_ROTATION)
             rotation = getDisplayRotation()
-            if (sharedPreferencesRotation != rotation) {
-                onRotationChanged(rotation)
+            if (oldRotation != rotation) {
+                onRotationChanged(oldRotation, rotation)
             }
         }
 
@@ -38,11 +38,11 @@ object RotationHelper {
 
         orientationEventListener = object : OrientationEventListener(context) {
             override fun onOrientationChanged(orientation: Int) {
-                val rotation = getDisplayRotation()
-                if (this@RotationHelper.rotation == rotation) return
-
-                this@RotationHelper.rotation = rotation
-                onRotationChanged(this@RotationHelper.rotation)
+                val oldRotation = this@RotationHelper.rotation
+                rotation = getDisplayRotation()
+                if (oldRotation != rotation) {
+                    onRotationChanged(oldRotation, this@RotationHelper.rotation)
+                }
             }
         }
         orientationEventListeners[context] = orientationEventListener
@@ -87,22 +87,26 @@ object RotationHelper {
         return true
     }
 
-    private fun onRotationChanged(rotation: Int) {
-        DebugHelper.log(rotation, "rotation")
+    private fun onRotationChanged(oldRotation: Int, newRotation: Int) {
+        DebugHelper.log("rotation: $oldRotation -> $newRotation")
 
-        defaultSharedPreferences.put(KEY_ROTATION, rotation)
+        defaultSharedPreferences.put(KEY_ROTATION, newRotation)
 
-        eventBus.post(RotationEvent(rotation))
+        listeners.forEach { it.onRotationChanged(oldRotation, newRotation) }
 
-        listeners.forEach { it.onRotationChanged(rotation) }
+        eventBus.post(RotationEvent())
     }
 
     val listeners = ArrayList<Listener>()
 
     interface Listener {
-        fun onRotationChanged(rotation: Int)
+        fun onRotationChanged(oldRotation: Int, newRotation: Int)
     }
 
     private const val KEY_ROTATION = "rotation"
     private const val DEF_VALUE_ROTATION = 0
+
+    init {
+        listeners.add(WindowPositionRotationListener)
+    }
 }

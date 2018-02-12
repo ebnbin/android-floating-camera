@@ -15,6 +15,7 @@ import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.extension.get
+import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.getString
 
 /**
@@ -109,9 +110,15 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
                 eventBus.post(WindowSizeEvent())
             }
             KEY_WINDOW_X -> {
+                val newValue = windowX
+
+                if (windowXPreference.value != newValue) windowXPreference.value = newValue
                 eventBus.post(WindowXEvent())
             }
             KEY_WINDOW_Y -> {
+                val newValue = windowY
+
+                if (windowYPreference.value != newValue) windowYPreference.value = newValue
                 eventBus.post(WindowYEvent())
             }
             KEY_PREVIEW -> {
@@ -135,5 +142,10 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
         val windowX get() = defaultSharedPreferences.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
         val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
+
+        fun putWindowXY(windowX: Int, windowY: Int) {
+            defaultSharedPreferences.put(KEY_WINDOW_X, windowX)
+            defaultSharedPreferences.put(KEY_WINDOW_Y, windowY)
+        }
     }
 }
