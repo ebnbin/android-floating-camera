@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.view.WindowManager
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
 import com.ebnbin.floatingcamera.util.isDisplayRotationLandscape
 import com.ebnbin.floatingcamera.util.windowManager
@@ -20,6 +21,8 @@ class CameraService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+
+        RotationHelper.registerAndEnable(this)
 
         cameraView = if (PreferenceHelper.isPhoto())
             Camera2BasicTextureView(this) else
@@ -42,6 +45,8 @@ class CameraService : Service() {
 
     override fun onDestroy() {
         windowManager.removeView(cameraView)
+
+        RotationHelper.unregister(this)
 
         super.onDestroy()
     }

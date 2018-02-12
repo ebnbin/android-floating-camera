@@ -629,8 +629,12 @@ class CameraHelper private constructor() {
 
         /**
          * 检测相机. 返回摄像头是否可用. 需要在初始化时调用一次.
+         *
+         * @param force 如果已经检测过, 只在 [force] 为 true 才重新检测.
          */
-        fun detect(): Boolean {
+        fun detect(force: Boolean = false): Boolean {
+            if (singleton != null && !force) return true
+
             singleton = try {
                 CameraHelper()
             } catch (e: CameraException) {

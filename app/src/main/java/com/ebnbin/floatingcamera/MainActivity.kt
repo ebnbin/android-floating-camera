@@ -6,6 +6,7 @@ import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.taskDescription
 import org.greenrobot.eventbus.Subscribe
@@ -21,6 +22,8 @@ class MainActivity : AppCompatActivity() {
 
         eventBus.register(this)
 
+        RotationHelper.register(this)
+
         if (!CameraHelper.detect()) {
             finish()
             return
@@ -35,12 +38,26 @@ class MainActivity : AppCompatActivity() {
         setTheme(if (PreferenceHelper.isDarkTheme()) R.style.DarkTheme else R.style.LightTheme)
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        RotationHelper.enable(this)
+    }
+
+    override fun onPause() {
+        RotationHelper.disable(this)
+
+        super.onPause()
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(@Suppress("UNUSED_PARAMETER") event: IsDarkThemeEvent) {
         recreate()
     }
 
     override fun onDestroy() {
+        RotationHelper.unregister(this)
+
         eventBus.unregister(this)
 
         super.onDestroy()

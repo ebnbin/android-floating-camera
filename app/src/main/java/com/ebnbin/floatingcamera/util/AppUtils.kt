@@ -78,7 +78,7 @@ private val display by lazy { windowManager.defaultDisplay!! }
 /**
  * 返回屏幕旋转方向.
  */
-private fun getDisplayRotation() = display.rotation
+fun getDisplayRotation() = display.rotation
 
 /**
  * 返回屏幕旋转方向是否为横向.
