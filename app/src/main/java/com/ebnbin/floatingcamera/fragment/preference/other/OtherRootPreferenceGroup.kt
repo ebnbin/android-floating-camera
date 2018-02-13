@@ -1,15 +1,12 @@
 package com.ebnbin.floatingcamera.fragment.preference.other
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
 import com.ebnbin.floatingcamera.preference.FooterPreference
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.preference.SwitchPreference
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
-import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.getString
 
@@ -54,16 +51,8 @@ class OtherRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) 
             otherPreferenceGroup,
             footerPreference)
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        when (key) {
-            KEY_IS_DARK_THEME -> {
-                eventBus.post(IsDarkThemeEvent())
-            }
-        }
-    }
-
     companion object {
-        private const val KEY_IS_DARK_THEME = "is_dark_theme"
+        const val KEY_IS_DARK_THEME = "is_dark_theme"
 
         private const val DEF_VALUE_IS_DARK_THEME = false
 

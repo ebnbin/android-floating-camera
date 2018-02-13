@@ -10,4 +10,6 @@ import android.support.v7.preference.Preference
 abstract class RootPreferenceGroup(context: Context) : PreferenceGroup(context),
         SharedPreferences.OnSharedPreferenceChangeListener{
     abstract override fun preferences(): Array<out Preference?>?
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) = Unit
 }

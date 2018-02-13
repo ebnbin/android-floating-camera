@@ -1,6 +1,7 @@
 package com.ebnbin.floatingcamera.widget
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -10,25 +11,22 @@ import android.view.TextureView
 import android.view.WindowManager
 import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.event.StopServiceEvent
-import com.ebnbin.floatingcamera.event.WindowScaleEvent
-import com.ebnbin.floatingcamera.event.WindowScrollEvent
-import com.ebnbin.floatingcamera.event.WindowSizeEvent
-import com.ebnbin.floatingcamera.event.WindowXEvent
-import com.ebnbin.floatingcamera.event.WindowYEvent
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.displaySize
 import com.ebnbin.floatingcamera.util.eventBus
-import com.ebnbin.floatingcamera.util.getDisplaySize
 import com.ebnbin.floatingcamera.util.windowManager
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 import kotlin.math.min
 
 /**
  * 相机控件.
  */
-abstract class CameraView : TextureView, GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener,
+abstract class CameraView : TextureView,
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        GestureDetector.OnGestureListener,
+        GestureDetector.OnDoubleTapListener,
         ScaleGestureDetector.OnScaleGestureListener {
     constructor(context: Context?) : super(context)
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
@@ -36,10 +34,51 @@ abstract class CameraView : TextureView, GestureDetector.OnGestureListener, Gest
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
             super(context, attrs, defStyleAttr, defStyleRes)
 
+    //*****************************************************************************************************************
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        eventBus.register(this)
+        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    override fun onDetachedFromWindow() {
+        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+
+        super.onDetachedFromWindow()
+    }
+
+    //*****************************************************************************************************************
+    // 偏好.
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        when (key) {
+            WindowRootPreferenceGroup.KEY_WINDOW_SIZE -> {
+                invalidateWindowSizeAndPosition()
+            }
+            WindowRootPreferenceGroup.KEY_WINDOW_X -> {
+                invalidateWindowPosition()
+            }
+            WindowRootPreferenceGroup.KEY_WINDOW_Y -> {
+                invalidateWindowPosition()
+            }
+            WindowRootPreferenceGroup.KEY_PREVIEW -> {
+                invalidateWindowSizeAndPosition()
+            }
+        }
+    }
+
+    private fun invalidateWindowSizeAndPosition() {
+        val params = layoutParams as WindowManager.LayoutParams
+        val windowSize = PreferenceHelper.windowSize()
+        params.width = windowSize.width()
+        params.height = windowSize.height()
+        // TODO: 更新窗口位置.
+        windowManager.updateViewLayout(this, params)
+    }
+
+    private fun invalidateWindowPosition() {
+        // TODO: 更新窗口位置.
     }
 
     //*****************************************************************************************************************
@@ -150,9 +189,9 @@ abstract class CameraView : TextureView, GestureDetector.OnGestureListener, Gest
         scaleBeginHeight = layoutParams.height
 
         // TODO: Size 的计算需要约束比例.
-        val size = getDisplaySize()
-        maxWidth = size.width
-        maxHeight = size.height
+        val size = displaySize
+        maxWidth = size.width()
+        maxHeight = size.height()
 
         return true
     }
@@ -164,7 +203,6 @@ abstract class CameraView : TextureView, GestureDetector.OnGestureListener, Gest
 
         WindowRootPreferenceGroup.putWindowSize(
                 min(100, (WindowRootPreferenceGroup.windowSize * detector.scaleFactor).toInt()))
-        eventBus.post(WindowScaleEvent())
     }
 
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
@@ -189,38 +227,10 @@ abstract class CameraView : TextureView, GestureDetector.OnGestureListener, Gest
             DebugHelper.log("ACTION_UP")
 
             // TODO: SharedPreferences 保存 window x, y.
-
-            eventBus.post(WindowScrollEvent())
         }
 
         if (scaleGestureDetector.onTouchEvent(event)) return true
 
         return super.onTouchEvent(event)
-    }
-
-    //*****************************************************************************************************************
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(@Suppress("UNUSED_PARAMETER") event: WindowSizeEvent) {
-        val params = layoutParams as WindowManager.LayoutParams
-        val windowSize = PreferenceHelper.windowSize()
-        params.width = windowSize.width()
-        params.height = windowSize.height()
-        // TODO: 更新窗口位置.
-        windowManager.updateViewLayout(this, params)
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(@Suppress("UNUSED_PARAMETER") event: WindowXEvent) {
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(@Suppress("UNUSED_PARAMETER") event: WindowYEvent) {
-    }
-
-    override fun onDetachedFromWindow() {
-        eventBus.unregister(this)
-
-        super.onDetachedFromWindow()
     }
 }

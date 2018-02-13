@@ -2,20 +2,19 @@ package com.ebnbin.floatingcamera
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import com.ebnbin.floatingcamera.event.IsDarkThemeEvent
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
+import com.ebnbin.floatingcamera.fragment.preference.other.OtherRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
-import com.ebnbin.floatingcamera.util.eventBus
+import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.taskDescription
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTaskDescription(taskDescription)
 
@@ -23,7 +22,7 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        eventBus.register(this)
+        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
 
         RotationHelper.register(this)
 
@@ -47,21 +46,24 @@ class MainActivity : AppCompatActivity() {
         RotationHelper.enable(this)
     }
 
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        when (key) {
+            OtherRootPreferenceGroup.KEY_IS_DARK_THEME -> {
+                recreate()
+            }
+        }
+    }
+
     override fun onPause() {
         RotationHelper.disable(this)
 
         super.onPause()
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(@Suppress("UNUSED_PARAMETER") event: IsDarkThemeEvent) {
-        recreate()
-    }
-
     override fun onDestroy() {
         RotationHelper.unregister(this)
 
-        eventBus.unregister(this)
+        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
 
         super.onDestroy()
     }

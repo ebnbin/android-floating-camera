@@ -3,7 +3,7 @@ package com.ebnbin.floatingcamera.util
 /**
  * 窗口位置.
  */
-class WindowPosition(x: Int, y: Int, rotation: Int = getDisplayRotation()) {
+class WindowPosition(x: Int, y: Int, rotation: Int = displayRotation()) {
     val x0: Int
     val y0: Int
 
@@ -74,7 +74,7 @@ class WindowPosition(x: Int, y: Int, rotation: Int = getDisplayRotation()) {
         }
     }
 
-    fun x(rotation: Int = getDisplayRotation()) = when (rotation) {
+    fun x(rotation: Int = displayRotation()) = when (rotation) {
         0 -> x0
         1 -> x90
         2 -> x180
@@ -82,7 +82,7 @@ class WindowPosition(x: Int, y: Int, rotation: Int = getDisplayRotation()) {
         else -> throw BaseRuntimeException()
     }
 
-    fun y(rotation: Int = getDisplayRotation()) = when (rotation) {
+    fun y(rotation: Int = displayRotation()) = when (rotation) {
         0 -> y0
         1 -> y90
         2 -> y180

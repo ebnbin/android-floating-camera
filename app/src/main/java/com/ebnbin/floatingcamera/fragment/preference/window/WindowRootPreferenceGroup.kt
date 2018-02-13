@@ -3,9 +3,6 @@ package com.ebnbin.floatingcamera.fragment.preference.window
 import android.content.Context
 import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.event.WindowSizeEvent
-import com.ebnbin.floatingcamera.event.WindowXEvent
-import com.ebnbin.floatingcamera.event.WindowYEvent
 import com.ebnbin.floatingcamera.preference.FooterPreference
 import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
@@ -13,7 +10,6 @@ import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
-import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.getString
@@ -110,31 +106,25 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
                 val newValue = windowSize
 
                 if (windowSizePreference.value != newValue) windowSizePreference.value = newValue
-                eventBus.post(WindowSizeEvent())
             }
             KEY_WINDOW_X -> {
                 val newValue = windowX
 
                 if (windowXPreference.value != newValue) windowXPreference.value = newValue
-                eventBus.post(WindowXEvent())
             }
             KEY_WINDOW_Y -> {
                 val newValue = windowY
 
                 if (windowYPreference.value != newValue) windowYPreference.value = newValue
-                eventBus.post(WindowYEvent())
-            }
-            KEY_PREVIEW -> {
-                eventBus.post(WindowSizeEvent())
             }
         }
     }
 
     companion object {
-        private const val KEY_WINDOW_SIZE = "window_size"
-        private const val KEY_WINDOW_X = "window_x"
-        private const val KEY_WINDOW_Y = "window_y"
-        private const val KEY_PREVIEW = "preview"
+        const val KEY_WINDOW_SIZE = "window_size"
+        const val KEY_WINDOW_X = "window_x"
+        const val KEY_WINDOW_Y = "window_y"
+        const val KEY_PREVIEW = "preview"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
@@ -150,7 +140,7 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
             defaultSharedPreferences.put(KEY_WINDOW_SIZE, windowSize)
         }
 
-        fun putWindowXY(windowX: Int, windowY: Int) {
+        fun putWindowPosition(windowX: Int, windowY: Int) {
             defaultSharedPreferences.put(KEY_WINDOW_X, windowX)
             defaultSharedPreferences.put(KEY_WINDOW_Y, windowY)
         }

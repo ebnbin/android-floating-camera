@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.view.Gravity
 import android.view.WindowManager
 import com.ebnbin.floatingcamera.event.StopServiceEvent
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -42,7 +43,10 @@ class CameraService : Service() {
         params.type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_PHONE else
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        params.gravity = Gravity.START or Gravity.TOP
 
         windowManager.addView(cameraView, params)
     }

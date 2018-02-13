@@ -78,40 +78,21 @@ private val display by lazy { windowManager.defaultDisplay!! }
 /**
  * 返回屏幕旋转方向.
  */
-fun getDisplayRotation() = display.rotation
+fun displayRotation() = display.rotation
 
 /**
  * 返回屏幕旋转方向是否为横向.
  */
 fun isDisplayRotationLandscape(): Boolean {
-    val rotation = getDisplayRotation()
+    val rotation = displayRotation()
     return rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
 }
 
 /**
- * 返回屏幕宽高.
+ * 屏幕大小.
  */
-fun getDisplaySize(): Size {
+val displaySize by lazy {
     val outSize = Point()
     display.getRealSize(outSize)
-    return Size(outSize.x, outSize.y)
+    WindowSize(outSize.x, outSize.y)
 }
-
-/**
- * 屏幕旋转方向为横向时的宽高.
- */
-private val displayLandscapeSize by lazy {
-    val isDisplayRotationLandscape = isDisplayRotationLandscape()
-    val displaySize = getDisplaySize()
-    Pair(if (isDisplayRotationLandscape) displaySize.width else displaySize.height,
-            if (isDisplayRotationLandscape) displaySize.height else displaySize.width)
-}
-
-/**
- * 屏幕旋转方向为横向时的宽.
- */
-val displayLandscapeWidth by lazy { displayLandscapeSize.first }
-/**
- * 屏幕旋转方向为横向时的高.
- */
-val displayLandscapeHeight by lazy { displayLandscapeSize.second }

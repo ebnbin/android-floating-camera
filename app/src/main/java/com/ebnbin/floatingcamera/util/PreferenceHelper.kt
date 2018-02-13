@@ -103,8 +103,8 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
      */
     fun windowSize(): WindowSize {
         val windowSizeValue = WindowRootPreferenceGroup.windowSize
-        var landscapeWidth = displayLandscapeWidth * windowSizeValue / 100f
-        var landscapeHeight = displayLandscapeHeight * windowSizeValue / 100f
+        var landscapeWidth = displaySize.landscapeWidth * windowSizeValue / 100f
+        var landscapeHeight = displaySize.landscapeHeight * windowSizeValue / 100f
 
         when (Preview.values()[WindowRootPreferenceGroup.preview.toInt()]) {
             Preview.CAPTURE -> {

@@ -3,14 +3,13 @@ package com.ebnbin.floatingcamera.util
 import android.content.Context
 import android.support.v4.util.ArrayMap
 import android.view.OrientationEventListener
-import com.ebnbin.floatingcamera.event.RotationEvent
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 
 /**
  * 屏幕旋转方向帮助类.
  *
- * 用于检测屏幕旋转方向. 可以检测屏幕旋转 180 度. 当屏幕旋转方向变化时会写入偏好, 并发送 [RotationEvent].
+ * 用于检测屏幕旋转方向. 可以检测屏幕旋转 180 度. 当屏幕旋转方向变化时会写入偏好.
  *
  * 如果没有任何对象被注册, 是不会检测屏幕旋转方向的.
  *
@@ -27,7 +26,7 @@ object RotationHelper {
     fun register(context: Context): OrientationEventListener {
         if (orientationEventListeners.isEmpty) {
             val oldRotation = defaultSharedPreferences.get(KEY_ROTATION, DEF_VALUE_ROTATION)
-            rotation = getDisplayRotation()
+            rotation = displayRotation()
             if (oldRotation != rotation) {
                 onRotationChanged(oldRotation, rotation)
             }
@@ -39,7 +38,7 @@ object RotationHelper {
         orientationEventListener = object : OrientationEventListener(context) {
             override fun onOrientationChanged(orientation: Int) {
                 val oldRotation = this@RotationHelper.rotation
-                rotation = getDisplayRotation()
+                rotation = displayRotation()
                 if (oldRotation != rotation) {
                     onRotationChanged(oldRotation, this@RotationHelper.rotation)
                 }
@@ -93,8 +92,6 @@ object RotationHelper {
         defaultSharedPreferences.put(KEY_ROTATION, newRotation)
 
         listeners.forEach { it.onRotationChanged(oldRotation, newRotation) }
-
-        eventBus.post(RotationEvent())
     }
 
     val listeners = ArrayList<Listener>()
