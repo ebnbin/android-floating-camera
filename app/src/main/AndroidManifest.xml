@@ -27,7 +27,8 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/ApplicationTheme">
         <activity
-            android:name=".MainActivity">
+            android:name=".MainActivity"
+            android:launchMode="singleInstance">
             <intent-filter>
                 <action
                     android:name="android.intent.action.MAIN"/>

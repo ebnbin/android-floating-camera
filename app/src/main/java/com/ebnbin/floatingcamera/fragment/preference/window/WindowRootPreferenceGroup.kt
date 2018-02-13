@@ -107,6 +107,9 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
             KEY_WINDOW_SIZE -> {
+                val newValue = windowSize
+
+                if (windowSizePreference.value != newValue) windowSizePreference.value = newValue
                 eventBus.post(WindowSizeEvent())
             }
             KEY_WINDOW_X -> {
@@ -142,6 +145,10 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
         val windowX get() = defaultSharedPreferences.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
         val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
+
+        fun putWindowSize(windowSize: Int) {
+            defaultSharedPreferences.put(KEY_WINDOW_SIZE, windowSize)
+        }
 
         fun putWindowXY(windowX: Int, windowY: Int) {
             defaultSharedPreferences.put(KEY_WINDOW_X, windowX)

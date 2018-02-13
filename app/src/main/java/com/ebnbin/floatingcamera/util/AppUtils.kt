@@ -91,10 +91,10 @@ fun isDisplayRotationLandscape(): Boolean {
 /**
  * 返回屏幕宽高.
  */
-private fun getDisplaySize(): Pair<Int, Int> {
+fun getDisplaySize(): Size {
     val outSize = Point()
     display.getRealSize(outSize)
-    return Pair(outSize.x, outSize.y)
+    return Size(outSize.x, outSize.y)
 }
 
 /**
@@ -103,8 +103,8 @@ private fun getDisplaySize(): Pair<Int, Int> {
 private val displayLandscapeSize by lazy {
     val isDisplayRotationLandscape = isDisplayRotationLandscape()
     val displaySize = getDisplaySize()
-    Pair(if (isDisplayRotationLandscape) displaySize.first else displaySize.second,
-            if (isDisplayRotationLandscape) displaySize.second else displaySize.first)
+    Pair(if (isDisplayRotationLandscape) displaySize.width else displaySize.height,
+            if (isDisplayRotationLandscape) displaySize.height else displaySize.width)
 }
 
 /**
