@@ -28,8 +28,10 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener {
 
         tabLayout.setupWithViewPager(viewPager)
 
-        viewPager.adapter = HomePagerAdapter(childFragmentManager)
+        val adapter = HomePagerAdapter(childFragmentManager)
+        viewPager.adapter = adapter
         viewPager.addOnPageChangeListener(this)
+        viewPager.offscreenPageLimit = adapter.count
 
         cameraFab.setOnClickListener { CameraService.start() }
 
