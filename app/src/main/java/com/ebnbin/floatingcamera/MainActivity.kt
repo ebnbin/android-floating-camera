@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     companion object {
-        fun launch(context: Context = app) {
+        fun start(context: Context = app) {
             context.startActivity(Intent(context, MainActivity::class.java))
         }
     }

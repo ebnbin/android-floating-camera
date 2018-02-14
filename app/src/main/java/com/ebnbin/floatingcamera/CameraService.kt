@@ -6,17 +6,13 @@ import android.content.Intent
 import android.os.Build
 import android.view.Gravity
 import android.view.WindowManager
-import com.ebnbin.floatingcamera.event.StopServiceEvent
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
-import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.Camera2BasicTextureView
 import com.ebnbin.floatingcamera.widget.CameraView
 import com.ebnbin.floatingcamera.widget.JCamera2VideoTextureView
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 
 /**
  * 相机服务.
@@ -26,8 +22,6 @@ class CameraService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-
-        eventBus.register(this)
 
         RotationHelper.registerAndEnable(this)
 
@@ -51,17 +45,10 @@ class CameraService : Service() {
         windowManager.addView(cameraView, params)
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(@Suppress("UNUSED_PARAMETER") event: StopServiceEvent) {
-        stopSelf()
-    }
-
     override fun onDestroy() {
         windowManager.removeView(cameraView)
 
         RotationHelper.unregister(this)
-
-        eventBus.unregister(this)
 
         super.onDestroy()
     }
@@ -71,6 +58,10 @@ class CameraService : Service() {
     companion object {
         fun start(context: Context = app) {
             context.startService(Intent(context, CameraService::class.java))
+        }
+
+        fun stop(context: Context = app) {
+            context.stopService(Intent(context, CameraService::class.java))
         }
     }
 }

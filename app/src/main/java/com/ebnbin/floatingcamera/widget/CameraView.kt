@@ -9,15 +9,14 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.TextureView
 import android.view.WindowManager
+import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
-import com.ebnbin.floatingcamera.event.StopServiceEvent
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
-import com.ebnbin.floatingcamera.util.displaySize
-import com.ebnbin.floatingcamera.util.eventBus
 import com.ebnbin.floatingcamera.util.windowManager
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -93,18 +92,29 @@ abstract class CameraView : TextureView,
     private var downX = 0
     private var downY = 0
 
+    private var minX = 0
+    private var minY = 0
+    private var maxX = 0
+    private var maxY = 0
+
     private var scaleBeginWidth = 0
     private var scaleBeginHeight = 0
 
     private var maxWidth = 0
     private var maxHeight = 0
 
+    /**
+     * 按下一小会儿. 比 tap 长, 比 long press 短, 用于显示提示信息.
+     */
     override fun onShowPress(e: MotionEvent?) {
         e ?: return
 
         DebugHelper.log("onShowPress")
     }
 
+    /**
+     * 单击 up. 还不能确定是单击还是双击.
+     */
     override fun onSingleTapUp(e: MotionEvent?): Boolean {
         e ?: return false
 
@@ -113,6 +123,9 @@ abstract class CameraView : TextureView,
         return false
     }
 
+    /**
+     * 第一个手指按下. 第二个手指按下不会调用.
+     */
     override fun onDown(e: MotionEvent?): Boolean {
         e ?: return false
 
@@ -122,9 +135,18 @@ abstract class CameraView : TextureView,
         downX = layoutParams.x
         downY = layoutParams.y
 
+        // TODO: min, max.
+        minX = 0
+        maxX = 0
+        minY = 0
+        maxY = 0
+
         return false
     }
 
+    /**
+     * 自由滚动. 滚动时不能保证调用.
+     */
     override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
         if (e1 == null || e2 == null) return false
 
@@ -133,12 +155,16 @@ abstract class CameraView : TextureView,
         return false
     }
 
+    /**
+     * 滚动.
+     */
     override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
         if (e1 == null || e2 == null) return false
 
         DebugHelper.log("onScroll")
 
         val layoutParams = layoutParams as WindowManager.LayoutParams
+        // TODO: min, max.
         layoutParams.x = (downX + e2.rawX - e1.rawX).toInt()
         layoutParams.y = (downY + e2.rawY - e1.rawY).toInt()
         windowManager.updateViewLayout(this, layoutParams)
@@ -146,24 +172,33 @@ abstract class CameraView : TextureView,
         return false
     }
 
+    /**
+     * 第一个手指长按.
+     */
     override fun onLongPress(e: MotionEvent?) {
         e ?: return
 
         DebugHelper.log("onLongPress")
 
-        eventBus.post(StopServiceEvent())
+        CameraService.stop()
     }
 
+    /**
+     * 双击. 已确定双击, 也就是第二击 down 时调用.
+     */
     override fun onDoubleTap(e: MotionEvent?): Boolean {
         e ?: return false
 
         DebugHelper.log("onDoubleTap")
 
-        MainActivity.launch()
+        MainActivity.start()
 
         return false
     }
 
+    /**
+     * 双击事件. 已确定双击后, 第二击的所有事件, 包括 down, move 和 up.
+     */
     override fun onDoubleTapEvent(e: MotionEvent?): Boolean {
         e ?: return false
 
@@ -172,6 +207,9 @@ abstract class CameraView : TextureView,
         return false
     }
 
+    /**
+     * 单击. 已确定是单击, 之后没有双击时调用.
+     */
     override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
         e ?: return false
 
@@ -180,6 +218,9 @@ abstract class CameraView : TextureView,
         return false
     }
 
+    /**
+     * 缩放开始. 双指按下且开始移动时调用.
+     */
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         detector ?: return true
 
@@ -188,31 +229,41 @@ abstract class CameraView : TextureView,
         scaleBeginWidth = layoutParams.width
         scaleBeginHeight = layoutParams.height
 
-        // TODO: Size 的计算需要约束比例.
-        val size = displaySize
-        maxWidth = size.width()
-        maxHeight = size.height()
+        val maxWindowSize = PreferenceHelper.maxWindowSize()
+        maxWidth = maxWindowSize.width()
+        maxHeight = maxWindowSize.height()
 
         return true
     }
 
+    /**
+     * 缩放完成.
+     */
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
         detector ?: return
 
         DebugHelper.log("onScaleEnd")
 
-        WindowRootPreferenceGroup.putWindowSize(
-                min(100, (WindowRootPreferenceGroup.windowSize * detector.scaleFactor).toInt()))
+        PreferenceHelper.putWindowSize(detector.scaleFactor)
     }
 
+    /**
+     * 缩放.
+     */
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
         detector ?: return false
 
         DebugHelper.log("onScale")
 
         val scaleFactor = detector.scaleFactor
-        layoutParams.width = min(maxWidth, (scaleBeginWidth * scaleFactor).toInt())
-        layoutParams.height = min(maxHeight, (scaleBeginHeight * scaleFactor).toInt())
+        var width = (scaleBeginWidth * scaleFactor).toInt()
+        width = min(maxWidth, width)
+        width = max(0, width)
+        layoutParams.width = width
+        var height = (scaleBeginHeight * scaleFactor).toInt()
+        height = min(maxHeight, height)
+        height = max(0, height)
+        layoutParams.height = height
         windowManager.updateViewLayout(this, layoutParams)
 
         return false
@@ -223,6 +274,9 @@ abstract class CameraView : TextureView,
 
         if (gestureDetector.onTouchEvent(event)) return true
 
+        /**
+         * 第一个 down 事件 up 时调用, 第二个 down 事件 up 时不会调用.
+         */
         if (event.action == MotionEvent.ACTION_UP) {
             DebugHelper.log("ACTION_UP")
 
