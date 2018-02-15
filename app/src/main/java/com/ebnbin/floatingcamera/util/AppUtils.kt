@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Point
 import android.hardware.camera2.CameraManager
+import android.os.Build
 import android.support.annotation.StringRes
 import android.support.v4.util.ArrayMap
 import android.view.Surface
@@ -91,8 +92,25 @@ fun isDisplayRotationLandscape(): Boolean {
 /**
  * 屏幕大小.
  */
-val displaySize by lazy {
+val displayRealSize by lazy {
     val outSize = Point()
     display.getRealSize(outSize)
     WindowSize(outSize.x, outSize.y)
+}
+
+/**
+ * 屏幕大小.
+ */
+val displaySize by lazy {
+    val outSize = Point()
+    display.getSize(outSize)
+    WindowSize(outSize.x, outSize.y)
+}
+
+/**
+ * 屏幕旋转 270 度且水平方向有 NavigationBar 且 api >= 25 时, NavigationBar 在右侧.
+ */
+fun getNavigationBarXOffset(rotation: Int = displayRotation()): Int {
+    val widthDiff = displayRealSize.width(rotation) - displaySize.width(rotation)
+    return if (rotation == 3 && widthDiff > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) -widthDiff else 0
 }

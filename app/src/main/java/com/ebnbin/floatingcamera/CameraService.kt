@@ -9,6 +9,7 @@ import android.view.WindowManager
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
+import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.Camera2BasicTextureView
 import com.ebnbin.floatingcamera.widget.CameraView
@@ -30,9 +31,10 @@ class CameraService : Service() {
             JCamera2VideoTextureView(this)
 
         val params = WindowManager.LayoutParams()
+        val rotation = displayRotation()
         val windowSize = PreferenceHelper.windowSize()
-        params.width = windowSize.width()
-        params.height = windowSize.height()
+        params.width = windowSize.width(rotation)
+        params.height = windowSize.height(rotation)
         @Suppress("DEPRECATION")
         params.type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_PHONE else
@@ -41,6 +43,11 @@ class CameraService : Service() {
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         params.gravity = Gravity.START or Gravity.TOP
+        val windowPosition = PreferenceHelper.windowPosition()
+        val x = windowPosition.x(windowSize, rotation)
+        val y = windowPosition.y(windowSize, rotation)
+        params.x = x
+        params.y = y
 
         windowManager.addView(cameraView, params)
     }

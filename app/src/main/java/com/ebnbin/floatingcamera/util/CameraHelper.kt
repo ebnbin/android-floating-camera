@@ -324,8 +324,8 @@ class CameraHelper private constructor() {
                 val previewResolutionList = ArrayList<PreviewResolution>()
                 previewResolutions.filterTo(previewResolutionList) { it.isRatioEquals(maxResolution) }
 
-                val maxLandscapeWidth = min(1920, displaySize.landscapeWidth)
-                val maxLandscapeHeight = min(1080, displaySize.landscapeHeight)
+                val maxLandscapeWidth = min(1920, displayRealSize.landscapeWidth)
+                val maxLandscapeHeight = min(1080, displayRealSize.landscapeHeight)
                 val previewResolutionList2 = ArrayList<PreviewResolution>()
                 if (previewResolutionList.isEmpty()) {
                     previewResolutions.filterTo(previewResolutionList2) {

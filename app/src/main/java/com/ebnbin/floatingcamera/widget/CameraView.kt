@@ -14,7 +14,11 @@ import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.RotationHelper
+import com.ebnbin.floatingcamera.util.WindowSize
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
+import com.ebnbin.floatingcamera.util.displayRealSize
+import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.windowManager
 import kotlin.math.max
 import kotlin.math.min
@@ -52,32 +56,29 @@ abstract class CameraView : TextureView,
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
-            WindowRootPreferenceGroup.KEY_WINDOW_SIZE -> {
-                invalidateWindowSizeAndPosition()
-            }
-            WindowRootPreferenceGroup.KEY_WINDOW_X -> {
-                invalidateWindowPosition()
-            }
-            WindowRootPreferenceGroup.KEY_WINDOW_Y -> {
-                invalidateWindowPosition()
-            }
-            WindowRootPreferenceGroup.KEY_PREVIEW -> {
-                invalidateWindowSizeAndPosition()
-            }
+            WindowRootPreferenceGroup.KEY_WINDOW_SIZE -> invalidateWindowSizeAndPosition()
+            WindowRootPreferenceGroup.KEY_WINDOW_X -> invalidateWindowSizeAndPosition(true)
+            WindowRootPreferenceGroup.KEY_WINDOW_Y -> invalidateWindowSizeAndPosition(true)
+            WindowRootPreferenceGroup.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
+            RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
         }
     }
 
-    private fun invalidateWindowSizeAndPosition() {
+    private fun invalidateWindowSizeAndPosition(invalidateWindowPositionOnly: Boolean = false) {
         val params = layoutParams as WindowManager.LayoutParams
-        val windowSize = PreferenceHelper.windowSize()
-        params.width = windowSize.width()
-        params.height = windowSize.height()
-        // TODO: 更新窗口位置.
+        val rotation = displayRotation()
+        val windowSize: WindowSize
+        if (invalidateWindowPositionOnly) {
+            windowSize = WindowSize(params.width, params.height, rotation)
+        } else {
+            windowSize = PreferenceHelper.windowSize()
+            params.width = windowSize.width(rotation)
+            params.height = windowSize.height(rotation)
+        }
+        val windowPosition = PreferenceHelper.windowPosition()
+        params.x = windowPosition.x(windowSize, rotation)
+        params.y = windowPosition.y(windowSize, rotation)
         windowManager.updateViewLayout(this, params)
-    }
-
-    private fun invalidateWindowPosition() {
-        // TODO: 更新窗口位置.
     }
 
     //*****************************************************************************************************************
@@ -92,16 +93,13 @@ abstract class CameraView : TextureView,
     private var downX = 0
     private var downY = 0
 
-    private var minX = 0
-    private var minY = 0
-    private var maxX = 0
-    private var maxY = 0
+    private var downRawX = 0f
+    private var downRawY = 0f
+
+    private var downRotation = 0
 
     private var scaleBeginWidth = 0
     private var scaleBeginHeight = 0
-
-    private var maxWidth = 0
-    private var maxHeight = 0
 
     /**
      * 按下一小会儿. 比 tap 长, 比 long press 短, 用于显示提示信息.
@@ -135,11 +133,10 @@ abstract class CameraView : TextureView,
         downX = layoutParams.x
         downY = layoutParams.y
 
-        // TODO: min, max.
-        minX = 0
-        maxX = 0
-        minY = 0
-        maxY = 0
+        downRawX = e.rawX
+        downRawY = e.rawY
+
+        downRotation = displayRotation()
 
         return false
     }
@@ -165,8 +162,8 @@ abstract class CameraView : TextureView,
 
         val layoutParams = layoutParams as WindowManager.LayoutParams
         // TODO: min, max.
-        layoutParams.x = (downX + e2.rawX - e1.rawX).toInt()
-        layoutParams.y = (downY + e2.rawY - e1.rawY).toInt()
+        layoutParams.x = (downX + e2.rawX - downRawX).toInt()
+        layoutParams.y = (downY + e2.rawY - downRawY).toInt()
         windowManager.updateViewLayout(this, layoutParams)
 
         return false
@@ -229,10 +226,6 @@ abstract class CameraView : TextureView,
         scaleBeginWidth = layoutParams.width
         scaleBeginHeight = layoutParams.height
 
-        val maxWindowSize = PreferenceHelper.maxWindowSize()
-        maxWidth = maxWindowSize.width()
-        maxHeight = maxWindowSize.height()
-
         return true
     }
 
@@ -244,7 +237,22 @@ abstract class CameraView : TextureView,
 
         DebugHelper.log("onScaleEnd")
 
-        PreferenceHelper.putWindowSize(detector.scaleFactor)
+        putWindowSize(detector.scaleFactor)
+    }
+
+    /**
+     * 更新窗口大小.
+     */
+    private fun putWindowSize(scaleFactor: Float) {
+        var windowSize = (WindowRootPreferenceGroup.windowSize * scaleFactor).toInt()
+        windowSize = min(100, windowSize)
+        windowSize = max(0, windowSize)
+        val sharedPreferencesWindowSize = WindowRootPreferenceGroup.windowSize
+        if (sharedPreferencesWindowSize != windowSize) {
+            WindowRootPreferenceGroup.putWindowSize(windowSize)
+        } else {
+            invalidateWindowSizeAndPosition()
+        }
     }
 
     /**
@@ -256,14 +264,8 @@ abstract class CameraView : TextureView,
         DebugHelper.log("onScale")
 
         val scaleFactor = detector.scaleFactor
-        var width = (scaleBeginWidth * scaleFactor).toInt()
-        width = min(maxWidth, width)
-        width = max(0, width)
-        layoutParams.width = width
-        var height = (scaleBeginHeight * scaleFactor).toInt()
-        height = min(maxHeight, height)
-        height = max(0, height)
-        layoutParams.height = height
+        layoutParams.width = (scaleBeginWidth * scaleFactor).toInt()
+        layoutParams.height = (scaleBeginHeight * scaleFactor).toInt()
         windowManager.updateViewLayout(this, layoutParams)
 
         return false
@@ -280,11 +282,85 @@ abstract class CameraView : TextureView,
         if (event.action == MotionEvent.ACTION_UP) {
             DebugHelper.log("ACTION_UP")
 
-            // TODO: SharedPreferences 保存 window x, y.
+            val offsetX = event.rawX - downRawX
+            val offsetY = event.rawY - downRawY
+            val x = downX + offsetX
+            val y = downY + offsetY
+            val windowSize = WindowSize(layoutParams.width, layoutParams.height, downRotation)
+            putWindowPosition(x, y, downRotation, windowSize)
         }
 
         if (scaleGestureDetector.onTouchEvent(event)) return true
 
         return super.onTouchEvent(event)
+    }
+
+    /**
+     * 更新窗口位置.
+     */
+    private fun putWindowPosition(x: Float, y: Float, rotation: Int, windowSize: WindowSize) {
+        fun calc(position: Float, offset: Int, range: Int, percentOffset: Int) =
+                ((position + offset) / range * 100).toInt() + percentOffset
+
+        val displayRealWidth = displayRealSize.width(rotation)
+        val windowWidth = windowSize.width(rotation)
+
+        val xMin = 0
+        val xMax = displayRealWidth - windowWidth
+
+        val xRange = displayRealWidth - windowWidth
+        val xOffset = 0
+        val xPercentOffset = 0
+
+        val leftRange = windowWidth
+        val leftOffset = windowWidth
+        val leftPercentOffset = -100
+
+        val rightRange = windowWidth
+        val rightOffset = -(displayRealWidth - windowWidth)
+        val rightPercentOffset = 100
+
+        var windowX = when {
+            x in xMin..xMax -> calc(x, xOffset, xRange, xPercentOffset)
+            x < xMin -> calc(x, leftOffset, leftRange, leftPercentOffset)
+            else -> calc(x, rightOffset, rightRange, rightPercentOffset)
+        }
+        windowX = min(200, windowX)
+        windowX = max(-100, windowX)
+
+        val displayRealHeight = displayRealSize.height(rotation)
+        val windowHeight = windowSize.height(rotation)
+
+        val yMin = 0
+        val yMax = displayRealHeight - windowHeight
+
+        val yRange = displayRealHeight - windowHeight
+        val yOffset = 0
+        val yPercentOffset = 0
+
+        val topRange = windowHeight
+        val topOffset = windowHeight
+        val topPercentOffset = -100
+
+        val bottomRange = windowHeight
+        val bottomOffset = -(displayRealHeight - windowHeight)
+        val bottomPercentOffset = 100
+
+        var windowY = when {
+            y in yMin..yMax -> calc(y, yOffset, yRange, yPercentOffset)
+            y < yMin -> calc(y, topOffset, topRange, topPercentOffset)
+            else -> calc(y, bottomOffset, bottomRange, bottomPercentOffset)
+        }
+        windowY = min(200, windowY)
+        windowY = max(-100, windowY)
+
+        val sharedPreferencesWindowX = WindowRootPreferenceGroup.windowX
+        val sharedPreferencesWindowY = WindowRootPreferenceGroup.windowY
+
+        if (sharedPreferencesWindowX != windowX || sharedPreferencesWindowY != windowY) {
+            WindowRootPreferenceGroup.putWindowPosition(windowX, windowY)
+        } else {
+            invalidateWindowSizeAndPosition(true)
+        }
     }
 }

@@ -4,8 +4,6 @@ import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.fragment.preference.camera.CameraRootPreferenceGroup
 import com.ebnbin.floatingcamera.fragment.preference.other.OtherRootPreferenceGroup
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * 偏好帮助类.
@@ -103,19 +101,11 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     /**
      * 窗口大小.
      */
-    fun windowSize() = windowSize(WindowRootPreferenceGroup.windowSize)
+    fun windowSize(): WindowSize {
+        val windowSizeValue = WindowRootPreferenceGroup.windowSize
 
-    /**
-     * 最大窗口大小.
-     */
-    fun maxWindowSize() = windowSize(100)
-
-    /**
-     * 窗口大小.
-     */
-    private fun windowSize(windowSizeValue: Int): WindowSize {
-        var landscapeWidth = displaySize.landscapeWidth * windowSizeValue / 100f
-        var landscapeHeight = displaySize.landscapeHeight * windowSizeValue / 100f
+        var landscapeWidth = displayRealSize.landscapeWidth * windowSizeValue / 100f
+        var landscapeHeight = displayRealSize.landscapeHeight * windowSizeValue / 100f
 
         when (Preview.values()[WindowRootPreferenceGroup.preview.toInt()]) {
             Preview.CAPTURE -> {
@@ -146,13 +136,13 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     }
 
     /**
-     * 更新窗口大小.
+     * 窗口位置.
      */
-    fun putWindowSize(scaleFactor: Float) {
-        var windowSize = (WindowRootPreferenceGroup.windowSize * scaleFactor).toInt()
-        windowSize = min(100, windowSize)
-        windowSize = max(0, windowSize)
-        WindowRootPreferenceGroup.putWindowSize(windowSize)
+    fun windowPosition(): WindowPosition {
+        val windowX = WindowRootPreferenceGroup.windowX
+        val windowY = WindowRootPreferenceGroup.windowY
+        val rotation = RotationHelper.getRotation()
+        return WindowPosition(windowX, windowY, rotation)
     }
 
     /**

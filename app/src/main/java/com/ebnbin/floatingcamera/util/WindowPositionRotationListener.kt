@@ -9,6 +9,7 @@ object WindowPositionRotationListener : RotationHelper.Listener {
     override fun onRotationChanged(oldRotation: Int, newRotation: Int) {
         val windowPosition = WindowPosition(WindowRootPreferenceGroup.windowX, WindowRootPreferenceGroup.windowY,
                 oldRotation)
-        WindowRootPreferenceGroup.putWindowPosition(windowPosition.x(newRotation), windowPosition.y(newRotation))
+        WindowRootPreferenceGroup.putWindowPosition(windowPosition.xPercent(newRotation),
+                windowPosition.yPercent(newRotation))
     }
 }

@@ -100,8 +100,10 @@ object RotationHelper {
         fun onRotationChanged(oldRotation: Int, newRotation: Int)
     }
 
-    private const val KEY_ROTATION = "rotation"
+    const val KEY_ROTATION = "rotation"
     private const val DEF_VALUE_ROTATION = 0
+
+    fun getRotation() = defaultSharedPreferences.get(KEY_ROTATION, DEF_VALUE_ROTATION)
 
     init {
         listeners.add(WindowPositionRotationListener)

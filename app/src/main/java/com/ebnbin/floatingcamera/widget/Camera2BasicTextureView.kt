@@ -144,12 +144,12 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
      * @param height Relative vertical size
      */
     fun setAspectRatio(width: Int, height: Int) {
-        if (width < 0 || height < 0) {
-            throw IllegalArgumentException("Size cannot be negative.")
-        }
-        ratioWidth = width
-        ratioHeight = height
-        requestLayout()
+//        if (width < 0 || height < 0) {
+//            throw IllegalArgumentException("Size cannot be negative.")
+//        }
+//        ratioWidth = width
+//        ratioHeight = height
+//        requestLayout()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

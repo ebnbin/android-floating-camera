@@ -273,15 +273,15 @@ public class JCamera2RawTextureView extends /*Fragment
      * @param height Relative vertical size
      */
     public void setAspectRatio(int width, int height) {
-        if (width < 0 || height < 0) {
-            throw new IllegalArgumentException("Size cannot be negative.");
-        }
-        if (mRatioWidth == width && mRatioHeight == height) {
-            return;
-        }
-        mRatioWidth = width;
-        mRatioHeight = height;
-        requestLayout();
+//        if (width < 0 || height < 0) {
+//            throw new IllegalArgumentException("Size cannot be negative.");
+//        }
+//        if (mRatioWidth == width && mRatioHeight == height) {
+//            return;
+//        }
+//        mRatioWidth = width;
+//        mRatioHeight = height;
+//        requestLayout();
     }
 
     @Override
