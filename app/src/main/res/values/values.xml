@@ -3,4 +3,11 @@
     <color name="black">#000</color>
 
     <string name="app_name">Floating Camera</string>
+
+    <string name="permission_message_system_alert_window">应用需要“显示在其他应用的上层”权限才能正常运行，请点击“请求”并在弹出的界面中手动开启权限。</string>
+    <string name="permission_message_runtime_permissions">应用需要权限才能正常运行，请点击“请求”并在弹出的界面中选择“允许”开启权限。</string>
+    <string name="permission_message_runtime_permissions_denied_forever">应用需要权限才能正常运行，请点击“请求”并在弹出的界面中手动开启权限。</string>
+    <string name="permission_request">请求</string>
+    <string name="permission_finish">退出应用</string>
+    <string name="permission_deny">暂不开启</string>
 </resources>

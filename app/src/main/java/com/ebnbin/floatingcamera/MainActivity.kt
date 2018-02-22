@@ -1,11 +1,13 @@
 package com.ebnbin.floatingcamera
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
+import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.fragment.preference.other.OtherRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -14,7 +16,8 @@ import com.ebnbin.floatingcamera.util.app
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.taskDescription
 
-class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
+class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener,
+        PermissionFragment.Callback {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTaskDescription(taskDescription)
 
@@ -26,14 +29,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         RotationHelper.register(this)
 
-        if (!CameraHelper.detect()) {
-            finish()
-            return
-        }
-
         if (savedInstanceState != null) return
 
-        supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+        PermissionFragment.request(supportFragmentManager, REQUEST_CODE_PERMISSION, Manifest.permission.CAMERA)
     }
 
     private fun initTheme() {
@@ -54,6 +52,21 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
     }
 
+    override fun onPermissionsResult(requestCode: Int, granted: Boolean) {
+        when (requestCode) {
+            REQUEST_CODE_PERMISSION -> {
+                if (!granted) return
+
+                if (!CameraHelper.detect()) {
+                    finish()
+                    return
+                }
+
+                supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+            }
+        }
+    }
+
     override fun onPause() {
         RotationHelper.disable(this)
 
@@ -69,6 +82,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     companion object {
+        private const val REQUEST_CODE_PERMISSION = 0x1
+
         fun start(context: Context = app) {
             context.startActivity(Intent(context, MainActivity::class.java))
         }

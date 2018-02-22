@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Point
 import android.hardware.camera2.CameraManager
+import android.net.Uri
 import android.os.Build
 import android.support.annotation.StringRes
 import android.support.v4.util.ArrayMap
@@ -17,6 +18,12 @@ import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.extension.dpInt
 
 val app by lazy { AppApplication.instance }
+
+//*********************************************************************************************************************
+
+val packageName by lazy { app.packageName!! }
+
+val packageUri by lazy { Uri.parse("package:$packageName")!! }
 
 //*********************************************************************************************************************
 // System services.
@@ -65,7 +72,7 @@ val defaultSharedPreferences by lazy { getSharedPreferences() }
 /**
  * 获取 [SharedPreferences].
  */
-fun getSharedPreferences(name: String = "${app.packageName}_preferences", mode: Int = Context.MODE_PRIVATE) =
+fun getSharedPreferences(name: String = "${packageName}_preferences", mode: Int = Context.MODE_PRIVATE) =
         app.getSharedPreferences(name, mode)!!
 
 //*********************************************************************************************************************
