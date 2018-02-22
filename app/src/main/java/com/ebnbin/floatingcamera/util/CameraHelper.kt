@@ -439,6 +439,27 @@ class CameraHelper private constructor() {
             val landscapeHeight = if (isSensorOrientationLandscape) height else width
 
             /**
+             * 纵向宽.
+             */
+            val portraitWidth = landscapeHeight
+            /**
+             * 纵向高.
+             */
+            val portraitHeight = landscapeWidth
+
+            fun width(rotation: Int = displayRotation()) = when (rotation) {
+                0, 2 -> portraitWidth
+                1, 3 -> landscapeWidth
+                else -> throw BaseRuntimeException()
+            }
+
+            fun height(rotation: Int = displayRotation()) = when (rotation) {
+                0, 2 -> portraitHeight
+                1, 3 -> landscapeHeight
+                else -> throw BaseRuntimeException()
+            }
+
+            /**
              * 宽高比是否相同.
              */
             fun isRatioEquals(other: Resolution) = ratioWidth == other.ratioWidth && ratioHeight == other.ratioHeight

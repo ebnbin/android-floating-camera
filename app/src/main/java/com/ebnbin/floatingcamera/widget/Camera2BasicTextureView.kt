@@ -20,11 +20,7 @@ package com.ebnbin.floatingcamera.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.ImageFormat
-import android.graphics.Matrix
-import android.graphics.Point
-import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
@@ -42,27 +38,19 @@ import android.os.HandlerThread
 import android.support.v4.app.FragmentActivity
 import android.util.AttributeSet
 import android.util.Log
-import android.util.Size
 import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
-import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.lang.Long
 import java.util.Arrays
-import java.util.Collections
-import java.util.Comparator
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
-/**
- * A [TextureView] that can be adjusted to a specified aspect ratio.
- */
 class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
         ActivityCompat.OnRequestPermissionsResultCallback*/@JvmOverloads constructor(
         context: Context,
@@ -83,7 +71,7 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
         if (textureView.isAvailable) {
-            openCamera(textureView.width, textureView.height)
+            openCamera()
 
             picture()
         } else {
@@ -132,43 +120,6 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
 
     //*****************************************************************************************************************
 
-    private var ratioWidth = 0
-    private var ratioHeight = 0
-
-    /**
-     * Sets the aspect ratio for this view. The size of the view will be measured based on the ratio
-     * calculated from the parameters. Note that the actual sizes of parameters don't matter, that
-     * is, calling setAspectRatio(2, 3) and setAspectRatio(4, 6) make the same result.
-     *
-     * @param width  Relative horizontal size
-     * @param height Relative vertical size
-     */
-    fun setAspectRatio(width: Int, height: Int) {
-//        if (width < 0 || height < 0) {
-//            throw IllegalArgumentException("Size cannot be negative.")
-//        }
-//        ratioWidth = width
-//        ratioHeight = height
-//        requestLayout()
-    }
-
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val width = View.MeasureSpec.getSize(widthMeasureSpec)
-        val height = View.MeasureSpec.getSize(heightMeasureSpec)
-        if (ratioWidth == 0 || ratioHeight == 0) {
-            setMeasuredDimension(width, height)
-        } else {
-            if (width < height * ratioWidth / ratioHeight) {
-                setMeasuredDimension(width, width * ratioHeight / ratioWidth)
-            } else {
-                setMeasuredDimension(height * ratioWidth / ratioHeight, height)
-            }
-        }
-    }
-
-    //*****************************************************************************************************************
-
     /**
      * [TextureView.SurfaceTextureListener] handles several lifecycle events on a
      * [TextureView].
@@ -176,13 +127,13 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
     private val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
 
         override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
-            openCamera(width, height)
+            openCamera()
 
             picture()
         }
 
         override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
-            configureTransform(width, height)
+            configureTransform()
         }
 
         override fun onSurfaceTextureDestroyed(texture: SurfaceTexture) = true
@@ -213,11 +164,6 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
      * A reference to the opened [CameraDevice].
      */
     private var cameraDevice: CameraDevice? = null
-
-    /**
-     * The [android.util.Size] of camera preview.
-     */
-    private lateinit var previewSize: Size
 
     /**
      * [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.
@@ -428,19 +374,13 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
 
     /**
      * Sets up member variables related to camera.
-     *
-     * @param width  The width of available size for camera preview
-     * @param height The height of available size for camera preview
      */
-    private fun setUpCameraOutputs(width: Int, height: Int) {
+    private fun setUpCameraOutputs() {
 //        val manager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
             val cameraId = PreferenceHelper.device().id2
 
             val characteristics = /*manager*/cameraManager.getCameraCharacteristics(cameraId)
-
-            val map = characteristics.get(
-                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)/* ?: continue*/
 
             val largest = PreferenceHelper.resolution().size
 
@@ -449,37 +389,7 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
                 setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
             }
 
-            // Find out if we need to swap dimension to get the preview size relative to sensor
-            // coordinate.
-            val displayRotation = /*activity.*/windowManager.defaultDisplay.rotation
-
             sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
-            val swappedDimensions = areDimensionsSwapped(displayRotation)
-
-            val displaySize = Point()
-            /*activity.*/windowManager.defaultDisplay.getSize(displaySize)
-            val rotatedPreviewWidth = if (swappedDimensions) height else width
-            val rotatedPreviewHeight = if (swappedDimensions) width else height
-            var maxPreviewWidth = if (swappedDimensions) displaySize.y else displaySize.x
-            var maxPreviewHeight = if (swappedDimensions) displaySize.x else displaySize.y
-
-            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) maxPreviewWidth = MAX_PREVIEW_WIDTH
-            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) maxPreviewHeight = MAX_PREVIEW_HEIGHT
-
-            // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-            // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-            // garbage capture data.
-            previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java),
-                    rotatedPreviewWidth, rotatedPreviewHeight,
-                    maxPreviewWidth, maxPreviewHeight,
-                    largest)
-
-            // We fit the aspect ratio of TextureView to the size of preview we picked.
-            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                textureView.setAspectRatio(previewSize.width, previewSize.height)
-            } else {
-                textureView.setAspectRatio(previewSize.height, previewSize.width)
-            }
 
             // Check if the flash is supported.
             flashSupported =
@@ -529,14 +439,14 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
      * Opens the camera specified by [Camera2BasicTextureView.cameraId].
      */
     @SuppressLint("MissingPermission")
-    private fun openCamera(width: Int, height: Int) {
+    private fun openCamera() {
 //        val permission = ContextCompat.checkSelfPermission(activity, Manifest.permission.CAMERA)
 //        if (permission != PackageManager.PERMISSION_GRANTED) {
 //            requestCameraPermission()
 //            return
 //        }
-        setUpCameraOutputs(width, height)
-        configureTransform(width, height)
+        setUpCameraOutputs()
+        configureTransform()
 //        val manager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
             // Wait for camera to open - 2.5 seconds is sufficient
@@ -598,11 +508,13 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
      * Creates a new [CameraCaptureSession] for camera preview.
      */
     private fun createCameraPreviewSession() {
+        val previewResolution = previewResolution ?: return
+
         try {
             val texture = textureView.surfaceTexture
 
             // We configure the size of default buffer to be the size of camera preview we want.
-            texture.setDefaultBufferSize(previewSize.width, previewSize.height)
+            texture.setDefaultBufferSize(previewResolution.width, previewResolution.height)
 
             // This is the output Surface we need to start preview.
             val surface = Surface(texture)
@@ -648,40 +560,6 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
             Log.e(TAG, e.toString())
         }
 
-    }
-
-    /**
-     * Configures the necessary [android.graphics.Matrix] transformation to `textureView`.
-     * This method should be called after the camera preview size is determined in
-     * setUpCameraOutputs and also the size of `textureView` is fixed.
-     *
-     * @param viewWidth  The width of `textureView`
-     * @param viewHeight The height of `textureView`
-     */
-    private fun configureTransform(viewWidth: Int, viewHeight: Int) {
-//        activity ?: return
-        if (isFinishing()) return
-        val rotation = /*activity.*/windowManager.defaultDisplay.rotation
-        val matrix = Matrix()
-        val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
-        val bufferRect = RectF(0f, 0f, previewSize.height.toFloat(), previewSize.width.toFloat())
-        val centerX = viewRect.centerX()
-        val centerY = viewRect.centerY()
-
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
-            val scale = Math.max(
-                    viewHeight.toFloat() / previewSize.height,
-                    viewWidth.toFloat() / previewSize.width)
-            with(matrix) {
-                setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
-                postScale(scale, scale, centerX, centerY)
-                postRotate((90 * (rotation - 2)).toFloat(), centerX, centerY)
-            }
-        } else if (Surface.ROTATION_180 == rotation) {
-            matrix.postRotate(180f, centerX, centerY)
-        }
-        textureView.setTransform(matrix)
     }
 
     /**
@@ -865,70 +743,6 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
          * Camera state: Picture was taken.
          */
         private val STATE_PICTURE_TAKEN = 4
-
-        /**
-         * Max preview width that is guaranteed by Camera2 API
-         */
-        private val MAX_PREVIEW_WIDTH = 1920
-
-        /**
-         * Max preview height that is guaranteed by Camera2 API
-         */
-        private val MAX_PREVIEW_HEIGHT = 1080
-
-        /**
-         * Given `choices` of `Size`s supported by a camera, choose the smallest one that
-         * is at least as large as the respective texture view size, and that is at most as large as
-         * the respective max size, and whose aspect ratio matches with the specified value. If such
-         * size doesn't exist, choose the largest one that is at most as large as the respective max
-         * size, and whose aspect ratio matches with the specified value.
-         *
-         * @param choices           The list of sizes that the camera supports for the intended
-         *                          output class
-         * @param textureViewWidth  The width of the texture view relative to sensor coordinate
-         * @param textureViewHeight The height of the texture view relative to sensor coordinate
-         * @param maxWidth          The maximum width that can be chosen
-         * @param maxHeight         The maximum height that can be chosen
-         * @param aspectRatio       The aspect ratio
-         * @return The optimal `Size`, or an arbitrary one if none were big enough
-         */
-        @JvmStatic private fun chooseOptimalSize(
-                choices: Array<Size>,
-                textureViewWidth: Int,
-                textureViewHeight: Int,
-                maxWidth: Int,
-                maxHeight: Int,
-                aspectRatio: Size
-        ): Size {
-
-            // Collect the supported resolutions that are at least as big as the preview Surface
-            val bigEnough = ArrayList<Size>()
-            // Collect the supported resolutions that are smaller than the preview Surface
-            val notBigEnough = ArrayList<Size>()
-            val w = aspectRatio.width
-            val h = aspectRatio.height
-            for (option in choices) {
-                if (option.width <= maxWidth && option.height <= maxHeight &&
-                        option.height == option.width * h / w) {
-                    if (option.width >= textureViewWidth && option.height >= textureViewHeight) {
-                        bigEnough.add(option)
-                    } else {
-                        notBigEnough.add(option)
-                    }
-                }
-            }
-
-            // Pick the smallest of those big enough. If there is no one big enough, pick the
-            // largest of those not big enough.
-            if (bigEnough.size > 0) {
-                return Collections.min(bigEnough, CompareSizesByArea())
-            } else if (notBigEnough.size > 0) {
-                return Collections.max(notBigEnough, CompareSizesByArea())
-            } else {
-                Log.e(TAG, "Couldn't find any suitable preview size")
-                return choices[0]
-            }
-        }
 //
 //        @JvmStatic fun newInstance(): Camera2BasicTextureView = Camera2BasicTextureView()
     }
@@ -948,17 +762,6 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
  */
 fun FragmentActivity.showToast(text: String) {
     runOnUiThread { Toast.makeText(this, text, Toast.LENGTH_SHORT).show() }
-}
-
-/**
- * Compares two `Size`s based on their areas.
- */
-internal class CompareSizesByArea : Comparator<Size> {
-
-    // We cast here to ensure the multiplications won't overflow
-    override fun compare(lhs: Size, rhs: Size) =
-            Long.signum(lhs.width.toLong() * lhs.height - rhs.width.toLong() * rhs.height)
-
 }
 //
 ///**

@@ -25,9 +25,6 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.res.Configuration;
-import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -36,7 +33,6 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -50,7 +46,6 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
-
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
@@ -58,14 +53,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-/**
- * A {@link TextureView} that can be adjusted to a specified aspect ratio.
- */
 public class JCamera2VideoTextureView extends /*Fragment
         implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback*/CameraView {
 
@@ -82,7 +73,7 @@ public class JCamera2VideoTextureView extends /*Fragment
 
         startBackgroundThread();
         if (mTextureView.isAvailable()) {
-            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
+            openCamera();
 
             record();
         } else {
@@ -188,9 +179,6 @@ public class JCamera2VideoTextureView extends /*Fragment
 
     //*****************************************************************************************************************
 
-    private int mRatioWidth = 0;
-    private int mRatioHeight = 0;
-
     public JCamera2VideoTextureView(Context context) {
         this(context, null);
 
@@ -207,39 +195,6 @@ public class JCamera2VideoTextureView extends /*Fragment
         super(context, attrs, defStyle);
 
         init();
-    }
-
-    /**
-     * Sets the aspect ratio for this view. The size of the view will be measured based on the ratio
-     * calculated from the parameters. Note that the actual sizes of parameters don't matter, that
-     * is, calling setAspectRatio(2, 3) and setAspectRatio(4, 6) make the same result.
-     *
-     * @param width  Relative horizontal size
-     * @param height Relative vertical size
-     */
-    public void setAspectRatio(int width, int height) {
-//        if (width < 0 || height < 0) {
-//            throw new IllegalArgumentException("Size cannot be negative.");
-//        }
-//        mRatioWidth = width;
-//        mRatioHeight = height;
-//        requestLayout();
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
-        if (0 == mRatioWidth || 0 == mRatioHeight) {
-            setMeasuredDimension(width, height);
-        } else {
-            if (width < height * mRatioWidth / mRatioHeight) {
-                setMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
-            } else {
-                setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
-            }
-        }
     }
 
     //*****************************************************************************************************************
@@ -303,7 +258,7 @@ public class JCamera2VideoTextureView extends /*Fragment
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
                                               int width, int height) {
-            openCamera(width, height);
+            openCamera();
 
             record();
         }
@@ -311,7 +266,7 @@ public class JCamera2VideoTextureView extends /*Fragment
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture,
                                                 int width, int height) {
-            configureTransform(width, height);
+            configureTransform();
         }
 
         @Override
@@ -324,11 +279,6 @@ public class JCamera2VideoTextureView extends /*Fragment
         }
 
     };
-
-    /**
-     * The {@link android.util.Size} of camera preview.
-     */
-    private Size mPreviewSize;
 
     /**
      * The {@link android.util.Size} of video recording.
@@ -371,7 +321,7 @@ public class JCamera2VideoTextureView extends /*Fragment
             startPreview();
             mCameraOpenCloseLock.release();
             if (null != mTextureView) {
-                configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
+                configureTransform();
             }
         }
 
@@ -401,38 +351,6 @@ public class JCamera2VideoTextureView extends /*Fragment
 //    public static JCamera2VideoTextureView newInstance() {
 //        return new JCamera2VideoTextureView();
 //    }
-
-    /**
-     * Given {@code choices} of {@code Size}s supported by a camera, chooses the smallest one whose
-     * width and height are at least as large as the respective requested values, and whose aspect
-     * ratio matches with the specified value.
-     *
-     * @param choices     The list of sizes that the camera supports for the intended output class
-     * @param width       The minimum desired width
-     * @param height      The minimum desired height
-     * @param aspectRatio The aspect ratio
-     * @return The optimal {@code Size}, or an arbitrary one if none were big enough
-     */
-    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        List<Size> bigEnough = new ArrayList<>();
-        int w = aspectRatio.getWidth();
-        int h = aspectRatio.getHeight();
-        for (Size option : choices) {
-            if (option.getHeight() == option.getWidth() * h / w &&
-                    option.getWidth() >= width && option.getHeight() >= height) {
-                bigEnough.add(option);
-            }
-        }
-
-        // Pick the smallest of those, assuming we found any
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else {
-            Log.e(TAG, "Couldn't find any suitable preview size");
-            return choices[0];
-        }
-    }
 //
 //    @Override
 //    public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -585,7 +503,7 @@ public class JCamera2VideoTextureView extends /*Fragment
      * Tries to open a {@link CameraDevice}. The result is listened by `mStateCallback`.
      */
     @SuppressWarnings("MissingPermission")
-    private void openCamera(int width, int height) {
+    private void openCamera() {
 //        if (!hasPermissionsGranted(VIDEO_PERMISSIONS)) {
 //            requestVideoPermissions();
 //            return;
@@ -605,25 +523,11 @@ public class JCamera2VideoTextureView extends /*Fragment
 
             // Choose the sizes for camera preview and video recording
             CameraCharacteristics characteristics = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics
-                    .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-            if (map == null) {
-                throw new RuntimeException("Cannot get available preview/video sizes");
-            }
 
             mVideoSize = PreferenceHelper.INSTANCE.resolution().getSize();
 
-            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    width, height, mVideoSize);
-
-            int orientation = getResources().getConfiguration().orientation;
-            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                mTextureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-            } else {
-                mTextureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
-            }
-            configureTransform(width, height);
+            configureTransform();
             mMediaRecorder = new MediaRecorder();
             /*manager*/mCameraManager.openCamera(cameraId, mStateCallback, null);
         } catch (CameraAccessException e) {
@@ -664,14 +568,16 @@ public class JCamera2VideoTextureView extends /*Fragment
      * Start the camera preview.
      */
     private void startPreview() {
-        if (null == mCameraDevice || !mTextureView.isAvailable() || null == mPreviewSize) {
+        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
+
+        if (null == mCameraDevice || !mTextureView.isAvailable() || null == previewResolution) {
             return;
         }
         try {
             closePreviewSession();
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             assert texture != null;
-            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
             Surface previewSurface = new Surface(texture);
@@ -719,37 +625,6 @@ public class JCamera2VideoTextureView extends /*Fragment
 
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-    }
-
-    /**
-     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
-     * This method should not to be called until the camera preview size is determined in
-     * openCamera, or until the size of `mTextureView` is fixed.
-     *
-     * @param viewWidth  The width of `mTextureView`
-     * @param viewHeight The height of `mTextureView`
-     */
-    private void configureTransform(int viewWidth, int viewHeight) {
-//        Activity activity = getActivity();
-        if (null == mTextureView || null == mPreviewSize || /*null == activity*/isFinishing()) {
-            return;
-        }
-        int rotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-            float scale = Math.max(
-                    (float) viewHeight / mPreviewSize.getHeight(),
-                    (float) viewWidth / mPreviewSize.getWidth());
-            matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-        }
-        mTextureView.setTransform(matrix);
     }
 
     private void setUpMediaRecorder() throws IOException {
@@ -817,7 +692,9 @@ public class JCamera2VideoTextureView extends /*Fragment
     }
 
     private void startRecordingVideo() {
-        if (null == mCameraDevice || !mTextureView.isAvailable() || null == mPreviewSize) {
+        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
+
+        if (null == mCameraDevice || !mTextureView.isAvailable() || null == previewResolution) {
             return;
         }
         try {
@@ -825,7 +702,7 @@ public class JCamera2VideoTextureView extends /*Fragment
             setUpMediaRecorder();
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             assert texture != null;
-            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
 
@@ -899,20 +776,6 @@ public class JCamera2VideoTextureView extends /*Fragment
         }
         mNextVideoAbsolutePath = null;
 //        startPreview();
-    }
-
-    /**
-     * Compares two {@code Size}s based on their areas.
-     */
-    static class CompareSizesByArea implements Comparator<Size> {
-
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-
     }
 
     public static class ErrorDialog extends DialogFragment {

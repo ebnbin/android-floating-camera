@@ -62,7 +62,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
-
+import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
@@ -71,22 +71,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-/**
- * A {@link TextureView} that can be adjusted to a specified aspect ratio.
- */
 
 /**
  * A fragment that demonstrates use of the Camera2 API to capture RAW and JPEG photos.
@@ -136,7 +130,7 @@ public class JCamera2RawTextureView extends /*Fragment
             @Override
             public void onOrientationChanged(int orientation) {
                 if (mTextureView != null && mTextureView.isAvailable()) {
-                    configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
+                    configureTransform2();
                 }
             }
         };
@@ -154,7 +148,7 @@ public class JCamera2RawTextureView extends /*Fragment
         // configure the preview bounds here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
         if (mTextureView.isAvailable()) {
-            configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
+            configureTransform2();
 
             picture();
         } else {
@@ -243,9 +237,6 @@ public class JCamera2RawTextureView extends /*Fragment
 
     //*****************************************************************************************************************
 
-    private int mRatioWidth = 0;
-    private int mRatioHeight = 0;
-
     public JCamera2RawTextureView(Context context) {
         this(context, null);
 
@@ -262,42 +253,6 @@ public class JCamera2RawTextureView extends /*Fragment
         super(context, attrs, defStyle);
 
         init();
-    }
-
-    /**
-     * Sets the aspect ratio for this view. The size of the view will be measured based on the ratio
-     * calculated from the parameters. Note that the actual sizes of parameters don't matter, that
-     * is, calling setAspectRatio(2, 3) and setAspectRatio(4, 6) make the same result.
-     *
-     * @param width  Relative horizontal size
-     * @param height Relative vertical size
-     */
-    public void setAspectRatio(int width, int height) {
-//        if (width < 0 || height < 0) {
-//            throw new IllegalArgumentException("Size cannot be negative.");
-//        }
-//        if (mRatioWidth == width && mRatioHeight == height) {
-//            return;
-//        }
-//        mRatioWidth = width;
-//        mRatioHeight = height;
-//        requestLayout();
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
-        if (0 == mRatioWidth || 0 == mRatioHeight) {
-            setMeasuredDimension(width, height);
-        } else {
-            if (width < height * mRatioWidth / mRatioHeight) {
-                setMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
-            } else {
-                setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
-            }
-        }
     }
 
     //*****************************************************************************************************************
@@ -332,21 +287,6 @@ public class JCamera2RawTextureView extends /*Fragment
      * Timeout for the pre-capture sequence.
      */
     private static final long PRECAPTURE_TIMEOUT_MS = 1000;
-
-    /**
-     * Tolerance when comparing aspect ratios.
-     */
-    private static final double ASPECT_RATIO_TOLERANCE = 0.005;
-
-    /**
-     * Max preview width that is guaranteed by Camera2 API
-     */
-    private static final int MAX_PREVIEW_WIDTH = 1920;
-
-    /**
-     * Max preview height that is guaranteed by Camera2 API
-     */
-    private static final int MAX_PREVIEW_HEIGHT = 1080;
 
     /**
      * Tag for the {@link Log}.
@@ -390,20 +330,20 @@ public class JCamera2RawTextureView extends /*Fragment
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-            configureTransform(width, height);
+            configureTransform2();
 
             picture();
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-            configureTransform(width, height);
+            configureTransform2();
         }
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
             synchronized (mCameraStateLock) {
-                mPreviewSize = null;
+                setPreviewResolution(null);
             }
             return true;
         }
@@ -461,11 +401,6 @@ public class JCamera2RawTextureView extends /*Fragment
      * A reference to the open {@link CameraDevice}.
      */
     private CameraDevice mCameraDevice;
-
-    /**
-     * The {@link Size} of camera preview.
-     */
-    private Size mPreviewSize;
 
     /**
      * The {@link CameraCharacteristics} for the currently configured camera device.
@@ -547,7 +482,7 @@ public class JCamera2RawTextureView extends /*Fragment
                 mCameraDevice = cameraDevice;
 
                 // Start the preview session if the TextureView has been set up already.
-                if (mPreviewSize != null && mTextureView.isAvailable()) {
+                if (getPreviewResolution() != null && mTextureView.isAvailable()) {
                     createCameraPreviewSessionLocked();
                 }
             }
@@ -1115,10 +1050,15 @@ public class JCamera2RawTextureView extends /*Fragment
      * Call this only with {@link #mCameraStateLock} held.
      */
     private void createCameraPreviewSessionLocked() {
+        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
+        if (previewResolution == null) {
+            return;
+        }
+
         try {
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             // We configure the size of default buffer to be the size of camera preview we want.
-            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
 
             // This is the output Surface we need to start preview.
             Surface surface = new Surface(texture);
@@ -1227,68 +1167,23 @@ public class JCamera2RawTextureView extends /*Fragment
      * <p/>
      * This method should be called after the camera state has been initialized in
      * setUpCameraOutputs.
-     *
-     * @param viewWidth  The width of `mTextureView`
-     * @param viewHeight The height of `mTextureView`
      */
-    private void configureTransform(int viewWidth, int viewHeight) {
+    private void configureTransform2() {
 //        Activity activity = getActivity();
         synchronized (mCameraStateLock) {
             if (null == mTextureView || /*null == activity*/isFinishing()) {
                 return;
             }
 
-            StreamConfigurationMap map = mCharacteristics.get(
-                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-            // For still image captures, we always use the largest available size.
-            Size largestJpeg = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                    new CompareSizesByArea());
+            int viewWidth = getWidth();
+            int viewHeight = getHeight();
 
             // Find the rotation of the device relative to the native device orientation.
             int deviceRotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
             Point displaySize = new Point();
             /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getSize(displaySize);
 
-            // Find the rotation of the device relative to the camera sensor's orientation.
-            int totalRotation = sensorToDeviceRotation(mCharacteristics, deviceRotation);
-
-            // Swap the view dimensions for calculation as needed if they are rotated relative to
-            // the sensor.
-            boolean swappedDimensions = totalRotation == 90 || totalRotation == 270;
-            int rotatedViewWidth = viewWidth;
-            int rotatedViewHeight = viewHeight;
-            int maxPreviewWidth = displaySize.x;
-            int maxPreviewHeight = displaySize.y;
-
-            if (swappedDimensions) {
-                rotatedViewWidth = viewHeight;
-                rotatedViewHeight = viewWidth;
-                maxPreviewWidth = displaySize.y;
-                maxPreviewHeight = displaySize.x;
-            }
-
-            // Preview should not be larger than display size and 1080p.
-            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
-                maxPreviewWidth = MAX_PREVIEW_WIDTH;
-            }
-
-            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
-                maxPreviewHeight = MAX_PREVIEW_HEIGHT;
-            }
-
-            // Find the best preview size for these view dimensions and configured JPEG size.
-            Size previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    rotatedViewWidth, rotatedViewHeight, maxPreviewWidth, maxPreviewHeight,
-                    largestJpeg);
-
-            if (swappedDimensions) {
-                mTextureView.setAspectRatio(
-                        previewSize.getHeight(), previewSize.getWidth());
-            } else {
-                mTextureView.setAspectRatio(
-                        previewSize.getWidth(), previewSize.getHeight());
-            }
+            CameraHelper.Device.Resolution previewResolution = PreferenceHelper.INSTANCE.previewResolution();
 
             // Find rotation of device in degrees (reverse device orientation for front-facing
             // cameras).
@@ -1299,7 +1194,7 @@ public class JCamera2RawTextureView extends /*Fragment
 
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-            RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
+            RectF bufferRect = new RectF(0, 0, previewResolution.getHeight(), previewResolution.getWidth());
             float centerX = viewRect.centerX();
             float centerY = viewRect.centerY();
 
@@ -1323,8 +1218,8 @@ public class JCamera2RawTextureView extends /*Fragment
                 bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
                 matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
                 float scale = Math.max(
-                        (float) viewHeight / previewSize.getHeight(),
-                        (float) viewWidth / previewSize.getWidth());
+                        (float) viewHeight / previewResolution.getHeight(),
+                        (float) viewWidth / previewResolution.getWidth());
                 matrix.postScale(scale, scale, centerX, centerY);
 
             }
@@ -1334,8 +1229,8 @@ public class JCamera2RawTextureView extends /*Fragment
 
             // Start or restart the active capture session if the preview was initialized or
             // if its aspect ratio changed significantly.
-            if (mPreviewSize == null || !checkAspectsEqual(previewSize, mPreviewSize)) {
-                mPreviewSize = previewSize;
+            if (getPreviewResolution() == null) {
+                setPreviewResolution(previewResolution);
                 if (mState != STATE_CLOSED) {
                     createCameraPreviewSessionLocked();
                 }
@@ -1811,54 +1706,6 @@ public class JCamera2RawTextureView extends /*Fragment
     }
 
     /**
-     * Given {@code choices} of {@code Size}s supported by a camera, choose the smallest one that
-     * is at least as large as the respective texture view size, and that is at most as large as the
-     * respective max size, and whose aspect ratio matches with the specified value. If such size
-     * doesn't exist, choose the largest one that is at most as large as the respective max size,
-     * and whose aspect ratio matches with the specified value.
-     *
-     * @param choices           The list of sizes that the camera supports for the intended output
-     *                          class
-     * @param textureViewWidth  The width of the texture view relative to sensor coordinate
-     * @param textureViewHeight The height of the texture view relative to sensor coordinate
-     * @param maxWidth          The maximum width that can be chosen
-     * @param maxHeight         The maximum height that can be chosen
-     * @param aspectRatio       The aspect ratio
-     * @return The optimal {@code Size}, or an arbitrary one if none were big enough
-     */
-    private static Size chooseOptimalSize(Size[] choices, int textureViewWidth,
-                                          int textureViewHeight, int maxWidth, int maxHeight, Size aspectRatio) {
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        List<Size> bigEnough = new ArrayList<>();
-        // Collect the supported resolutions that are smaller than the preview Surface
-        List<Size> notBigEnough = new ArrayList<>();
-        int w = aspectRatio.getWidth();
-        int h = aspectRatio.getHeight();
-        for (Size option : choices) {
-            if (option.getWidth() <= maxWidth && option.getHeight() <= maxHeight &&
-                    option.getHeight() == option.getWidth() * h / w) {
-                if (option.getWidth() >= textureViewWidth &&
-                    option.getHeight() >= textureViewHeight) {
-                    bigEnough.add(option);
-                } else {
-                    notBigEnough.add(option);
-                }
-            }
-        }
-
-        // Pick the smallest of those big enough. If there is no one big enough, pick the
-        // largest of those not big enough.
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else if (notBigEnough.size() > 0) {
-            return Collections.max(notBigEnough, new CompareSizesByArea());
-        } else {
-            Log.e(TAG, "Couldn't find any suitable preview size");
-            return choices[0];
-        }
-    }
-
-    /**
      * Generate a string containing a formatted timestamp with the current date and time.
      *
      * @return a {@link String} representing a time.
@@ -1900,19 +1747,6 @@ public class JCamera2RawTextureView extends /*Fragment
             }
         }
         return false;
-    }
-
-    /**
-     * Return true if the two given {@link Size}s have the same aspect ratio.
-     *
-     * @param a first {@link Size} to compare.
-     * @param b second {@link Size} to compare.
-     * @return true if the sizes have the same aspect ratio, otherwise false.
-     */
-    private static boolean checkAspectsEqual(Size a, Size b) {
-        double aAspect = a.getWidth() / (double) a.getHeight();
-        double bAspect = b.getWidth() / (double) b.getHeight();
-        return Math.abs(aAspect - bAspect) <= ASPECT_RATIO_TOLERANCE;
     }
 
     /**

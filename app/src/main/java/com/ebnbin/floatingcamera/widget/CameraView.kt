@@ -2,6 +2,8 @@ package com.ebnbin.floatingcamera.widget
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Matrix
+import android.graphics.RectF
 import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -12,6 +14,7 @@ import android.view.WindowManager
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
+import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
@@ -362,5 +365,54 @@ abstract class CameraView : TextureView,
         } else {
             invalidateWindowSizeAndPosition(true)
         }
+    }
+
+    //*****************************************************************************************************************
+
+    private fun isNotAttachedToWindow() = !isAttachedToWindow
+
+    protected var previewResolution: CameraHelper.Device.Resolution? = null
+
+    /**
+     * 配置 [setTransform].
+     */
+    protected fun configureTransform() {
+        if (isNotAttachedToWindow()) return
+
+        val previewResolution = PreferenceHelper.previewResolution()
+
+        val viewWidth = width.toFloat()
+        val viewHeight = height.toFloat()
+        val viewCenterX = 0.5f * viewWidth
+        val viewCenterY = 0.5f * viewHeight
+
+        // 因为之后需要 rotate, 且以 0 度为标准, 因此这里使用 portraitWidth 和 portraitHeight.
+        val bufferWidth = previewResolution.portraitWidth.toFloat()
+        val bufferHeight = previewResolution.portraitHeight.toFloat()
+        val bufferCenterX = 0.5f * bufferWidth
+        val bufferCenterY = 0.5f * bufferHeight
+
+        val offsetX = viewCenterX - bufferCenterX
+        val offsetY = viewCenterY - bufferCenterY
+
+        val viewRectF = RectF(0f, 0f, viewWidth, viewHeight)
+        val bufferRectF = RectF(offsetX, offsetY, bufferWidth + offsetX, bufferHeight + offsetY)
+
+        val rotation = displayRotation()
+
+        val matrix = Matrix()
+
+        matrix.setRectToRect(viewRectF, bufferRectF, Matrix.ScaleToFit.FILL)
+
+        val scale = Math.max(viewWidth / previewResolution.width(rotation),
+                viewHeight / previewResolution.height(rotation))
+        matrix.postScale(scale, scale, viewCenterX, viewCenterY)
+
+        val degrees = 360f - rotation * 90f
+        matrix.postRotate(degrees, viewCenterX, viewCenterY)
+
+        setTransform(matrix)
+
+        this.previewResolution = previewResolution
     }
 }
