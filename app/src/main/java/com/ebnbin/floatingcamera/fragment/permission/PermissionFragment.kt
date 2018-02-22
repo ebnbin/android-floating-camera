@@ -155,8 +155,6 @@ class PermissionFragment : Fragment() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
         when (requestCode) {
             REQUEST_CODE_SYSTEM_ALERT_WINDOW -> {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
@@ -168,18 +166,18 @@ class PermissionFragment : Fragment() {
 
                 requestRuntimePermissions(true)
             }
+            else -> super.onActivityResult(requestCode, resultCode, data)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
         when (requestCode) {
             REQUEST_CODE_RUNTIME_PERMISSIONS -> {
                 // 系统权限对话框 bug. permissions 数量可能为 0.
                 requestRuntimePermissions(permissions.isNotEmpty())
             }
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
 

@@ -19,12 +19,7 @@
 package com.ebnbin.floatingcamera.widget;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -48,7 +43,6 @@ import android.media.ImageReader;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -63,6 +57,7 @@ import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
 import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
@@ -113,8 +108,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </li>
  * </ul>
  */
-public class JCamera2RawTextureView extends /*Fragment
-        implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback*/CameraView {
+public class JCamera2RawTextureView extends CameraView {
 
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
@@ -268,20 +262,6 @@ public class JCamera2RawTextureView extends /*Fragment
         ORIENTATIONS.append(Surface.ROTATION_180, 180);
         ORIENTATIONS.append(Surface.ROTATION_270, 270);
     }
-
-    /**
-     * Request code for camera permissions.
-     */
-    private static final int REQUEST_CAMERA_PERMISSIONS = 1;
-
-    /**
-     * Permissions required to take a picture.
-     */
-    private static final String[] CAMERA_PERMISSIONS = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-    };
 
     /**
      * Timeout for the pre-capture sequence.
@@ -700,129 +680,11 @@ public class JCamera2RawTextureView extends /*Fragment
         }
 
     };
-//
-//    /**
-//     * A {@link Handler} for showing {@link Toast}s on the UI thread.
-//     */
-//    private final Handler mMessageHandler = new Handler(Looper.getMainLooper()) {
-//        @Override
-//        public void handleMessage(Message msg) {
-//            Activity activity = getActivity();
-//            if (activity != null) {
-//                Toast.makeText(activity, (String) msg.obj, Toast.LENGTH_SHORT).show();
-//            }
-//        }
-//    };
-//
-//    public static JCamera2RawTextureView newInstance() {
-//        return new JCamera2RawTextureView();
-//    }
-//
-//    @Override
-//    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-//                             Bundle savedInstanceState) {
-//        return inflater.inflate(R.layout.fragment_camera2_basic, container, false);
-//    }
-//
-//    @Override
-//    public void onViewCreated(final View view, Bundle savedInstanceState) {
-//        view.findViewById(R.id.picture).setOnClickListener(this);
-//        view.findViewById(R.id.info).setOnClickListener(this);
-//        mTextureView = (/*AutoFitTextureView*/JCamera2RawTextureView) view.findViewById(R.id.texture);
-//
-//        // Setup a new OrientationEventListener.  This is used to handle rotation events like a
-//        // 180 degree rotation that do not normally trigger a call to onCreate to do view re-layout
-//        // or otherwise cause the preview TextureView's size to change.
-//        mOrientationListener = new OrientationEventListener(/*getActivity()*/getContext(),
-//                SensorManager.SENSOR_DELAY_NORMAL) {
-//            @Override
-//            public void onOrientationChanged(int orientation) {
-//                if (mTextureView != null && mTextureView.isAvailable()) {
-//                    configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
-//                }
-//            }
-//        };
-//    }
-//
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        startBackgroundThread();
-//        openCamera();
-//
-//        // When the screen is turned off and turned back on, the SurfaceTexture is already
-//        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we should
-//        // configure the preview bounds here (otherwise, we wait until the surface is ready in
-//        // the SurfaceTextureListener).
-//        if (mTextureView.isAvailable()) {
-//            configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
-//        } else {
-//            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-//        }
-//        if (mOrientationListener != null && mOrientationListener.canDetectOrientation()) {
-//            mOrientationListener.enable();
-//        }
-//    }
-//
-//    @Override
-//    public void onPause() {
-//        if (mOrientationListener != null) {
-//            mOrientationListener.disable();
-//        }
-//        closeCamera();
-//        stopBackgroundThread();
-//        super.onPause();
-//    }
-//
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-//        if (requestCode == REQUEST_CAMERA_PERMISSIONS) {
-//            for (int result : grantResults) {
-//                if (result != PackageManager.PERMISSION_GRANTED) {
-//                    showMissingPermissionError();
-//                    return;
-//                }
-//            }
-//        } else {
-//            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        }
-//    }
-//
-//    @Override
-//    public void onClick(View view) {
-//        switch (view.getId()) {
-//            case R.id.picture: {
-//                takePicture();
-//                break;
-//            }
-//            case R.id.info: {
-//                Activity activity = getActivity();
-//                if (null != activity) {
-//                    new AlertDialog.Builder(activity)
-//                            .setMessage(/*R.string.intro_message*/"\n" +
-//                                    "        <![CDATA[\n" +
-//                                    "        \n" +
-//                                    "            \n" +
-//                                    "            This sample demonstrates how to use the Camera2 API to capture RAW\n" +
-//                                    "            camera buffers and save them as DNG files.\n" +
-//                                    "            \n" +
-//                                    "        \n" +
-//                                    "        ]]>\n" +
-//                                    "    ")
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show();
-//                }
-//                break;
-//            }
-//        }
-//    }
 
     /**
      * Sets up state related to camera that is needed before opening a {@link CameraDevice}.
      */
     private boolean setUpCameraOutputs() {
-//        Activity activity = getActivity();
-//        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         if (/*manager*/mCameraManager == null) {
 //            ErrorDialog.buildErrorDialog("This device doesn't support Camera2 API.").
 //                    show(getFragmentManager(), "dialog");
@@ -898,13 +760,14 @@ public class JCamera2RawTextureView extends /*Fragment
         if (!setUpCameraOutputs()) {
             return;
         }
-//        if (!hasAllPermissionsGranted()) {
-//            requestCameraPermissions();
-//            return;
-//        }
 
-//        Activity activity = getActivity();
-//        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        if (PermissionHelper.INSTANCE.isPermissionsDenied(Manifest.permission.CAMERA,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            finish();
+            return;
+        }
+
         try {
             // Wait for any previously running session to finish.
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
@@ -927,58 +790,6 @@ public class JCamera2RawTextureView extends /*Fragment
             throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
         }
     }
-//
-//    /**
-//     * Requests permissions necessary to use camera and save pictures.
-//     */
-//    private void requestCameraPermissions() {
-//        if (shouldShowRationale()) {
-//            PermissionConfirmationDialog.newInstance().show(getChildFragmentManager(), "dialog");
-//        } else {
-//            FragmentCompat.requestPermissions(this, CAMERA_PERMISSIONS, REQUEST_CAMERA_PERMISSIONS);
-//        }
-//    }
-//
-//    /**
-//     * Tells whether all the necessary permissions are granted to this app.
-//     *
-//     * @return True if all the required permissions are granted.
-//     */
-//    private boolean hasAllPermissionsGranted() {
-//        for (String permission : CAMERA_PERMISSIONS) {
-//            if (ActivityCompat.checkSelfPermission(getActivity(), permission)
-//                    != PackageManager.PERMISSION_GRANTED) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
-//
-//    /**
-//     * Gets whether you should show UI with rationale for requesting the permissions.
-//     *
-//     * @return True if the UI should be shown.
-//     */
-//    private boolean shouldShowRationale() {
-//        for (String permission : CAMERA_PERMISSIONS) {
-//            if (FragmentCompat.shouldShowRequestPermissionRationale(this, permission)) {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     * Shows that this app really needs the permission and finishes the app.
-//     */
-//    private void showMissingPermissionError() {
-//        Activity activity = getActivity();
-//        if (activity != null) {
-////            Toast.makeText(activity, /*R.string.request_permission*/"This app needs camera permission.", Toast.LENGTH_SHORT).show();
-//            toast("This app needs camera permission.");
-//            activity.finish();
-//        }
-//    }
 
     /**
      * Closes the current {@link CameraDevice}.
@@ -1169,7 +980,6 @@ public class JCamera2RawTextureView extends /*Fragment
      * setUpCameraOutputs.
      */
     private void configureTransform2() {
-//        Activity activity = getActivity();
         synchronized (mCameraStateLock) {
             if (null == mTextureView || /*null == activity*/isFinishing()) {
                 return;
@@ -1296,7 +1106,6 @@ public class JCamera2RawTextureView extends /*Fragment
      */
     private void captureStillPictureLocked() {
         try {
-//            final Activity activity = getActivity();
             if (/*null == activity*/isFinishing() || null == mCameraDevice) {
                 return;
             }
@@ -1611,40 +1420,6 @@ public class JCamera2RawTextureView extends /*Fragment
     }
 
     /**
-     * A dialog fragment for displaying non-recoverable errors; this {@ling Activity} will be
-     * finished once the dialog has been acknowledged by the user.
-     */
-    public static class ErrorDialog extends DialogFragment {
-
-        private String mErrorMessage;
-
-        public ErrorDialog() {
-            mErrorMessage = "Unknown error occurred!";
-        }
-
-        // Build a dialog with a custom message (Fragments require default constructor).
-        public static ErrorDialog buildErrorDialog(String errorMessage) {
-            ErrorDialog dialog = new ErrorDialog();
-            dialog.mErrorMessage = errorMessage;
-            return dialog;
-        }
-
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            final Activity activity = getActivity();
-            return new AlertDialog.Builder(activity)
-                    .setMessage(mErrorMessage)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            activity.finish();
-                        }
-                    })
-                    .create();
-        }
-    }
-
-    /**
      * A wrapper for an {@link AutoCloseable} object that implements reference counting to allow
      * for resource management.
      */
@@ -1774,19 +1549,6 @@ public class JCamera2RawTextureView extends /*Fragment
         // the image upright relative to the device orientation
         return (sensorOrientation + deviceOrientation + 360) % 360;
     }
-//
-//    /**
-//     * Shows a {@link Toast} on the UI thread.
-//     *
-//     * @param text The message to show.
-//     */
-//    private void showToast(String text) {
-//        // We show a Toast by sending request message to mMessageHandler. This makes sure that the
-//        // Toast is shown on the UI thread.
-//        Message message = Message.obtain();
-//        message.obj = text;
-//        mMessageHandler.sendMessage(message);
-//    }
 
     /**
      * If the given request has been completed, remove it from the queue of active requests and
@@ -1840,38 +1602,5 @@ public class JCamera2RawTextureView extends /*Fragment
     private boolean hitTimeoutLocked() {
         return (SystemClock.elapsedRealtime() - mCaptureTimer) > PRECAPTURE_TIMEOUT_MS;
     }
-//
-//    /**
-//     * A dialog that explains about the necessary permissions.
-//     */
-//    public static class PermissionConfirmationDialog extends DialogFragment {
-//
-//        public static PermissionConfirmationDialog newInstance() {
-//            return new PermissionConfirmationDialog();
-//        }
-//
-//        @Override
-//        public Dialog onCreateDialog(Bundle savedInstanceState) {
-//            final Fragment parent = getParentFragment();
-//            return new AlertDialog.Builder(getActivity())
-//                    .setMessage(/*R.string.request_permission*/"This app needs camera permission.")
-//                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            FragmentCompat.requestPermissions(parent, CAMERA_PERMISSIONS,
-//                                    REQUEST_CAMERA_PERMISSIONS);
-//                        }
-//                    })
-//                    .setNegativeButton(android.R.string.cancel,
-//                            new DialogInterface.OnClickListener() {
-//                                @Override
-//                                public void onClick(DialogInterface dialog, int which) {
-//                                    getActivity().finish();
-//                                }
-//                            })
-//                    .create();
-//        }
-//
-//    }
 
 }

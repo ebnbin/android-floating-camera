@@ -19,12 +19,7 @@
 package com.ebnbin.floatingcamera.widget;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -34,7 +29,6 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.MediaRecorder;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -47,6 +41,7 @@ import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
 import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
@@ -57,8 +52,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class JCamera2VideoTextureView extends /*Fragment
-        implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback*/CameraView {
+public class JCamera2VideoTextureView extends CameraView {
 
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
@@ -205,13 +199,7 @@ public class JCamera2VideoTextureView extends /*Fragment
     private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
 
     private static final String TAG = "JCamera2VideoTextureVie";
-    private static final int REQUEST_VIDEO_PERMISSIONS = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
-
-    private static final String[] VIDEO_PERMISSIONS = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-    };
 
     static {
         DEFAULT_ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -231,11 +219,6 @@ public class JCamera2VideoTextureView extends /*Fragment
      * An {@link JCamera2VideoTextureView} for camera preview.
      */
     private /*AutoFitTextureView*/ JCamera2VideoTextureView mTextureView;
-//
-//    /**
-//     * Button to record video
-//     */
-//    private Button mButtonVideo;
 
     /**
      * A reference to the opened {@link android.hardware.camera2.CameraDevice}.
@@ -347,74 +330,6 @@ public class JCamera2VideoTextureView extends /*Fragment
     private Integer mSensorOrientation;
     private String mNextVideoAbsolutePath;
     private CaptureRequest.Builder mPreviewBuilder;
-//
-//    public static JCamera2VideoTextureView newInstance() {
-//        return new JCamera2VideoTextureView();
-//    }
-//
-//    @Override
-//    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-//                             Bundle savedInstanceState) {
-//        return inflater.inflate(R.layout.fragment_camera2_video, container, false);
-//    }
-//
-//    @Override
-//    public void onViewCreated(final View view, Bundle savedInstanceState) {
-//        mTextureView = (/*AutoFitTextureView*/JCamera2VideoTextureView) view.findViewById(R.id.texture);
-//        mButtonVideo = (Button) view.findViewById(R.id.video);
-//        mButtonVideo.setOnClickListener(this);
-//        view.findViewById(R.id.info).setOnClickListener(this);
-//    }
-//
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        startBackgroundThread();
-//        if (mTextureView.isAvailable()) {
-//            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
-//        } else {
-//            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-//        }
-//    }
-//
-//    @Override
-//    public void onPause() {
-//        closeCamera();
-//        stopBackgroundThread();
-//        super.onPause();
-//    }
-//
-//    @Override
-//    public void onClick(View view) {
-//        switch (view.getId()) {
-//            case R.id.video: {
-//                if (mIsRecordingVideo) {
-//                    stopRecordingVideo();
-//                } else {
-//                    startRecordingVideo();
-//                }
-//                break;
-//            }
-//            case R.id.info: {
-//                Activity activity = getActivity();
-//                if (null != activity) {
-//                    new AlertDialog.Builder(activity)
-//                            .setMessage(/*R.string.intro_message*/"\n" +
-//                                    "        <![CDATA[\n" +
-//                                    "        \n" +
-//                                    "            \n" +
-//                                    "            This sample demonstrates how to record video using Camera2 API.\n" +
-//                                    "            \n" +
-//                                    "        \n" +
-//                                    "        ]]>\n" +
-//                                    "    ")
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show();
-//                }
-//                break;
-//            }
-//        }
-//    }
 
     /**
      * Starts a background thread and its {@link Handler}.
@@ -438,81 +353,21 @@ public class JCamera2VideoTextureView extends /*Fragment
             e.printStackTrace();
         }
     }
-//
-//    /**
-//     * Gets whether you should show UI with rationale for requesting permissions.
-//     *
-//     * @param permissions The permissions your app wants to request.
-//     * @return Whether you can show permission rationale UI.
-//     */
-//    private boolean shouldShowRequestPermissionRationale(String[] permissions) {
-//        for (String permission : permissions) {
-//            if (FragmentCompat.shouldShowRequestPermissionRationale(this, permission)) {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     * Requests permissions needed for recording video.
-//     */
-//    private void requestVideoPermissions() {
-//        if (shouldShowRequestPermissionRationale(VIDEO_PERMISSIONS)) {
-//            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
-//        } else {
-//            FragmentCompat.requestPermissions(this, VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
-//        }
-//    }
-//
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-//                                           @NonNull int[] grantResults) {
-//        Log.d(TAG, "onRequestPermissionsResult");
-//        if (requestCode == REQUEST_VIDEO_PERMISSIONS) {
-//            if (grantResults.length == VIDEO_PERMISSIONS.length) {
-//                for (int result : grantResults) {
-//                    if (result != PackageManager.PERMISSION_GRANTED) {
-////                        ErrorDialog.newInstance(/*getString(R.string.permission_request)*/"This sample needs permission for camera and audio recording.")
-////                                .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-//                        error("This sample needs permission for camera and audio recording.");
-//                        break;
-//                    }
-//                }
-//            } else {
-////                ErrorDialog.newInstance(/*getString(R.string.permission_request)*/"This sample needs permission for camera and audio recording.")
-////                        .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-//                error("This sample needs permission for camera and audio recording.");
-//            }
-//        } else {
-//            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        }
-//    }
-//
-//    private boolean hasPermissionsGranted(String[] permissions) {
-//        for (String permission : permissions) {
-//            if (ActivityCompat.checkSelfPermission(getActivity(), permission)
-//                    != PackageManager.PERMISSION_GRANTED) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
 
     /**
      * Tries to open a {@link CameraDevice}. The result is listened by `mStateCallback`.
      */
     @SuppressWarnings("MissingPermission")
     private void openCamera() {
-//        if (!hasPermissionsGranted(VIDEO_PERMISSIONS)) {
-//            requestVideoPermissions();
-//            return;
-//        }
-//        final Activity activity = getActivity();
+        if (PermissionHelper.INSTANCE.isPermissionsDenied(Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO)) {
+            finish();
+            return;
+        }
+
         if (/*null == activity || activity.*/isFinishing()) {
             return;
         }
-//        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             Log.d(TAG, "tryAcquire");
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
@@ -628,7 +483,6 @@ public class JCamera2VideoTextureView extends /*Fragment
     }
 
     private void setUpMediaRecorder() throws IOException {
-//        final Activity activity = getActivity();
         if (/*null == activity*/isFinishing()) {
             return;
         }
@@ -777,59 +631,5 @@ public class JCamera2VideoTextureView extends /*Fragment
         mNextVideoAbsolutePath = null;
 //        startPreview();
     }
-
-    public static class ErrorDialog extends DialogFragment {
-
-        private static final String ARG_MESSAGE = "message";
-
-        public static ErrorDialog newInstance(String message) {
-            ErrorDialog dialog = new ErrorDialog();
-            Bundle args = new Bundle();
-            args.putString(ARG_MESSAGE, message);
-            dialog.setArguments(args);
-            return dialog;
-        }
-
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            final Activity activity = getActivity();
-            return new AlertDialog.Builder(activity)
-                    .setMessage(getArguments().getString(ARG_MESSAGE))
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            activity.finish();
-                        }
-                    })
-                    .create();
-        }
-
-    }
-//
-//    public static class ConfirmationDialog extends DialogFragment {
-//
-//        @Override
-//        public Dialog onCreateDialog(Bundle savedInstanceState) {
-//            final Fragment parent = getParentFragment();
-//            return new AlertDialog.Builder(getActivity())
-//                    .setMessage(/*R.string.permission_request*/"This sample needs permission for camera and audio recording.")
-//                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            FragmentCompat.requestPermissions(parent, VIDEO_PERMISSIONS,
-//                                    REQUEST_VIDEO_PERMISSIONS);
-//                        }
-//                    })
-//                    .setNegativeButton(android.R.string.cancel,
-//                            new DialogInterface.OnClickListener() {
-//                                @Override
-//                                public void onClick(DialogInterface dialog, int which) {
-//                                    parent.getActivity().finish();
-//                                }
-//                            })
-//                    .create();
-//        }
-//
-//    }
 
 }

@@ -18,6 +18,7 @@
 
 package com.ebnbin.floatingcamera.widget
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageFormat
@@ -35,7 +36,6 @@ import android.media.Image
 import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
-import android.support.v4.app.FragmentActivity
 import android.util.AttributeSet
 import android.util.Log
 import android.util.SparseIntArray
@@ -43,6 +43,7 @@ import android.view.Surface
 import android.view.TextureView
 import android.view.WindowManager
 import android.widget.Toast
+import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import java.io.File
 import java.io.FileOutputStream
@@ -51,8 +52,7 @@ import java.util.Arrays
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
-class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
-        ActivityCompat.OnRequestPermissionsResultCallback*/@JvmOverloads constructor(
+class Camera2BasicTextureView constructor(
         context: Context,
         attrs: AttributeSet? = null,
         defStyle: Int = 0
@@ -311,72 +311,11 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
         }
 
     }
-//
-//    override fun onCreateView(inflater: LayoutInflater,
-//            container: ViewGroup?,
-//            savedInstanceState: Bundle?
-//    ): View? = inflater.inflate(R.layout.fragment_camera2_basic, container, false)
-//
-//    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-//        view.findViewById<View>(R.id.picture).setOnClickListener(this)
-//        view.findViewById<View>(R.id.info).setOnClickListener(this)
-//        textureView = view.findViewById(R.id.texture)
-//    }
-//
-//    override fun onActivityCreated(savedInstanceState: Bundle?) {
-//        super.onActivityCreated(savedInstanceState)
-//        file = File(/*activity*/context.getExternalFilesDir(null), PIC_FILE_NAME)
-//    }
-//
-//    override fun onResume() {
-//        super.onResume()
-//        startBackgroundThread()
-//
-//        // When the screen is turned off and turned back on, the SurfaceTexture is already
-//        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-//        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-//        // the SurfaceTextureListener).
-//        if (textureView.isAvailable) {
-//            openCamera(textureView.width, textureView.height)
-//        } else {
-////            textureView.surfaceTextureListener = surfaceTextureListener
-//            setSurfaceTextureListener(surfaceTextureListener)
-//        }
-//    }
-//
-//    override fun onPause() {
-//        closeCamera()
-//        stopBackgroundThread()
-//        super.onPause()
-//    }
-//
-//    private fun requestCameraPermission() {
-//        if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-//            ConfirmationDialog().show(childFragmentManager, FRAGMENT_DIALOG)
-//        } else {
-//            requestPermissions(arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
-//        }
-//    }
-//
-//    override fun onRequestPermissionsResult(requestCode: Int,
-//            permissions: Array<String>,
-//            grantResults: IntArray) {
-//        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-//            if (grantResults.size != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-////                ErrorDialog.newInstance(/*getString(R.string.request_permission)*/"This sample needs camera permission.")
-////                        .show(childFragmentManager, FRAGMENT_DIALOG)
-//                error("This sample needs camera permission.")
-//            }
-//        } else {
-//            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//        }
-//    }
 
     /**
      * Sets up member variables related to camera.
      */
     private fun setUpCameraOutputs() {
-//        val manager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
             val cameraId = PreferenceHelper.device().id2
 
@@ -409,45 +348,17 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
     }
 
     /**
-     * Determines if the dimensions are swapped given the phone's current rotation.
-     *
-     * @param displayRotation The current rotation of the display
-     *
-     * @return true if the dimensions are swapped, false otherwise.
-     */
-    private fun areDimensionsSwapped(displayRotation: Int): Boolean {
-        var swappedDimensions = false
-        when (displayRotation) {
-            Surface.ROTATION_0, Surface.ROTATION_180 -> {
-                if (sensorOrientation == 90 || sensorOrientation == 270) {
-                    swappedDimensions = true
-                }
-            }
-            Surface.ROTATION_90, Surface.ROTATION_270 -> {
-                if (sensorOrientation == 0 || sensorOrientation == 180) {
-                    swappedDimensions = true
-                }
-            }
-            else -> {
-                Log.e(TAG, "Display rotation is invalid: $displayRotation")
-            }
-        }
-        return swappedDimensions
-    }
-
-    /**
      * Opens the camera specified by [Camera2BasicTextureView.cameraId].
      */
     @SuppressLint("MissingPermission")
     private fun openCamera() {
-//        val permission = ContextCompat.checkSelfPermission(activity, Manifest.permission.CAMERA)
-//        if (permission != PackageManager.PERMISSION_GRANTED) {
-//            requestCameraPermission()
-//            return
-//        }
+        if (PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
+            finish()
+            return
+        }
+
         setUpCameraOutputs()
         configureTransform()
-//        val manager = activity.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
             // Wait for camera to open - 2.5 seconds is sufficient
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
@@ -668,29 +579,6 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
         }
 
     }
-//
-//    override fun onClick(view: View) {
-//        when (view.id) {
-//            R.id.picture -> lockFocus()
-//            R.id.info -> {
-//                if (activity != null) {
-//                    AlertDialog.Builder(activity)
-//                            .setMessage(/*R.string.intro_message*/"\n" +
-//                                    "        <![CDATA[\n" +
-//                                    "\n" +
-//                                    "\n" +
-//                                    "            This sample demonstrates the basic use of Camera2 API. Check the source code to see how\n" +
-//                                    "            you can display camera preview and take pictures.\n" +
-//                                    "\n" +
-//                                    "\n" +
-//                                    "        ]]>\n" +
-//                                    "    ")
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show()
-//                }
-//            }
-//        }
-//    }
 
     private fun setAutoFlash(requestBuilder: CaptureRequest.Builder) {
         if (flashSupported) {
@@ -743,74 +631,15 @@ class Camera2BasicTextureView /*: Fragment(), View.OnClickListener,
          * Camera state: Picture was taken.
          */
         private val STATE_PICTURE_TAKEN = 4
-//
-//        @JvmStatic fun newInstance(): Camera2BasicTextureView = Camera2BasicTextureView()
     }
 }
-
-/**
- * ActivityExtensions.kt
- */
-/**
- * This file illustrates Kotlin's Extension Functions by extending FragmentActivity.
- */
-
-/**
- * Shows a [Toast] on the UI thread.
- *
- * @param text The message to show
- */
-fun FragmentActivity.showToast(text: String) {
-    runOnUiThread { Toast.makeText(this, text, Toast.LENGTH_SHORT).show() }
-}
-//
-///**
-// * Shows OK/Cancel confirmation dialog about camera permission.
-// */
-//class ConfirmationDialog : DialogFragment() {
-//
-//    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
-//            AlertDialog.Builder(activity)
-//                    .setMessage(/*R.string.request_permission*/"This sample needs camera permission.")
-//                    .setPositiveButton(android.R.string.ok) { _, _ ->
-//                        parentFragment.requestPermissions(arrayOf(Manifest.permission.CAMERA),
-//                                REQUEST_CAMERA_PERMISSION)
-//                    }
-//                    .setNegativeButton(android.R.string.cancel) { _, _ ->
-//                        parentFragment.activity?.finish()
-//                    }
-//                    .create()
-//}
 
 /**
  * Constants.kt
  */
 //@file:JvmName("Constants")
 
-@JvmField val REQUEST_CAMERA_PERMISSION = 1
 @JvmField val PIC_FILE_NAME = "pic.jpg"
-//
-///**
-// * Shows an error message dialog.
-// */
-//class ErrorDialog : DialogFragment() {
-//
-//    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
-//            AlertDialog.Builder(activity)
-//                    .setMessage(arguments.getString(ARG_MESSAGE))
-//                    .setPositiveButton(android.R.string.ok) { _, _ -> activity.finish() }
-//                    .create()
-//
-//    companion object {
-//
-//        @JvmStatic private val ARG_MESSAGE = "message"
-//
-//        @JvmStatic fun newInstance(message: String): ErrorDialog = ErrorDialog().apply {
-//            arguments = Bundle().apply { putString(ARG_MESSAGE, message) }
-//        }
-//    }
-//
-//}
 
 /**
  * Saves a JPEG [Image] into the specified [File].

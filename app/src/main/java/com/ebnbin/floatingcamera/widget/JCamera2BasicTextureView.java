@@ -20,11 +20,7 @@ package com.ebnbin.floatingcamera.widget;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -38,12 +34,9 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Size;
@@ -53,6 +46,7 @@ import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
 import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
@@ -63,8 +57,7 @@ import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class JCamera2BasicTextureView extends /*Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback*/CameraView {
+public class JCamera2BasicTextureView extends CameraView {
 
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
@@ -193,7 +186,6 @@ public class JCamera2BasicTextureView extends /*Fragment
      * Conversion from screen rotation to JPEG orientation.
      */
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
 
     static {
@@ -449,99 +441,12 @@ public class JCamera2BasicTextureView extends /*Fragment
         }
 
     };
-//
-//    /**
-//     * Shows a {@link Toast} on the UI thread.
-//     *
-//     * @param text The message to show
-//     */
-//    private void showToast(final String text) {
-//        final Activity activity = getActivity();
-//        if (activity != null) {
-//            activity.runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    Toast.makeText(activity, text, Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//        }
-//    }
-//
-//    public static JCamera2BasicTextureView newInstance() {
-//        return new JCamera2BasicTextureView();
-//    }
-//
-//    @Override
-//    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-//                             Bundle savedInstanceState) {
-//        return inflater.inflate(R.layout.fragment_camera2_basic, container, false);
-//    }
-//
-//    @Override
-//    public void onViewCreated(final View view, Bundle savedInstanceState) {
-//        view.findViewById(R.id.picture).setOnClickListener(this);
-//        view.findViewById(R.id.info).setOnClickListener(this);
-//        mTextureView = (/*AutoFitTextureView*/JCamera2BasicTextureView) view.findViewById(R.id.texture);
-//    }
-//
-//    @Override
-//    public void onActivityCreated(Bundle savedInstanceState) {
-//        super.onActivityCreated(savedInstanceState);
-//        mFile = new File(/*getActivity()*/getContext().getExternalFilesDir(null), "pic.jpg");
-//    }
-//
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        startBackgroundThread();
-//
-//        // When the screen is turned off and turned back on, the SurfaceTexture is already
-//        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-//        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-//        // the SurfaceTextureListener).
-//        if (mTextureView.isAvailable()) {
-//            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
-//        } else {
-//            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-//        }
-//    }
-//
-//    @Override
-//    public void onPause() {
-//        closeCamera();
-//        stopBackgroundThread();
-//        super.onPause();
-//    }
-//
-//    private void requestCameraPermission() {
-//        if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-//            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
-//        } else {
-//            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
-//        }
-//    }
-//
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-//                                           @NonNull int[] grantResults) {
-//        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-//            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-////                ErrorDialog.newInstance(/*getString(R.string.request_permission)*/"This sample needs camera permission.")
-////                        .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-//                error("This sample needs camera permission.");
-//            }
-//        } else {
-//            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        }
-//    }
 
     /**
      * Sets up member variables related to camera.
      */
     @SuppressWarnings("SuspiciousNameCombination")
     private void setUpCameraOutputs() {
-//        Activity activity = getActivity();
-//        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             String cameraId = PreferenceHelper.INSTANCE.device().getId2();
 
@@ -579,15 +484,13 @@ public class JCamera2BasicTextureView extends /*Fragment
      */
     @SuppressLint("MissingPermission")
     private void openCamera() {
-//        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
-//                != PackageManager.PERMISSION_GRANTED) {
-//            requestCameraPermission();
-//            return;
-//        }
+        if (PermissionHelper.INSTANCE.isPermissionsDenied(Manifest.permission.CAMERA)) {
+            finish();
+            return;
+        }
+
         setUpCameraOutputs();
         configureTransform();
-//        Activity activity = getActivity();
-//        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
@@ -761,7 +664,6 @@ public class JCamera2BasicTextureView extends /*Fragment
      */
     private void captureStillPicture() {
         try {
-//            final Activity activity = getActivity();
             if (/*null == activity*/isFinishing() || null == mCameraDevice) {
                 return;
             }
@@ -834,35 +736,6 @@ public class JCamera2BasicTextureView extends /*Fragment
             e.printStackTrace();
         }
     }
-//
-//    @Override
-//    public void onClick(View view) {
-//        switch (view.getId()) {
-//            case R.id.picture: {
-//                takePicture();
-//                break;
-//            }
-//            case R.id.info: {
-//                Activity activity = getActivity();
-//                if (null != activity) {
-//                    new AlertDialog.Builder(activity)
-//                            .setMessage(/*R.string.intro_message*/"\n" +
-//                                    "        <![CDATA[\n" +
-//                                    "        \n" +
-//                                    "            \n" +
-//                                    "            This sample demonstrates the basic use of Camera2 API. Check the source code to see how\n" +
-//                                    "            you can display camera preview and take pictures.\n" +
-//                                    "            \n" +
-//                                    "        \n" +
-//                                    "        ]]>\n" +
-//                                    "    ")
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show();
-//                }
-//                break;
-//            }
-//        }
-//    }
 
     private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
         if (mFlashSupported) {
@@ -913,70 +786,6 @@ public class JCamera2BasicTextureView extends /*Fragment
             }
         }
 
-    }
-
-    /**
-     * Shows an error message dialog.
-     */
-    public static class ErrorDialog extends DialogFragment {
-
-        private static final String ARG_MESSAGE = "message";
-
-        public static ErrorDialog newInstance(String message) {
-            ErrorDialog dialog = new ErrorDialog();
-            Bundle args = new Bundle();
-            args.putString(ARG_MESSAGE, message);
-            dialog.setArguments(args);
-            return dialog;
-        }
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            final Activity activity = getActivity();
-            return new AlertDialog.Builder(activity)
-                    .setMessage(getArguments().getString(ARG_MESSAGE))
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            activity.finish();
-                        }
-                    })
-                    .create();
-        }
-
-    }
-
-    /**
-     * Shows OK/Cancel confirmation dialog about camera permission.
-     */
-    public static class ConfirmationDialog extends DialogFragment {
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            final Fragment parent = getParentFragment();
-            return new AlertDialog.Builder(getActivity())
-                    .setMessage(/*R.string.request_permission*/"This sample needs camera permission.")
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            parent.requestPermissions(new String[]{Manifest.permission.CAMERA},
-                                    REQUEST_CAMERA_PERMISSION);
-                        }
-                    })
-                    .setNegativeButton(android.R.string.cancel,
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    Activity activity = parent.getActivity();
-                                    if (activity != null) {
-                                        activity.finish();
-                                    }
-                                }
-                            })
-                    .create();
-        }
     }
 
 }
