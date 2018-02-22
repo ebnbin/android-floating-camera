@@ -1,6 +1,7 @@
 package com.ebnbin.floatingcamera.fragment.permission
 
 import android.Manifest
+import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
@@ -17,6 +18,8 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatDialogFragment
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment.Callback
+import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment.Companion.request
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.packageUri
 
@@ -26,6 +29,9 @@ import com.ebnbin.floatingcamera.util.packageUri
  * 没有 ui.
  *
  * 如果从未请求过权限, 会正常弹出系统权限对话框. 如果权限被拒绝过, 或被永久拒绝, 或为特殊权限, 会弹出对应的提示对话框.
+ *
+ * 需要权限的 [Activity] 或 [Fragment] 需要实现 [Callback], 调用 [request] 请求权限, 并在 [Callback.onPermissionsResult]
+ * 中处理权限获取成功或失败后的逻辑.
  */
 class PermissionFragment : Fragment() {
     private lateinit var callback: Callback
@@ -171,7 +177,8 @@ class PermissionFragment : Fragment() {
 
         when (requestCode) {
             REQUEST_CODE_RUNTIME_PERMISSIONS -> {
-                requestRuntimePermissions(true)
+                // 系统权限对话框 bug. permissions 数量可能为 0.
+                requestRuntimePermissions(permissions.isNotEmpty())
             }
         }
     }
