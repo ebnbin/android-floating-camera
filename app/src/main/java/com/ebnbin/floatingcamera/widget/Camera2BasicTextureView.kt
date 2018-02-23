@@ -89,7 +89,11 @@ class Camera2BasicTextureView constructor(
 
     private fun onClick() = lockFocus()
 
-    private fun picture() = runOnUiThreadDelayed { onClick() }
+    private fun picture() = runOnUiThreadDelayed {
+        file = File(PreferenceHelper.path(), "${System.currentTimeMillis()}.jpg")
+
+        onClick()
+    }
 
     private fun isFinishing() = !isAttachedToWindow
 
@@ -208,9 +212,6 @@ class Camera2BasicTextureView constructor(
      * This is the output file for our picture.
      */
     private lateinit var file: File
-    init {
-        file = File(/*activity*/context.getExternalFilesDir(null), PIC_FILE_NAME)
-    }
 
     /**
      * This a callback object for the [ImageReader]. "onImageAvailable" will be called when a
@@ -633,13 +634,6 @@ class Camera2BasicTextureView constructor(
         private val STATE_PICTURE_TAKEN = 4
     }
 }
-
-/**
- * Constants.kt
- */
-//@file:JvmName("Constants")
-
-@JvmField val PIC_FILE_NAME = "pic.jpg"
 
 /**
  * Saves a JPEG [Image] into the specified [File].

@@ -328,7 +328,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
     };
     private Integer mSensorOrientation;
-    private String mNextVideoAbsolutePath;
+    private File mNextVideoAbsolutePath;
     private CaptureRequest.Builder mPreviewBuilder;
 
     /**
@@ -490,10 +490,10 @@ public class JCamera2VideoTextureView extends CameraView {
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
 //        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        if (mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty()) {
-            mNextVideoAbsolutePath = getVideoFilePath(/*getActivity()*/getContext());
+        if (mNextVideoAbsolutePath == null) {
+            mNextVideoAbsolutePath = getVideoFilePath();
         }
-        mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
+        mMediaRecorder.setOutputFile(mNextVideoAbsolutePath.getAbsolutePath());
 //        mMediaRecorder.setVideoEncodingBitRate(10000000);
 //        mMediaRecorder.setVideoFrameRate(30);
 //        mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
@@ -539,10 +539,8 @@ public class JCamera2VideoTextureView extends CameraView {
         mMediaRecorder.prepare();
     }
 
-    private String getVideoFilePath(Context context) {
-        final File dir = context.getExternalFilesDir(null);
-        return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
-                + System.currentTimeMillis() + ".mp4";
+    private File getVideoFilePath() {
+        return new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".mp4");
     }
 
     private void startRecordingVideo() {

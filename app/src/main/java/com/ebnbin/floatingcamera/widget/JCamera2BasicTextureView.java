@@ -64,8 +64,6 @@ public class JCamera2BasicTextureView extends CameraView {
 
     private void init() {
         mTextureView = this;
-
-        mFile = new File(/*getActivity()*/getContext().getExternalFilesDir(null), "pic.jpg");
     }
 
     @Override
@@ -103,6 +101,8 @@ public class JCamera2BasicTextureView extends CameraView {
         runOnUiThreadDelayed(new Runnable() {
             @Override
             public void run() {
+                mFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
+
                 onClick();
             }
         });
