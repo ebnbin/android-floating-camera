@@ -40,7 +40,7 @@ class PermissionFragment : Fragment() {
     private var permissions = arrayOf<String>()
     private var hasSystemAlertWindowPermission = false
     private var runtimePermissions = arrayOf<String>()
-    private var enableDenied = false
+    private var enableDenied = true
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
@@ -281,7 +281,7 @@ class PermissionFragment : Fragment() {
          *
          * @param enableDenied 是否允许拒绝权限. 如果为 `false` 则拒绝权限时退出应用, 否则拒绝权限时回调 [Callback].
          */
-        fun request(fm: FragmentManager, requestCode: Int, vararg permissions: String, enableDenied: Boolean = false) {
+        fun request(fm: FragmentManager, requestCode: Int, vararg permissions: String, enableDenied: Boolean = true) {
             if (postRequest) return
 
             postRequest = true

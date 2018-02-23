@@ -164,7 +164,6 @@ abstract class CameraView : TextureView,
         DebugHelper.log("onScroll")
 
         val layoutParams = layoutParams as WindowManager.LayoutParams
-        // TODO: min, max.
         layoutParams.x = (downX + e2.rawX - downRawX).toInt()
         layoutParams.y = (downY + e2.rawY - downRawY).toInt()
         windowManager.updateViewLayout(this, layoutParams)

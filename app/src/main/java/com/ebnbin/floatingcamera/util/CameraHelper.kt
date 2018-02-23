@@ -276,7 +276,6 @@ class CameraHelper private constructor() {
          * 预览分辨率列表.
          */
         private val previewResolutions = createResolutions(
-                { width, height -> PreviewResolution(width, height, isSensorOrientationLandscape) },
                 { throw CameraException("预览分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedPreviewSizes1)
@@ -284,7 +283,6 @@ class CameraHelper private constructor() {
          * 视频分辨率列表.
          */
         val videoResolutions = createResolutions(
-                { width, height -> VideoResolution(width, height, isSensorOrientationLandscape, camcorderProfiles) },
                 { throw CameraException("视频分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedVideoSizes1,
@@ -293,19 +291,57 @@ class CameraHelper private constructor() {
          * 照片分辨率列表.
          */
         val photoResolutions = createResolutions(
-                { width, height -> PhotoResolution(width, height, isSensorOrientationLandscape) },
                 { throw CameraException("照片分辨率数量为 0.") },
                 surfaceTextureSizes2,
                 supportedPictureSizes1)
 
         /**
+         * 创建分辨率数组. 取 [sizes2] 与 [sizes1] 分辨率交集, 如果 [sizes1] 为 `null` 则使用 [alternativeSizes1].
+         * 从大到小排序.
+         *
+         * @param onEmpty 分辨率数量为 0 的回调.
+         *
+         * @param sizes2 Camera2 尺寸列表.
+         *
+         * @param sizes1 Camera1 尺寸列表.
+         *
+         * @param alternativeSizes1 如果 [sizes1] 为 `null`, 使用这个参数.
+         */
+        private fun createResolutions(
+                onEmpty: () -> Unit,
+                sizes2: Array<Size>,
+                sizes1: List<Camera.Size>?,
+                alternativeSizes1: List<Camera.Size>? = null): Array<Resolution> {
+            fun createResolution(width: Int, height: Int) =
+                    Resolution(width, height, isSensorOrientationLandscape, camcorderProfiles)
+
+            val resolutionList2 = ArrayList<Resolution>()
+            sizes2.forEach { resolutionList2.add(createResolution(it.width, it.height)) }
+
+            val resolutionList1 = ArrayList<Resolution>()
+            if (sizes1 == null) {
+                alternativeSizes1?.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
+            } else {
+                sizes1.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
+            }
+
+            resolutionList2.retainAll(resolutionList1)
+
+            if (resolutionList2.isEmpty()) onEmpty()
+
+            resolutionList2.sortDescending()
+
+            return resolutionList2.toTypedArray()
+        }
+
+        /**
          * 视频分辨率摘要列表.
          */
-        val videoResolutionSummaries = Array(videoResolutions.size) { videoResolutions[it].summary }
+        val videoResolutionSummaries = Array(videoResolutions.size) { videoResolutions[it].videoSummary }
         /**
          * 照片分辨率摘要列表.
          */
-        val photoResolutionSummaries = Array(photoResolutions.size) { photoResolutions[it].summary }
+        val photoResolutionSummaries = Array(photoResolutions.size) { photoResolutions[it].photoSummary }
 
         /**
          * 最大分辨率. 取照片分辨率最大值.
@@ -318,15 +354,15 @@ class CameraHelper private constructor() {
          * 1. 与 [maxResolution] 宽高比相同.
          * 2. 小等于 `1920x1080` 与屏幕宽高取小值.
          */
-        val previewResolution: PreviewResolution
+        val previewResolution: Resolution
         init {
-            fun getPreviewResolution(): PreviewResolution {
-                val previewResolutionList = ArrayList<PreviewResolution>()
+            fun getPreviewResolution(): Resolution {
+                val previewResolutionList = ArrayList<Resolution>()
                 previewResolutions.filterTo(previewResolutionList) { it.isRatioEquals(maxResolution) }
 
                 val maxLandscapeWidth = min(1920, displayRealSize.landscapeWidth)
                 val maxLandscapeHeight = min(1080, displayRealSize.landscapeHeight)
-                val previewResolutionList2 = ArrayList<PreviewResolution>()
+                val previewResolutionList2 = ArrayList<Resolution>()
                 if (previewResolutionList.isEmpty()) {
                     previewResolutions.filterTo(previewResolutionList2) {
                         it.isLessOrEquals(maxLandscapeWidth, maxLandscapeHeight)
@@ -392,8 +428,11 @@ class CameraHelper private constructor() {
          * @param height 高.
          *
          * @param isSensorOrientationLandscape 传感器方向是否为横向.
+         *
+         * @param camcorderProfiles [CamcorderProfile] 列表.
          */
-        abstract class Resolution(val width: Int, val height: Int, private val isSensorOrientationLandscape: Boolean) :
+        class Resolution(val width: Int, val height: Int, private val isSensorOrientationLandscape: Boolean,
+                camcorderProfiles: Array<CamcorderProfile>) :
                 Comparable<Resolution> {
             /**
              * 宽高最大公约数.
@@ -403,11 +442,11 @@ class CameraHelper private constructor() {
             /**
              * 宽比.
              */
-            protected val ratioWidth = if (gcd == 0) width else width / gcd
+            private val ratioWidth = if (gcd == 0) width else width / gcd
             /**
              * 高比.
              */
-            protected val ratioHeight = if (gcd == 0) height else height / gcd
+            private val ratioHeight = if (gcd == 0) height else height / gcd
 
             /**
              * 面积.
@@ -417,12 +456,30 @@ class CameraHelper private constructor() {
             /**
              * 百万像素.
              */
-            protected val megapixels = area.toFloat() / 1_000_000f
+            private val megapixels = area.toFloat() / 1_000_000f
 
             /**
-             * 摘要.
+             * 视频摘要.
              */
-            abstract val summary: String
+            val videoSummary: String
+            init {
+                val qualityString = camcorderProfiles
+                        .firstOrNull { width == it.videoFrameWidth && height == it.videoFrameHeight }
+                        ?.qualityString
+                        ?: ""
+                val qualitySummary = if (qualityString.isEmpty())
+                    "" else
+                    resources.getString(R.string.video_resolution_summary_quality, qualityString)
+
+                videoSummary = resources.getString(R.string.video_resolution_summary, this.width, this.height,
+                        ratioWidth, ratioHeight, megapixels, qualitySummary)!!
+            }
+
+            /**
+             * 照片摘要.
+             */
+            val photoSummary = resources.getString(R.string.photo_resolution_summary, this.width, this.height,
+                    ratioWidth, ratioHeight, megapixels)!!
 
             /**
              * [Size].
@@ -494,44 +551,6 @@ class CameraHelper private constructor() {
         }
 
         /**
-         * 预览分辨率.
-         */
-        class PreviewResolution(width: Int, height: Int, isSensorOrientationLandscape: Boolean) :
-                Resolution(width, height, isSensorOrientationLandscape) {
-            override val summary = resources.getString(R.string.preview_resolution_summary, this.width, this.height,
-                    ratioWidth, ratioHeight)!!
-        }
-
-        /**
-         * 视频分辨率.
-         */
-        class VideoResolution(width: Int, height: Int, isSensorOrientationLandscape: Boolean,
-                camcorderProfiles: Array<CamcorderProfile>) : Resolution(width, height, isSensorOrientationLandscape) {
-            override val summary: String
-            init {
-                val qualityString = camcorderProfiles
-                        .firstOrNull { width == it.videoFrameWidth && height == it.videoFrameHeight }
-                        ?.qualityString
-                        ?: ""
-                val qualitySummary = if (qualityString.isEmpty())
-                    "" else
-                    resources.getString(R.string.video_resolution_summary_quality, qualityString)
-
-                summary = resources.getString(R.string.video_resolution_summary, this.width, this.height, ratioWidth,
-                        ratioHeight, megapixels, qualitySummary)!!
-            }
-        }
-
-        /**
-         * 照片分辨率.
-         */
-        class PhotoResolution(width: Int, height: Int, isSensorOrientationLandscape: Boolean) :
-                Resolution(width, height, isSensorOrientationLandscape) {
-            override val summary = resources.getString(R.string.photo_resolution_summary, this.width, this.height,
-                    ratioWidth, ratioHeight, megapixels)!!
-        }
-
-        /**
          * 视频配置. [CamcorderProfile] 的帮助类.
          *
          * @param camcorderProfile [CamcorderProfile].
@@ -548,10 +567,10 @@ class CameraHelper private constructor() {
                 val camcorderProfile: CamcorderProfile,
                 camcorderProfiles: Array<CamcorderProfile>,
                 isSensorOrientationLandscape: Boolean,
-                videoResolutions: Array<VideoResolution>):
+                videoResolutions: Array<Resolution>):
                 Comparable<VideoProfile> {
-            val videoResolution = VideoResolution(camcorderProfile.videoFrameWidth,
-                    camcorderProfile.videoFrameHeight, isSensorOrientationLandscape, camcorderProfiles)
+            val videoResolution = Resolution(camcorderProfile.videoFrameWidth, camcorderProfile.videoFrameHeight,
+                    isSensorOrientationLandscape, camcorderProfiles)
             init {
                 if (!videoResolutions.contains(videoResolution)) throw CameraException("CamcorderProfile 分辨率不支持.")
             }
@@ -601,45 +620,6 @@ class CameraHelper private constructor() {
                     CamcorderProfile.QUALITY_QCIF,
                     CamcorderProfile.QUALITY_HIGH,
                     CamcorderProfile.QUALITY_LOW)
-
-            /**
-             * 创建分辨率数组. 取 [sizes2] 与 [sizes1] 分辨率交集, 如果 [sizes1] 为 `null` 则使用 [alternativeSizes1].
-             * 从大到小排序.
-             *
-             * @param createResolution 创建分辨率. 参数 `width`, `height`.
-             *
-             * @param onEmpty 分辨率数量为 0 的回调.
-             *
-             * @param sizes2 Camera2 尺寸列表.
-             *
-             * @param sizes1 Camera1 尺寸列表.
-             *
-             * @param alternativeSizes1 如果 [sizes1] 为 `null`, 使用这个参数.
-             */
-            private inline fun <reified T : Resolution> createResolutions(
-                    createResolution: (Int, Int) -> T,
-                    onEmpty: () -> Unit,
-                    sizes2: Array<Size>,
-                    sizes1: List<Camera.Size>?,
-                    alternativeSizes1: List<Camera.Size>? = null): Array<T> {
-                val resolutionList2 = ArrayList<T>()
-                sizes2.forEach { resolutionList2.add(createResolution(it.width, it.height)) }
-
-                val resolutionList1 = ArrayList<T>()
-                if (sizes1 == null) {
-                    alternativeSizes1?.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
-                } else {
-                    sizes1.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
-                }
-
-                resolutionList2.retainAll(resolutionList1)
-
-                if (resolutionList2.isEmpty()) onEmpty()
-
-                resolutionList2.sortDescending()
-
-                return resolutionList2.toTypedArray()
-            }
         }
     }
 

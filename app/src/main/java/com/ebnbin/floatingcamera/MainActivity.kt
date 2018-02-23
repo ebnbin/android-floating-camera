@@ -31,7 +31,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         if (savedInstanceState != null) return
 
-        PermissionFragment.request(supportFragmentManager, REQUEST_CODE_PERMISSION, Manifest.permission.CAMERA)
+        PermissionFragment.request(supportFragmentManager, REQUEST_CODE_PERMISSION, Manifest.permission.CAMERA,
+                enableDenied = false)
     }
 
     private fun initTheme() {
