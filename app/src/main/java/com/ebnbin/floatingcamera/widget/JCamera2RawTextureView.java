@@ -25,7 +25,6 @@ import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -47,7 +46,6 @@ import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseIntArray;
-import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
@@ -56,6 +54,7 @@ import android.widget.Toast;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
+import com.ebnbin.floatingcamera.util.RotationHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -100,25 +99,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </li>
  * </ul>
  */
-public class JCamera2RawTextureView extends CameraView {
+public class JCamera2RawTextureView extends CameraView implements RotationHelper.Listener {
 
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-
-    private void init() {
-        // Setup a new OrientationEventListener.  This is used to handle rotation events like a
-        // 180 degree rotation that do not normally trigger a call to onCreate to do view re-layout
-        // or otherwise cause the preview TextureView's size to change.
-        mOrientationListener = new OrientationEventListener(/*getActivity()*/getContext(),
-                SensorManager.SENSOR_DELAY_NORMAL) {
-            @Override
-            public void onOrientationChanged(int orientation) {
-                if (isAvailable()) {
-                    configureTransform2();
-                }
-            }
-        };
-    }
 
     @Override
     protected void onAttachedToWindow() {
@@ -138,20 +122,21 @@ public class JCamera2RawTextureView extends CameraView {
         } else {
             setSurfaceTextureListener(mSurfaceTextureListener);
         }
-        if (mOrientationListener != null && mOrientationListener.canDetectOrientation()) {
-            mOrientationListener.enable();
-        }
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        if (mOrientationListener != null) {
-            mOrientationListener.disable();
-        }
         closeCamera();
         stopBackgroundThread();
 
         super.onDetachedFromWindow();
+    }
+
+    @Override
+    public void onRotationChanged(int oldRotation, int newRotation) {
+        if (isAvailable()) {
+            configureTransform2();
+        }
     }
 
     private void onClick() {
@@ -223,20 +208,14 @@ public class JCamera2RawTextureView extends CameraView {
 
     public JCamera2RawTextureView(Context context) {
         this(context, null);
-
-        init();
     }
 
     public JCamera2RawTextureView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
-
-        init();
     }
 
     public JCamera2RawTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
-        init();
     }
 
     //*****************************************************************************************************************
@@ -282,14 +261,6 @@ public class JCamera2RawTextureView extends CameraView {
      * Camera state: Waiting for 3A convergence before capturing a photo.
      */
     private static final int STATE_WAITING_FOR_3A_CONVERGENCE = 3;
-
-    /**
-     * An {@link OrientationEventListener} used to determine when device rotation has occurred.
-     * This is mainly necessary for when the device is rotated by 180 degrees, in which case
-     * onCreate or onConfigurationChanged is not called as the view dimensions remain the same,
-     * but the orientation of the has changed, and thus the preview rotation must be updated.
-     */
-    private OrientationEventListener mOrientationListener;
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events of a

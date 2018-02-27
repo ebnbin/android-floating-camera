@@ -1,5 +1,6 @@
 package com.ebnbin.floatingcamera.util
 
+import android.content.ComponentCallbacks
 import android.content.Context
 import android.support.v4.util.ArrayMap
 import android.view.OrientationEventListener
@@ -9,7 +10,8 @@ import com.ebnbin.floatingcamera.util.extension.put
 /**
  * 屏幕旋转方向帮助类.
  *
- * 用于检测屏幕旋转方向. 可以检测屏幕旋转 180 度. 当屏幕旋转方向变化时会写入偏好.
+ * 用于检测屏幕旋转方向. 可以检测屏幕旋转 180 度 (屏幕旋转 180 度不会回调 [ComponentCallbacks.onConfigurationChanged]).
+ * 当屏幕旋转方向变化时会写入偏好.
  *
  * 如果没有任何对象被注册, 是不会检测屏幕旋转方向的.
  *

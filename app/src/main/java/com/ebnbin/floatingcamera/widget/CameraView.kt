@@ -33,7 +33,8 @@ abstract class CameraView : TextureView,
         SharedPreferences.OnSharedPreferenceChangeListener,
         GestureDetector.OnGestureListener,
         GestureDetector.OnDoubleTapListener,
-        ScaleGestureDetector.OnScaleGestureListener {
+        ScaleGestureDetector.OnScaleGestureListener,
+        RotationHelper.Listener {
     constructor(context: Context?) : super(context)
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
@@ -46,9 +47,13 @@ abstract class CameraView : TextureView,
         super.onAttachedToWindow()
 
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+
+        RotationHelper.listeners.add(this)
     }
 
     override fun onDetachedFromWindow() {
+        RotationHelper.listeners.remove(this)
+
         defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
 
         super.onDetachedFromWindow()
@@ -417,5 +422,13 @@ abstract class CameraView : TextureView,
         setTransform(matrix)
 
         this.previewResolution = previewResolution
+    }
+
+    //*****************************************************************************************************************
+
+    override fun onRotationChanged(oldRotation: Int, newRotation: Int) {
+        if (isAvailable) {
+            configureTransform()
+        }
     }
 }
