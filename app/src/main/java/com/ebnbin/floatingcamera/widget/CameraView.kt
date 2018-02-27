@@ -370,7 +370,11 @@ abstract class CameraView : TextureView,
 
     private fun isNotAttachedToWindow() = !isAttachedToWindow
 
+    protected val device = PreferenceHelper.device()
+
     protected var previewResolution: CameraHelper.Device.Resolution? = null
+
+    protected val resolution = PreferenceHelper.resolution()
 
     /**
      * 配置 [setTransform].

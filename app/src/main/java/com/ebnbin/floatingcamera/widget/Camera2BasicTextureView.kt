@@ -25,7 +25,6 @@ import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
@@ -38,7 +37,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
-import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
 import android.view.WindowManager
@@ -147,11 +145,6 @@ class Camera2BasicTextureView constructor(
     }
 
     /**
-     * ID of the current [CameraDevice].
-     */
-    private lateinit var cameraId: String
-
-    /**
      * An [Camera2BasicTextureView] for camera preview.
      */
     private lateinit var textureView: /*AutoFitTextureView*/Camera2BasicTextureView
@@ -244,16 +237,6 @@ class Camera2BasicTextureView constructor(
     private val cameraOpenCloseLock = Semaphore(1)
 
     /**
-     * Whether the current camera device supports Flash or not.
-     */
-    private var flashSupported = false
-
-    /**
-     * Orientation of the camera sensor
-     */
-    private var sensorOrientation = 0
-
-    /**
      * A [CameraCaptureSession.CaptureCallback] that handles events related to JPEG capture.
      */
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
@@ -314,42 +297,7 @@ class Camera2BasicTextureView constructor(
     }
 
     /**
-     * Sets up member variables related to camera.
-     */
-    private fun setUpCameraOutputs() {
-        try {
-            val cameraId = PreferenceHelper.device().id2
-
-            val characteristics = /*manager*/cameraManager.getCameraCharacteristics(cameraId)
-
-            val largest = PreferenceHelper.resolution().size
-
-            imageReader = ImageReader.newInstance(largest.width, largest.height,
-                    ImageFormat.JPEG, /*maxImages*/ 2).apply {
-                setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
-            }
-
-            sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
-
-            // Check if the flash is supported.
-            flashSupported =
-                    characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-
-            this.cameraId = cameraId
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
-        } catch (e: NullPointerException) {
-            // Currently an NPE is thrown when the Camera2API is used but not supported on the
-            // device this code runs.
-//            ErrorDialog.newInstance(/*getString(R.string.camera_error)*/"This device doesn't support Camera2 API.")
-//                    .show(childFragmentManager, FRAGMENT_DIALOG)
-            error("This device doesn't support Camera2 API.")
-        }
-
-    }
-
-    /**
-     * Opens the camera specified by [Camera2BasicTextureView.cameraId].
+     * Opens the camera.
      */
     @SuppressLint("MissingPermission")
     private fun openCamera() {
@@ -358,14 +306,18 @@ class Camera2BasicTextureView constructor(
             return
         }
 
-        setUpCameraOutputs()
+        imageReader = ImageReader.newInstance(resolution.width, resolution.height,
+                ImageFormat.JPEG, /*maxImages*/ 2).apply {
+            setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
+        }
+
         configureTransform()
         try {
             // Wait for camera to open - 2.5 seconds is sufficient
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw RuntimeException("Time out waiting to lock camera opening.")
             }
-            /*manager*/cameraManager.openCamera(cameraId, stateCallback, backgroundHandler)
+            /*manager*/cameraManager.openCamera(device.id2, stateCallback, backgroundHandler)
         } catch (e: CameraAccessException) {
             Log.e(TAG, e.toString())
         } catch (e: InterruptedException) {
@@ -518,7 +470,6 @@ class Camera2BasicTextureView constructor(
     private fun captureStillPicture() {
         try {
             if (/*activity == null*/isFinishing() || cameraDevice == null) return
-            val rotation = /*activity.*/windowManager.defaultDisplay.rotation
 
             // This is the CaptureRequest.Builder that we use to take a picture.
             val captureBuilder = cameraDevice?.createCaptureRequest(
@@ -529,8 +480,7 @@ class Camera2BasicTextureView constructor(
                 // We have to take that into account and rotate JPEG properly.
                 // For devices with orientation of 90, we return our mapping from ORIENTATIONS.
                 // For devices with orientation of 270, we need to rotate the JPEG 180 degrees.
-                set(CaptureRequest.JPEG_ORIENTATION,
-                        (ORIENTATIONS.get(rotation) + sensorOrientation + 270) % 360)
+                set(CaptureRequest.JPEG_ORIENTATION, device.getOrientation())
 
                 // Use the same AE and AF modes as the preview.
                 set(CaptureRequest.CONTROL_AF_MODE,
@@ -582,26 +532,13 @@ class Camera2BasicTextureView constructor(
     }
 
     private fun setAutoFlash(requestBuilder: CaptureRequest.Builder) {
-        if (flashSupported) {
-            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
-        }
+//        if (flashSupported) {
+//            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+//                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
+//        }
     }
 
     companion object {
-
-        /**
-         * Conversion from screen rotation to JPEG orientation.
-         */
-        private val ORIENTATIONS = SparseIntArray()
-        private val FRAGMENT_DIALOG = "dialog"
-
-        init {
-            ORIENTATIONS.append(Surface.ROTATION_0, 90)
-            ORIENTATIONS.append(Surface.ROTATION_90, 0)
-            ORIENTATIONS.append(Surface.ROTATION_180, 270)
-            ORIENTATIONS.append(Surface.ROTATION_270, 180)
-        }
 
         /**
          * Tag for the [Log].

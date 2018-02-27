@@ -37,7 +37,6 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.DngCreator;
 import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaScannerConnection;
@@ -49,13 +48,13 @@ import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
+
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
@@ -67,8 +66,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -366,11 +363,6 @@ public class JCamera2RawTextureView extends CameraView {
     //
     // The following state is used across both the UI and background threads.  Methods with "Locked"
     // in the name expect mCameraStateLock to be held while calling.
-
-    /**
-     * ID of the current {@link CameraDevice}.
-     */
-    private String mCameraId;
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -693,12 +685,8 @@ public class JCamera2RawTextureView extends CameraView {
         }
         try {
             // Find a CameraDevice that supports RAW captures, and configure state.
-
-            String cameraId = PreferenceHelper.INSTANCE.device().getId2();
-
-            // Find a CameraDevice that supports RAW captures, and configure state.
             CameraCharacteristics characteristics
-                    = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
+                    = /*manager*/mCameraManager.getCameraCharacteristics(getDevice().getId2());
 
             // We only use a camera that supports RAW in this sample.
             if (!contains(characteristics.get(
@@ -707,15 +695,10 @@ public class JCamera2RawTextureView extends CameraView {
 //                continue;
             }
 
-            StreamConfigurationMap map = characteristics.get(
-                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-            Size largestJpeg = PreferenceHelper.INSTANCE.resolution().getSize();
-
-            // TODO
-            Size largestRaw = Collections.max(
-                    Arrays.asList(map.getOutputSizes(ImageFormat.RAW_SENSOR)),
-                    new CompareSizesByArea());
+            CameraHelper.Device.Resolution largestRaw = getDevice().getMaxRawResolution();
+            if (largestRaw == null) {
+                return false;
+            }
 
             synchronized (mCameraStateLock) {
                 // Set up ImageReaders for JPEG and RAW outputs.  Place these in a reference
@@ -723,8 +706,8 @@ public class JCamera2RawTextureView extends CameraView {
                 // using them are finished.
                 if (mJpegImageReader == null || mJpegImageReader.getAndRetain() == null) {
                     mJpegImageReader = new RefCountedAutoCloseable<>(
-                            ImageReader.newInstance(largestJpeg.getWidth(),
-                                    largestJpeg.getHeight(), ImageFormat.JPEG, /*maxImages*/5));
+                            ImageReader.newInstance(getResolution().getWidth(),
+                                    getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5));
                 }
                 mJpegImageReader.get().setOnImageAvailableListener(
                         mOnJpegImageAvailableListener, mBackgroundHandler);
@@ -738,7 +721,6 @@ public class JCamera2RawTextureView extends CameraView {
                         mOnRawImageAvailableListener, mBackgroundHandler);
 
                 mCharacteristics = characteristics;
-                mCameraId = cameraId;
             }
             return true;
         } catch (CameraAccessException e) {
@@ -753,7 +735,7 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     /**
-     * Opens the camera specified by {@link #mCameraId}.
+     * Opens the camera.
      */
     @SuppressWarnings("MissingPermission")
     private void openCamera() {
@@ -774,16 +756,14 @@ public class JCamera2RawTextureView extends CameraView {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
-            String cameraId;
             Handler backgroundHandler;
             synchronized (mCameraStateLock) {
-                cameraId = mCameraId;
                 backgroundHandler = mBackgroundHandler;
             }
 
             // Attempt to open the camera. mStateCallback will be called on the background handler's
             // thread when this succeeds or fails.
-            /*manager*/mCameraManager.openCamera(cameraId, mStateCallback, backgroundHandler);
+            /*manager*/mCameraManager.openCamera(getDevice().getId2(), mStateCallback, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -949,18 +929,18 @@ public class JCamera2RawTextureView extends CameraView {
                         CaptureRequest.CONTROL_AF_MODE_AUTO);
             }
         }
-
-        // If there is an auto-magical flash control mode available, use it, otherwise default to
-        // the "on" mode, which is guaranteed to always be available.
-        if (contains(mCharacteristics.get(
-                        CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES),
-                CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)) {
-            builder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-        } else {
-            builder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON);
-        }
+//
+//        // If there is an auto-magical flash control mode available, use it, otherwise default to
+//        // the "on" mode, which is guaranteed to always be available.
+//        if (contains(mCharacteristics.get(
+//                        CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES),
+//                CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)) {
+//            builder.set(CaptureRequest.CONTROL_AE_MODE,
+//                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//        } else {
+//            builder.set(CaptureRequest.CONTROL_AE_MODE,
+//                    CaptureRequest.CONTROL_AE_MODE_ON);
+//        }
 
         // If there is an auto-magical white balance control mode available, use it.
         if (contains(mCharacteristics.get(
@@ -1404,20 +1384,6 @@ public class JCamera2RawTextureView extends CameraView {
 
     // Utility classes and methods:
     // *********************************************************************************************
-
-    /**
-     * Comparator based on area of the given {@link Size} objects.
-     */
-    static class CompareSizesByArea implements Comparator<Size> {
-
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-
-    }
 
     /**
      * A wrapper for an {@link AutoCloseable} object that implements reference counting to allow

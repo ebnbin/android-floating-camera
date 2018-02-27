@@ -23,7 +23,6 @@ import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
@@ -34,12 +33,12 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.Size;
-import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.Toast;
+
+import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
@@ -193,27 +192,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
     //*****************************************************************************************************************
 
-    private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
-    private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
-    private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
-    private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
-
     private static final String TAG = "JCamera2VideoTextureVie";
-    private static final String FRAGMENT_DIALOG = "dialog";
-
-    static {
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
-
-    static {
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_0, 270);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_90, 180);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_180, 90);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
-    }
 
     /**
      * An {@link JCamera2VideoTextureView} for camera preview.
@@ -262,11 +241,6 @@ public class JCamera2VideoTextureView extends CameraView {
         }
 
     };
-
-    /**
-     * The {@link android.util.Size} of video recording.
-     */
-    private Size mVideoSize;
 
     /**
      * MediaRecorder
@@ -327,7 +301,6 @@ public class JCamera2VideoTextureView extends CameraView {
         }
 
     };
-    private Integer mSensorOrientation;
     private File mNextVideoAbsolutePath;
     private CaptureRequest.Builder mPreviewBuilder;
 
@@ -374,17 +347,9 @@ public class JCamera2VideoTextureView extends CameraView {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
-            String cameraId = PreferenceHelper.INSTANCE.device().getId2();
-
-            // Choose the sizes for camera preview and video recording
-            CameraCharacteristics characteristics = /*manager*/mCameraManager.getCameraCharacteristics(cameraId);
-            mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-
-            mVideoSize = PreferenceHelper.INSTANCE.resolution().getSize();
-
             configureTransform();
             mMediaRecorder = new MediaRecorder();
-            /*manager*/mCameraManager.openCamera(cameraId, mStateCallback, null);
+            /*manager*/mCameraManager.openCamera(getDevice().getId2(), mStateCallback, null);
         } catch (CameraAccessException e) {
 //            Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
             toast("Cannot access the camera.");
@@ -489,49 +454,20 @@ public class JCamera2VideoTextureView extends CameraView {
 
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-//        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         if (mNextVideoAbsolutePath == null) {
             mNextVideoAbsolutePath = getVideoFilePath();
         }
         mMediaRecorder.setOutputFile(mNextVideoAbsolutePath.getAbsolutePath());
-//        mMediaRecorder.setVideoEncodingBitRate(10000000);
-//        mMediaRecorder.setVideoFrameRate(30);
-//        mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
-//        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-//        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-        int rotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
-        switch (mSensorOrientation) {
-            case SENSOR_ORIENTATION_DEFAULT_DEGREES:
-                mMediaRecorder.setOrientationHint(DEFAULT_ORIENTATIONS.get(rotation));
-                break;
-            case SENSOR_ORIENTATION_INVERSE_DEGREES:
-                mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
-                break;
-        }
+        mMediaRecorder.setOrientationHint(getDevice().getOrientation(AppUtilsKt.displayRotation()));
 
         CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.videoProfile();
         if (videoProfile == null) {
-//            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-//            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
             mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-//            if (mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty()) {
-//                mNextVideoAbsolutePath = getVideoFilePath(/*getActivity()*/getContext());
-//            }
-//            mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
             mMediaRecorder.setVideoEncodingBitRate(10000000);
             mMediaRecorder.setVideoFrameRate(30);
-            mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
+            mMediaRecorder.setVideoSize(getResolution().getWidth(), getResolution().getHeight());
             mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
             mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-//            int rotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
-//            switch (mSensorOrientation) {
-//                case SENSOR_ORIENTATION_DEFAULT_DEGREES:
-//                    mMediaRecorder.setOrientationHint(DEFAULT_ORIENTATIONS.get(rotation));
-//                    break;
-//                case SENSOR_ORIENTATION_INVERSE_DEGREES:
-//                    mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
-//                    break;
-//            }
         } else {
             mMediaRecorder.setProfile(videoProfile.getCamcorderProfile());
         }

@@ -2,6 +2,7 @@
 
 package com.ebnbin.floatingcamera.util
 
+import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.hardware.camera2.CameraAccessException
@@ -9,6 +10,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
+import android.support.v4.util.ArrayMap
 import android.util.Size
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.extension.audioCodecString
@@ -31,8 +33,13 @@ class CameraHelper private constructor() {
      */
     private val ids2: Array<String> = try {
         cameraManager.cameraIdList
-    } catch (e: CameraAccessException) {
-        throw CameraException("Camera2 id 获取失败.", e)
+    } catch (e: Exception) {
+        throw when (e) {
+            is CameraAccessException, is NullPointerException -> {
+                CameraException("Camera2 id 获取失败.", e)
+            }
+            else -> e
+        }
     }
 
     /**
@@ -153,9 +160,11 @@ class CameraHelper private constructor() {
             cameraManager.getCameraCharacteristics(id2)
                     ?: throw CameraException("Camera2 CameraCharacteristics 获取失败.")
         } catch (e: Exception) {
-            when (e) {
-                is CameraAccessException -> throw CameraException("Camera2 CameraCharacteristics 获取失败.", e)
-                else -> throw e
+            throw when (e) {
+                is CameraAccessException, is NullPointerException -> {
+                    CameraException("Camera2 CameraCharacteristics 获取失败.", e)
+                }
+                else -> e
             }
         }
 
@@ -230,6 +239,54 @@ class CameraHelper private constructor() {
         private val isSensorOrientationLandscape = sensorOrientation == 90 || sensorOrientation == 270
 
         /**
+         * 获取拍摄方向.
+         */
+        fun getOrientation(rotation: Int = displayRotation()) = (sensorOrientation - (90 * rotation) + 360) % 360
+
+        /**
+         * Camera2 闪光灯是否可用.
+         */
+        private val flashInfoAvailable2 = cameraCharacteristics2.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)
+                ?: throw CameraException("Camera2 闪光灯是否可用获取失败.")
+
+        /**
+         * Camera2 闪光灯模式.
+         */
+        private val controlAeAvailableModes2 = cameraCharacteristics2.get(
+                CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES) ?: throw CameraException("Camera2 闪光灯模式获取失败.")
+
+        /**
+         * Camera1 闪光灯模式.
+         */
+        private val supportedFlashModes1: List<String>? = parameters1.supportedFlashModes
+
+        /**
+         * 闪光灯模式.
+         */
+        private val controlAeAvailableModes: IntArray
+        init {
+            val controlAeAvailableModeList = ArrayList<Int>()
+            if (flashInfoAvailable2 && supportedFlashModes1 != null) {
+                for (key in controlAeAvailableModes2) {
+                    supportedFlashModes1.forEach {
+                        if (CONTROL_AE_AVAILABLE_MODE_MAP.containsKey(key) &&
+                                it == CONTROL_AE_AVAILABLE_MODE_MAP[key]) {
+                            controlAeAvailableModeList.add(key)
+                            return@forEach
+                        }
+                    }
+                }
+            }
+
+            controlAeAvailableModes = controlAeAvailableModeList.toIntArray()
+        }
+
+        /**
+         * 闪光灯是否可用.
+         */
+        private val flashInfoAvailable = controlAeAvailableModes.isNotEmpty()
+
+        /**
          * Camera2 [StreamConfigurationMap].
          */
         private val scalerStreamConfigurationMap2 = cameraCharacteristics2.get(
@@ -241,6 +298,12 @@ class CameraHelper private constructor() {
          */
         private val surfaceTextureSizes2: Array<Size> = scalerStreamConfigurationMap2.getOutputSizes(
                 SurfaceTexture::class.java) ?: throw CameraException("Camera2 SurfaceTexture 输出尺寸列表获取失败.")
+
+        /**
+         * Camera2 [ImageFormat.RAW_SENSOR] 输出尺寸列表.
+         */
+        private val rawSensorSizes2: Array<Size>? = scalerStreamConfigurationMap2.getOutputSizes(
+                ImageFormat.RAW_SENSOR)
 
         /**
          * Camera1 预览尺寸列表.
@@ -333,6 +396,24 @@ class CameraHelper private constructor() {
 
             return resolutionList2.toTypedArray()
         }
+
+        /**
+         * 原始分辨率列表.
+         */
+        private val rawResolutions: Array<Resolution>
+        init {
+            val rawResolutionList = ArrayList<Resolution>()
+            rawSensorSizes2?.forEach {
+                rawResolutionList.add(Resolution(it.width, it.height, isSensorOrientationLandscape, camcorderProfiles))
+            }
+
+            rawResolutions = rawResolutionList.toTypedArray()
+        }
+
+        /**
+         * 最大原始分辨率列表.
+         */
+        val maxRawResolution = rawResolutions.max()
 
         /**
          * 视频分辨率摘要列表.
@@ -607,6 +688,21 @@ class CameraHelper private constructor() {
         }
 
         companion object {
+            /**
+             * Camera2 和 Camera1 闪光灯模式对应 map.
+             */
+            private val CONTROL_AE_AVAILABLE_MODE_MAP = ArrayMap<Int, String>()
+            init {
+                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_OFF] = Camera.Parameters.FLASH_MODE_OFF
+                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON] = Camera.Parameters.FLASH_MODE_ON
+                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH] =
+                        Camera.Parameters.FLASH_MODE_AUTO
+                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON_ALWAYS_FLASH] =
+                        Camera.Parameters.FLASH_MODE_TORCH
+                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE] =
+                        Camera.Parameters.FLASH_MODE_RED_EYE
+            }
+
             /**
              * [CamcorderProfile] 质量列表.
              */
