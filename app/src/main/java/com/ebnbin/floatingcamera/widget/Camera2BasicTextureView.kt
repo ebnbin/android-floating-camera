@@ -26,7 +26,6 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
@@ -38,11 +37,11 @@ import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Surface
-import android.view.TextureView
-import android.view.WindowManager
 import android.widget.Toast
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.cameraManager
+import com.ebnbin.floatingcamera.util.windowManager
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -55,9 +54,6 @@ class Camera2BasicTextureView constructor(
         attrs: AttributeSet? = null,
         defStyle: Int = 0
 ) : CameraView(context, attrs, defStyle) {
-
-    private val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-    private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -73,8 +69,7 @@ class Camera2BasicTextureView constructor(
 
             picture()
         } else {
-//            textureView.surfaceTextureListener = surfaceTextureListener
-            setSurfaceTextureListener(surfaceTextureListener)
+            surfaceTextureListener = this
         }
     }
 
@@ -93,56 +88,43 @@ class Camera2BasicTextureView constructor(
         onClick()
     }
 
-    private fun isFinishing() = !isAttachedToWindow
-
     private fun finish() {
-        if (isFinishing()) return
+        if (isNotAttachedToWindow()) return
 
         windowManager.removeView(this)
     }
 
     private fun runOnUiThread(action: () -> Unit) = post {
-        if (isFinishing()) return@post
+        if (isNotAttachedToWindow()) return@post
 
         action()
     }
 
     private fun runOnUiThreadDelayed(action: () -> Unit) = postDelayed({
-        if (isFinishing()) return@postDelayed
+        if (isNotAttachedToWindow()) return@postDelayed
 
         action()
     }, 1000L)
 
     private fun toast(text: CharSequence) = runOnUiThread { Toast.makeText(context, text, Toast.LENGTH_SHORT).show() }
 
-    private fun error(message: String) {
-        toast(message)
-        Log.e("ebnbin", message)
+    //*****************************************************************************************************************
+
+    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
+        super.onSurfaceTextureAvailable(surface, width, height)
+
+        openCamera()
+
+        picture()
+    }
+
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
+        super.onSurfaceTextureSizeChanged(surface, width, height)
+
+        configureTransform()
     }
 
     //*****************************************************************************************************************
-
-    /**
-     * [TextureView.SurfaceTextureListener] handles several lifecycle events on a
-     * [TextureView].
-     */
-    private val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-
-        override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
-            openCamera()
-
-            picture()
-        }
-
-        override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
-            configureTransform()
-        }
-
-        override fun onSurfaceTextureDestroyed(texture: SurfaceTexture) = true
-
-        override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
-
-    }
 
     /**
      * A [CameraCaptureSession] for camera preview.
@@ -309,7 +291,7 @@ class Camera2BasicTextureView constructor(
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw RuntimeException("Time out waiting to lock camera opening.")
             }
-            /*manager*/cameraManager.openCamera(device.id2, stateCallback, backgroundHandler)
+            cameraManager.openCamera(device.id2, stateCallback, backgroundHandler)
         } catch (e: CameraAccessException) {
             Log.e(TAG, e.toString())
         } catch (e: InterruptedException) {
@@ -461,7 +443,7 @@ class Camera2BasicTextureView constructor(
      */
     private fun captureStillPicture() {
         try {
-            if (/*activity == null*/isFinishing() || cameraDevice == null) return
+            if (isNotAttachedToWindow() || cameraDevice == null) return
 
             // This is the CaptureRequest.Builder that we use to take a picture.
             val captureBuilder = cameraDevice?.createCaptureRequest(

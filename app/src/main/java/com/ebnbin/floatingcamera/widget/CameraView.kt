@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.graphics.SurfaceTexture
 import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -30,6 +31,7 @@ import kotlin.math.min
  * 相机控件.
  */
 abstract class CameraView : TextureView,
+        TextureView.SurfaceTextureListener,
         SharedPreferences.OnSharedPreferenceChangeListener,
         GestureDetector.OnGestureListener,
         GestureDetector.OnDoubleTapListener,
@@ -373,13 +375,25 @@ abstract class CameraView : TextureView,
 
     //*****************************************************************************************************************
 
-    private fun isNotAttachedToWindow() = !isAttachedToWindow
+    protected fun isNotAttachedToWindow() = !isAttachedToWindow
 
     protected val device = PreferenceHelper.device()
 
     protected var previewResolution: CameraHelper.Device.Resolution? = null
 
     protected val resolution = PreferenceHelper.resolution()
+
+    //*****************************************************************************************************************
+
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) = Unit
+
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) = Unit
+
+    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = true
+
+    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) = Unit
+
+    //*****************************************************************************************************************
 
     /**
      * 配置 [setTransform].

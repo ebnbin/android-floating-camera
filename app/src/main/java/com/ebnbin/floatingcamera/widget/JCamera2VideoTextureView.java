@@ -24,7 +24,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.MediaRecorder;
@@ -34,14 +33,14 @@ import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
-import android.view.TextureView;
-import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,9 +52,6 @@ import java.util.concurrent.TimeUnit;
 
 public class JCamera2VideoTextureView extends CameraView {
 
-    private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
-    private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -66,7 +62,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
             record();
         } else {
-            setSurfaceTextureListener(mSurfaceTextureListener);
+            setSurfaceTextureListener(this);
         }
     }
 
@@ -114,23 +110,19 @@ public class JCamera2VideoTextureView extends CameraView {
         });
     }
 
-    private boolean isFinishing() {
-        return !isAttachedToWindow();
-    }
-
     private void finish() {
-        if (isFinishing()) {
+        if (isNotAttachedToWindow()) {
             return;
         }
 
-        mWindowManager.removeView(this);
+        AppUtilsKt.getWindowManager().removeView(this);
     }
 
     private void runOnUiThread(final Runnable action) {
         post(new Runnable() {
             @Override
             public void run() {
-                if (isFinishing()) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
@@ -143,7 +135,7 @@ public class JCamera2VideoTextureView extends CameraView {
         postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (isFinishing()) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
@@ -164,6 +156,24 @@ public class JCamera2VideoTextureView extends CameraView {
     private void error(String message) {
         toast(message);
         Log.e("ebnbin", message);
+    }
+
+    //*****************************************************************************************************************
+
+    @Override
+    public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
+        super.onSurfaceTextureAvailable(surface, width, height);
+
+        openCamera();
+
+        record();
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
+        super.onSurfaceTextureSizeChanged(surface, width, height);
+
+        configureTransform();
     }
 
     //*****************************************************************************************************************
@@ -194,38 +204,6 @@ public class JCamera2VideoTextureView extends CameraView {
      * preview.
      */
     private CameraCaptureSession mPreviewSession;
-
-    /**
-     * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
-     * {@link TextureView}.
-     */
-    private TextureView.SurfaceTextureListener mSurfaceTextureListener
-            = new TextureView.SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
-                                              int width, int height) {
-            openCamera();
-
-            record();
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture,
-                                                int width, int height) {
-            configureTransform();
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-        }
-
-    };
 
     /**
      * MediaRecorder
@@ -322,7 +300,7 @@ public class JCamera2VideoTextureView extends CameraView {
             return;
         }
 
-        if (/*null == activity || activity.*/isFinishing()) {
+        if (isNotAttachedToWindow()) {
             return;
         }
         try {
@@ -333,7 +311,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
             configureTransform();
             mMediaRecorder = new MediaRecorder();
-            /*manager*/mCameraManager.openCamera(getDevice().getId2(), mStateCallback, null);
+            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, null);
         } catch (CameraAccessException e) {
 //            Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
             toast("Cannot access the camera.");
@@ -432,7 +410,7 @@ public class JCamera2VideoTextureView extends CameraView {
     }
 
     private void setUpMediaRecorder() throws IOException {
-        if (/*null == activity*/isFinishing()) {
+        if (isNotAttachedToWindow()) {
             return;
         }
 
@@ -540,7 +518,7 @@ public class JCamera2VideoTextureView extends CameraView {
         mMediaRecorder.reset();
 
 //        Activity activity = getActivity();
-        if (/*null != activity*/!isFinishing()) {
+        if (isAttachedToWindow()) {
 //            Toast.makeText(activity, "Video saved: " + mNextVideoAbsolutePath,
 //                    Toast.LENGTH_SHORT).show();
             toast("Video saved: " + mNextVideoAbsolutePath);

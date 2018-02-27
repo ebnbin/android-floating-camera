@@ -26,7 +26,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
@@ -39,14 +38,14 @@ import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
-import android.view.TextureView;
-import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -57,9 +56,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class JCamera2BasicTextureView extends CameraView {
-
-    private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
-    private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
 
     @Override
     protected void onAttachedToWindow() {
@@ -76,7 +72,7 @@ public class JCamera2BasicTextureView extends CameraView {
 
             picture();
         } else {
-            setSurfaceTextureListener(mSurfaceTextureListener);
+            setSurfaceTextureListener(this);
         }
     }
 
@@ -103,23 +99,19 @@ public class JCamera2BasicTextureView extends CameraView {
         });
     }
 
-    private boolean isFinishing() {
-        return !isAttachedToWindow();
-    }
-
     private void finish() {
-        if (isFinishing()) {
+        if (isNotAttachedToWindow()) {
             return;
         }
 
-        mWindowManager.removeView(this);
+        AppUtilsKt.getWindowManager().removeView(this);
     }
 
     private void runOnUiThread(final Runnable action) {
         post(new Runnable() {
             @Override
             public void run() {
-                if (isFinishing()) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
@@ -132,7 +124,7 @@ public class JCamera2BasicTextureView extends CameraView {
         postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (isFinishing()) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
@@ -150,9 +142,22 @@ public class JCamera2BasicTextureView extends CameraView {
         });
     }
 
-    private void error(String message) {
-        toast(message);
-        Log.e("ebnbin", message);
+    //*****************************************************************************************************************
+
+    @Override
+    public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
+        super.onSurfaceTextureAvailable(surface, width, height);
+
+        openCamera();
+
+        picture();
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
+        super.onSurfaceTextureSizeChanged(surface, width, height);
+
+        configureTransform();
     }
 
     //*****************************************************************************************************************
@@ -200,36 +205,6 @@ public class JCamera2BasicTextureView extends CameraView {
      * Camera state: Picture was taken.
      */
     private static final int STATE_PICTURE_TAKEN = 4;
-
-    /**
-     * {@link SurfaceTextureListener} handles several lifecycle events on a
-     * {@link TextureView}.
-     */
-    private final SurfaceTextureListener mSurfaceTextureListener
-            = new SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-            openCamera();
-
-            picture();
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-            configureTransform();
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture texture) {
-        }
-
-    };
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -418,7 +393,7 @@ public class JCamera2BasicTextureView extends CameraView {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            /*manager*/mCameraManager.openCamera(getDevice().getId2(), mStateCallback, mBackgroundHandler);
+            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -587,7 +562,7 @@ public class JCamera2BasicTextureView extends CameraView {
      */
     private void captureStillPicture() {
         try {
-            if (/*null == activity*/isFinishing() || null == mCameraDevice) {
+            if (isNotAttachedToWindow() || null == mCameraDevice) {
                 return;
             }
             // This is the CaptureRequest.Builder that we use to take a picture.

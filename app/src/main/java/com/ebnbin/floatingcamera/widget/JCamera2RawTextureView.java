@@ -22,14 +22,12 @@ import android.Manifest;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
-import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
@@ -47,14 +45,15 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Surface;
-import android.view.TextureView;
-import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 import com.ebnbin.floatingcamera.util.RotationHelper;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -101,9 +100,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class JCamera2RawTextureView extends CameraView implements RotationHelper.Listener {
 
-    private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
-    private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -120,7 +116,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
             picture();
         } else {
-            setSurfaceTextureListener(mSurfaceTextureListener);
+            setSurfaceTextureListener(this);
         }
     }
 
@@ -152,23 +148,19 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         });
     }
 
-    private boolean isFinishing() {
-        return !isAttachedToWindow();
-    }
-
     private void finish() {
-        if (isFinishing()) {
+        if (isNotAttachedToWindow()) {
             return;
         }
 
-        mWindowManager.removeView(this);
+        AppUtilsKt.getWindowManager().removeView(this);
     }
 
     private void runOnUiThread(final Runnable action) {
         post(new Runnable() {
             @Override
             public void run() {
-                if (isFinishing()) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
@@ -181,7 +173,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (isFinishing()) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
@@ -199,9 +191,31 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         });
     }
 
-    private void error(String message) {
-        toast(message);
-        Log.e("ebnbin", message);
+    //*****************************************************************************************************************
+
+    @Override
+    public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
+        super.onSurfaceTextureAvailable(surface, width, height);
+
+        configureTransform2();
+
+        picture();
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
+        super.onSurfaceTextureSizeChanged(surface, width, height);
+
+        configureTransform2();
+    }
+
+    @Override
+    public boolean onSurfaceTextureDestroyed(@Nullable SurfaceTexture surface) {
+        synchronized (mCameraStateLock) {
+            setPreviewResolution(null);
+        }
+
+        return super.onSurfaceTextureDestroyed(surface);
     }
 
     //*****************************************************************************************************************
@@ -261,39 +275,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * Camera state: Waiting for 3A convergence before capturing a photo.
      */
     private static final int STATE_WAITING_FOR_3A_CONVERGENCE = 3;
-
-    /**
-     * {@link TextureView.SurfaceTextureListener} handles several lifecycle events of a
-     * {@link TextureView}.
-     */
-    private final TextureView.SurfaceTextureListener mSurfaceTextureListener
-            = new TextureView.SurfaceTextureListener() {
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-            configureTransform2();
-
-            picture();
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-            configureTransform2();
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
-            synchronized (mCameraStateLock) {
-                setPreviewResolution(null);
-            }
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture texture) {
-        }
-
-    };
 
     /**
      * An additional thread for running tasks that shouldn't block the UI.  This is used for all
@@ -560,7 +541,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                 jpegBuilder = mJpegResultQueue.get(requestId);
 
                 if (jpegBuilder != null) {
-                    jpegBuilder.setResult(result);
                     sb.append("Saving JPEG as: ");
                     sb.append(jpegBuilder.getSaveLocation());
                 }
@@ -591,16 +571,10 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * Sets up state related to camera that is needed before opening a {@link CameraDevice}.
      */
     private boolean setUpCameraOutputs() {
-        if (/*manager*/mCameraManager == null) {
-//            ErrorDialog.buildErrorDialog("This device doesn't support Camera2 API.").
-//                    show(getFragmentManager(), "dialog");
-            error("This device doesn't support Camera2 API.");
-            return false;
-        }
         try {
             // Configure state.
             CameraCharacteristics characteristics
-                    = /*manager*/mCameraManager.getCameraCharacteristics(getDevice().getId2());
+                    = AppUtilsKt.getCameraManager().getCameraCharacteristics(getDevice().getId2());
 
 //            // We only use a camera that supports RAW in this sample.
 //            if (!contains(characteristics.get(
@@ -660,7 +634,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
             // Attempt to open the camera. mStateCallback will be called on the background handler's
             // thread when this succeeds or fails.
-            /*manager*/mCameraManager.openCamera(getDevice().getId2(), mStateCallback, backgroundHandler);
+            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -853,7 +827,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      */
     private void configureTransform2() {
         synchronized (mCameraStateLock) {
-            if (/*null == activity*/isFinishing()) {
+            if (isNotAttachedToWindow()) {
                 return;
             }
 
@@ -861,9 +835,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             int viewHeight = getHeight();
 
             // Find the rotation of the device relative to the native device orientation.
-            int deviceRotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
-            Point displaySize = new Point();
-            /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getSize(displaySize);
+            int deviceRotation = AppUtilsKt.displayRotation();
 
             CameraHelper.Device.Resolution previewResolution = PreferenceHelper.INSTANCE.previewResolution();
 
@@ -978,7 +950,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      */
     private void captureStillPictureLocked() {
         try {
-            if (/*null == activity*/isFinishing() || null == mCameraDevice) {
+            if (isNotAttachedToWindow() || null == mCameraDevice) {
                 return;
             }
             // This is the CaptureRequest.Builder that we use to take a picture.
@@ -991,9 +963,8 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             setup3AControlsLocked(captureBuilder);
 
             // Set orientation.
-            int rotation = /*activity.getWindowManager()*/mWindowManager.getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
-                    sensorToDeviceRotation(mCharacteristics, rotation));
+                    sensorToDeviceRotation(mCharacteristics, AppUtilsKt.displayRotation()));
 
             // Set request tag to easily track results in callbacks.
             captureBuilder.setTag(mRequestCounter.getAndIncrement());
@@ -1002,8 +973,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
             // Create an ImageSaverBuilder in which to collect results, and add it to the queue
             // of active requests.
-            ImageSaver.ImageSaverBuilder jpegBuilder = new ImageSaver.ImageSaverBuilder(/*activity*/getContext())
-                    .setCharacteristics(mCharacteristics);
+            ImageSaver.ImageSaverBuilder jpegBuilder = new ImageSaver.ImageSaverBuilder(/*activity*/getContext());
 
             mJpegResultQueue.put((int) request.getTag(), jpegBuilder);
 
@@ -1171,8 +1141,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         public static class ImageSaverBuilder {
             private Image mImage;
             private File mFile;
-            private CaptureResult mCaptureResult;
-            private CameraCharacteristics mCharacteristics;
             private Context mContext;
             private RefCountedAutoCloseable<ImageReader> mReader;
 
@@ -1206,19 +1174,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                 return this;
             }
 
-            public synchronized ImageSaverBuilder setResult(final CaptureResult result) {
-                if (result == null) throw new NullPointerException();
-                mCaptureResult = result;
-                return this;
-            }
-
-            public synchronized ImageSaverBuilder setCharacteristics(
-                    final CameraCharacteristics characteristics) {
-                if (characteristics == null) throw new NullPointerException();
-                mCharacteristics = characteristics;
-                return this;
-            }
-
             public synchronized ImageSaver buildIfComplete() {
                 if (!isComplete()) {
                     return null;
@@ -1232,8 +1187,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             }
 
             private boolean isComplete() {
-                return mImage != null && mFile != null && mCaptureResult != null
-                        && mCharacteristics != null;
+                return mImage != null && mFile != null;
             }
         }
     }
