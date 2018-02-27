@@ -35,14 +35,12 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.DngCreator;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
@@ -64,10 +62,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
@@ -75,7 +70,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A fragment that demonstrates use of the Camera2 API to capture RAW and JPEG photos.
+ * A fragment that demonstrates use of the Camera2 API to capture JPEG photos.
  * <p/>
  * In this example, the lifecycle of a single request to take a photo is:
  * <ul>
@@ -89,14 +84,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <li>
  * When the pre-capture sequence has finished, a {@link CaptureRequest} with a monotonically
  * increasing request ID set by calls to {@link CaptureRequest.Builder#setTag(Object)} is sent to
- * the camera to begin the JPEG and RAW capture sequence, and an
+ * the camera to begin the JPEG capture sequence, and an
  * {@link ImageSaver.ImageSaverBuilder} is stored for this request in the
- * {@link #mJpegResultQueue} and {@link #mRawResultQueue}.
+ * {@link #mJpegResultQueue}.
  * </li>
  * <li>
  * As {@link CaptureResult}s and {@link Image}s become available via callbacks in a background
  * thread, a {@link ImageSaver.ImageSaverBuilder} is looked up by the request ID in
- * {@link #mJpegResultQueue} and {@link #mRawResultQueue} and updated.
+ * {@link #mJpegResultQueue} and updated.
  * </li>
  * <li>
  * When all of the necessary results to save an image are available, the an {@link ImageSaver} is
@@ -111,8 +106,6 @@ public class JCamera2RawTextureView extends CameraView {
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
 
     private void init() {
-        mTextureView = this;
-
         // Setup a new OrientationEventListener.  This is used to handle rotation events like a
         // 180 degree rotation that do not normally trigger a call to onCreate to do view re-layout
         // or otherwise cause the preview TextureView's size to change.
@@ -120,7 +113,7 @@ public class JCamera2RawTextureView extends CameraView {
                 SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(int orientation) {
-                if (mTextureView != null && mTextureView.isAvailable()) {
+                if (isAvailable()) {
                     configureTransform2();
                 }
             }
@@ -138,12 +131,12 @@ public class JCamera2RawTextureView extends CameraView {
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we should
         // configure the preview bounds here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
-        if (mTextureView.isAvailable()) {
+        if (isAvailable()) {
             configureTransform2();
 
             picture();
         } else {
-            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+            setSurfaceTextureListener(mSurfaceTextureListener);
         }
         if (mOrientationListener != null && mOrientationListener.canDetectOrientation()) {
             mOrientationListener.enable();
@@ -332,11 +325,6 @@ public class JCamera2RawTextureView extends CameraView {
     };
 
     /**
-     * An {@link JCamera2RawTextureView} for camera preview.
-     */
-    private /*AutoFitTextureView*/ JCamera2RawTextureView mTextureView;
-
-    /**
      * An additional thread for running tasks that shouldn't block the UI.  This is used for all
      * callbacks from the {@link CameraDevice} and {@link CameraCaptureSession}s.
      */
@@ -392,13 +380,6 @@ public class JCamera2RawTextureView extends CameraView {
     private RefCountedAutoCloseable<ImageReader> mJpegImageReader;
 
     /**
-     * A reference counted holder wrapping the {@link ImageReader} that handles RAW image captures.
-     * This is used to allow us to clean up the {@link ImageReader} when all background tasks using
-     * its {@link Image}s have completed.
-     */
-    private RefCountedAutoCloseable<ImageReader> mRawImageReader;
-
-    /**
      * Whether or not the currently configured camera device is fixed-focus.
      */
     private boolean mNoAFRun = false;
@@ -412,11 +393,6 @@ public class JCamera2RawTextureView extends CameraView {
      * Request ID to {@link ImageSaver.ImageSaverBuilder} mapping for in-progress JPEG captures.
      */
     private final TreeMap<Integer, ImageSaver.ImageSaverBuilder> mJpegResultQueue = new TreeMap<>();
-
-    /**
-     * Request ID to {@link ImageSaver.ImageSaverBuilder} mapping for in-progress RAW captures.
-     */
-    private final TreeMap<Integer, ImageSaver.ImageSaverBuilder> mRawResultQueue = new TreeMap<>();
 
     /**
      * {@link CaptureRequest.Builder} for the camera preview
@@ -454,7 +430,7 @@ public class JCamera2RawTextureView extends CameraView {
                 mCameraDevice = cameraDevice;
 
                 // Start the preview session if the TextureView has been set up already.
-                if (getPreviewResolution() != null && mTextureView.isAvailable()) {
+                if (getPreviewResolution() != null && isAvailable()) {
                     createCameraPreviewSessionLocked();
                 }
             }
@@ -497,20 +473,6 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onImageAvailable(ImageReader reader) {
             dequeueAndSaveImage(mJpegResultQueue, mJpegImageReader);
-        }
-
-    };
-
-    /**
-     * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
-     * RAW image is ready to be saved.
-     */
-    private final ImageReader.OnImageAvailableListener mOnRawImageAvailableListener
-            = new ImageReader.OnImageAvailableListener() {
-
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            dequeueAndSaveImage(mRawResultQueue, mRawImageReader);
         }
 
     };
@@ -594,7 +556,7 @@ public class JCamera2RawTextureView extends CameraView {
     };
 
     /**
-     * A {@link CameraCaptureSession.CaptureCallback} that handles the still JPEG and RAW capture
+     * A {@link CameraCaptureSession.CaptureCallback} that handles the still JPEG capture
      * request.
      */
     private final CameraCaptureSession.CaptureCallback mCaptureCallback
@@ -602,26 +564,17 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                                      long timestamp, long frameNumber) {
-            String currentDateTime = generateTimestamp();
-            File rawFile = new File(Environment.
-                    getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
-                    "RAW_" + currentDateTime + ".dng");
-            File jpegFile = new File(Environment.
-                    getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
-                    "JPEG_" + currentDateTime + ".jpg");
+            File jpegFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
 
             // Look up the ImageSaverBuilder for this request and update it with the file name
             // based on the capture start time.
             ImageSaver.ImageSaverBuilder jpegBuilder;
-            ImageSaver.ImageSaverBuilder rawBuilder;
             int requestId = (int) request.getTag();
             synchronized (mCameraStateLock) {
                 jpegBuilder = mJpegResultQueue.get(requestId);
-                rawBuilder = mRawResultQueue.get(requestId);
             }
 
             if (jpegBuilder != null) jpegBuilder.setFile(jpegFile);
-            if (rawBuilder != null) rawBuilder.setFile(rawFile);
         }
 
         @Override
@@ -629,29 +582,20 @@ public class JCamera2RawTextureView extends CameraView {
                                        TotalCaptureResult result) {
             int requestId = (int) request.getTag();
             ImageSaver.ImageSaverBuilder jpegBuilder;
-            ImageSaver.ImageSaverBuilder rawBuilder;
             StringBuilder sb = new StringBuilder();
 
             // Look up the ImageSaverBuilder for this request and update it with the CaptureResult
             synchronized (mCameraStateLock) {
                 jpegBuilder = mJpegResultQueue.get(requestId);
-                rawBuilder = mRawResultQueue.get(requestId);
 
                 if (jpegBuilder != null) {
                     jpegBuilder.setResult(result);
                     sb.append("Saving JPEG as: ");
                     sb.append(jpegBuilder.getSaveLocation());
                 }
-                if (rawBuilder != null) {
-                    rawBuilder.setResult(result);
-                    if (jpegBuilder != null) sb.append(", ");
-                    sb.append("Saving RAW as: ");
-                    sb.append(rawBuilder.getSaveLocation());
-                }
 
                 // If we have all the results necessary, save the image to a file in the background.
                 handleCompletionLocked(requestId, jpegBuilder, mJpegResultQueue);
-                handleCompletionLocked(requestId, rawBuilder, mRawResultQueue);
 
                 finishedCaptureLocked();
             }
@@ -665,7 +609,6 @@ public class JCamera2RawTextureView extends CameraView {
             int requestId = (int) request.getTag();
             synchronized (mCameraStateLock) {
                 mJpegResultQueue.remove(requestId);
-                mRawResultQueue.remove(requestId);
                 finishedCaptureLocked();
             }
             /*showToast*/toast("Capture failed!");
@@ -684,24 +627,19 @@ public class JCamera2RawTextureView extends CameraView {
             return false;
         }
         try {
-            // Find a CameraDevice that supports RAW captures, and configure state.
+            // Configure state.
             CameraCharacteristics characteristics
                     = /*manager*/mCameraManager.getCameraCharacteristics(getDevice().getId2());
 
-            // We only use a camera that supports RAW in this sample.
-            if (!contains(characteristics.get(
-                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES),
-                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-//                continue;
-            }
-
-            CameraHelper.Device.Resolution largestRaw = getDevice().getMaxRawResolution();
-            if (largestRaw == null) {
-                return false;
-            }
+//            // We only use a camera that supports RAW in this sample.
+//            if (!contains(characteristics.get(
+//                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES),
+//                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
+////                continue;
+//            }
 
             synchronized (mCameraStateLock) {
-                // Set up ImageReaders for JPEG and RAW outputs.  Place these in a reference
+                // Set up ImageReaders for JPEG outputs.  Place these in a reference
                 // counted wrapper to ensure they are only closed when all background tasks
                 // using them are finished.
                 if (mJpegImageReader == null || mJpegImageReader.getAndRetain() == null) {
@@ -712,14 +650,6 @@ public class JCamera2RawTextureView extends CameraView {
                 mJpegImageReader.get().setOnImageAvailableListener(
                         mOnJpegImageAvailableListener, mBackgroundHandler);
 
-                if (mRawImageReader == null || mRawImageReader.getAndRetain() == null) {
-                    mRawImageReader = new RefCountedAutoCloseable<>(
-                            ImageReader.newInstance(largestRaw.getWidth(),
-                                    largestRaw.getHeight(), ImageFormat.RAW_SENSOR, /*maxImages*/ 5));
-                }
-                mRawImageReader.get().setOnImageAvailableListener(
-                        mOnRawImageAvailableListener, mBackgroundHandler);
-
                 mCharacteristics = characteristics;
             }
             return true;
@@ -727,10 +657,6 @@ public class JCamera2RawTextureView extends CameraView {
             e.printStackTrace();
         }
 
-        // If we found no suitable cameras for capturing RAW, warn the user.
-//        ErrorDialog.buildErrorDialog("This device doesn't support capturing RAW photos").
-//                show(getFragmentManager(), "dialog");
-        error("This device doesn't support capturing RAW photos");
         return false;
     }
 
@@ -796,10 +722,6 @@ public class JCamera2RawTextureView extends CameraView {
                     mJpegImageReader.close();
                     mJpegImageReader = null;
                 }
-                if (null != mRawImageReader) {
-                    mRawImageReader.close();
-                    mRawImageReader = null;
-                }
             }
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
@@ -847,7 +769,7 @@ public class JCamera2RawTextureView extends CameraView {
         }
 
         try {
-            SurfaceTexture texture = mTextureView.getSurfaceTexture();
+            SurfaceTexture texture = getSurfaceTexture();
             // We configure the size of default buffer to be the size of camera preview we want.
             texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
 
@@ -861,8 +783,7 @@ public class JCamera2RawTextureView extends CameraView {
 
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice.createCaptureSession(Arrays.asList(surface,
-                            mJpegImageReader.get().getSurface(),
-                            mRawImageReader.get().getSurface()), new CameraCaptureSession.StateCallback() {
+                            mJpegImageReader.get().getSurface()), new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession cameraCaptureSession) {
                             synchronized (mCameraStateLock) {
@@ -961,7 +882,7 @@ public class JCamera2RawTextureView extends CameraView {
      */
     private void configureTransform2() {
         synchronized (mCameraStateLock) {
-            if (null == mTextureView || /*null == activity*/isFinishing()) {
+            if (/*null == activity*/isFinishing()) {
                 return;
             }
 
@@ -1015,7 +936,7 @@ public class JCamera2RawTextureView extends CameraView {
             }
             matrix.postRotate(rotation, centerX, centerY);
 
-            mTextureView.setTransform(matrix);
+            setTransform(matrix);
 
             // Start or restart the active capture session if the preview was initialized or
             // if its aspect ratio changed significantly.
@@ -1079,8 +1000,8 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     /**
-     * Send a capture request to the camera device that initiates a capture targeting the JPEG and
-     * RAW outputs.
+     * Send a capture request to the camera device that initiates a capture targeting the JPEG
+     * outputs.
      * <p/>
      * Call this only with {@link #mCameraStateLock} held.
      */
@@ -1094,7 +1015,6 @@ public class JCamera2RawTextureView extends CameraView {
                     mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
 
             captureBuilder.addTarget(mJpegImageReader.get().getSurface());
-            captureBuilder.addTarget(mRawImageReader.get().getSurface());
 
             // Use the same AE and AF modes as the preview.
             setup3AControlsLocked(captureBuilder);
@@ -1113,11 +1033,8 @@ public class JCamera2RawTextureView extends CameraView {
             // of active requests.
             ImageSaver.ImageSaverBuilder jpegBuilder = new ImageSaver.ImageSaverBuilder(/*activity*/getContext())
                     .setCharacteristics(mCharacteristics);
-            ImageSaver.ImageSaverBuilder rawBuilder = new ImageSaver.ImageSaverBuilder(/*activity*/getContext())
-                    .setCharacteristics(mCharacteristics);
 
             mJpegResultQueue.put((int) request.getTag(), jpegBuilder);
-            mRawResultQueue.put((int) request.getTag(), rawBuilder);
 
             mCaptureSession.capture(request, mCaptureCallback, mBackgroundHandler);
 
@@ -1127,7 +1044,7 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     /**
-     * Called after a RAW/JPEG capture has completed; resets the AF trigger state for the
+     * Called after a JPEG capture has completed; resets the AF trigger state for the
      * pre-capture sequence.
      * <p/>
      * Call this only with {@link #mCameraStateLock} held.
@@ -1213,16 +1130,6 @@ public class JCamera2RawTextureView extends CameraView {
         private final File mFile;
 
         /**
-         * The CaptureResult for this image capture.
-         */
-        private final CaptureResult mCaptureResult;
-
-        /**
-         * The CameraCharacteristics for this camera device.
-         */
-        private final CameraCharacteristics mCharacteristics;
-
-        /**
          * The Context to use when updating MediaStore with the saved images.
          */
         private final Context mContext;
@@ -1232,13 +1139,11 @@ public class JCamera2RawTextureView extends CameraView {
          */
         private final RefCountedAutoCloseable<ImageReader> mReader;
 
-        private ImageSaver(Image image, File file, CaptureResult result,
-                           CameraCharacteristics characteristics, Context context,
+        private ImageSaver(Image image, File file,
+                           Context context,
                            RefCountedAutoCloseable<ImageReader> reader) {
             mImage = image;
             mFile = file;
-            mCaptureResult = result;
-            mCharacteristics = characteristics;
             mContext = context;
             mReader = reader;
         }
@@ -1247,43 +1152,23 @@ public class JCamera2RawTextureView extends CameraView {
         public void run() {
             boolean success = false;
             int format = mImage.getFormat();
-            switch (format) {
-                case ImageFormat.JPEG: {
-                    ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    FileOutputStream output = null;
-                    try {
-                        output = new FileOutputStream(mFile);
-                        output.write(bytes);
-                        success = true;
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        mImage.close();
-                        closeOutput(output);
-                    }
-                    break;
+            if (format == ImageFormat.JPEG) {
+                ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes);
+                FileOutputStream output = null;
+                try {
+                    output = new FileOutputStream(mFile);
+                    output.write(bytes);
+                    success = true;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    mImage.close();
+                    closeOutput(output);
                 }
-                case ImageFormat.RAW_SENSOR: {
-                    DngCreator dngCreator = new DngCreator(mCharacteristics, mCaptureResult);
-                    FileOutputStream output = null;
-                    try {
-                        output = new FileOutputStream(mFile);
-                        dngCreator.writeImage(output, mImage);
-                        success = true;
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        mImage.close();
-                        closeOutput(output);
-                    }
-                    break;
-                }
-                default: {
-                    Log.e(TAG, "Cannot save image, unexpected image format:" + format);
-                    break;
-                }
+            } else {
+                Log.e(TAG, "Cannot save image, unexpected image format:" + format);
             }
 
             // Decrement reference count to allow ImageReader to be closed to free up resources.
@@ -1367,7 +1252,7 @@ public class JCamera2RawTextureView extends CameraView {
                 if (!isComplete()) {
                     return null;
                 }
-                return new ImageSaver(mImage, mFile, mCaptureResult, mCharacteristics, mContext,
+                return new ImageSaver(mImage, mFile, mContext,
                         mReader);
             }
 
@@ -1444,16 +1329,6 @@ public class JCamera2RawTextureView extends CameraView {
                 }
             }
         }
-    }
-
-    /**
-     * Generate a string containing a formatted timestamp with the current date and time.
-     *
-     * @return a {@link String} representing a time.
-     */
-    private static String generateTimestamp() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS", Locale.US);
-        return sdf.format(new Date());
     }
 
     /**

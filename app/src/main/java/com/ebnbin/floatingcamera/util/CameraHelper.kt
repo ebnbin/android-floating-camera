@@ -2,7 +2,6 @@
 
 package com.ebnbin.floatingcamera.util
 
-import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.hardware.camera2.CameraAccessException
@@ -300,12 +299,6 @@ class CameraHelper private constructor() {
                 SurfaceTexture::class.java) ?: throw CameraException("Camera2 SurfaceTexture 输出尺寸列表获取失败.")
 
         /**
-         * Camera2 [ImageFormat.RAW_SENSOR] 输出尺寸列表.
-         */
-        private val rawSensorSizes2: Array<Size>? = scalerStreamConfigurationMap2.getOutputSizes(
-                ImageFormat.RAW_SENSOR)
-
-        /**
          * Camera1 预览尺寸列表.
          */
         private val supportedPreviewSizes1: List<Camera.Size> = parameters1.supportedPreviewSizes
@@ -396,24 +389,6 @@ class CameraHelper private constructor() {
 
             return resolutionList2.toTypedArray()
         }
-
-        /**
-         * 原始分辨率列表.
-         */
-        private val rawResolutions: Array<Resolution>
-        init {
-            val rawResolutionList = ArrayList<Resolution>()
-            rawSensorSizes2?.forEach {
-                rawResolutionList.add(Resolution(it.width, it.height, isSensorOrientationLandscape, camcorderProfiles))
-            }
-
-            rawResolutions = rawResolutionList.toTypedArray()
-        }
-
-        /**
-         * 最大原始分辨率列表.
-         */
-        val maxRawResolution = rawResolutions.max()
 
         /**
          * 视频分辨率摘要列表.

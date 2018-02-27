@@ -56,21 +56,17 @@ public class JCamera2VideoTextureView extends CameraView {
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
 
-    private void init() {
-        mTextureView = this;
-    }
-
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
 
         startBackgroundThread();
-        if (mTextureView.isAvailable()) {
+        if (isAvailable()) {
             openCamera();
 
             record();
         } else {
-            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+            setSurfaceTextureListener(mSurfaceTextureListener);
         }
     }
 
@@ -174,30 +170,19 @@ public class JCamera2VideoTextureView extends CameraView {
 
     public JCamera2VideoTextureView(Context context) {
         this(context, null);
-
-        init();
     }
 
     public JCamera2VideoTextureView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
-
-        init();
     }
 
     public JCamera2VideoTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
-        init();
     }
 
     //*****************************************************************************************************************
 
     private static final String TAG = "JCamera2VideoTextureVie";
-
-    /**
-     * An {@link JCamera2VideoTextureView} for camera preview.
-     */
-    private /*AutoFitTextureView*/ JCamera2VideoTextureView mTextureView;
 
     /**
      * A reference to the opened {@link android.hardware.camera2.CameraDevice}.
@@ -277,9 +262,8 @@ public class JCamera2VideoTextureView extends CameraView {
             mCameraDevice = cameraDevice;
             startPreview();
             mCameraOpenCloseLock.release();
-            if (null != mTextureView) {
-                configureTransform();
-            }
+
+            configureTransform();
         }
 
         @Override
@@ -390,12 +374,12 @@ public class JCamera2VideoTextureView extends CameraView {
     private void startPreview() {
         CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
 
-        if (null == mCameraDevice || !mTextureView.isAvailable() || null == previewResolution) {
+        if (null == mCameraDevice || !isAvailable() || null == previewResolution) {
             return;
         }
         try {
             closePreviewSession();
-            SurfaceTexture texture = mTextureView.getSurfaceTexture();
+            SurfaceTexture texture = getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -482,13 +466,13 @@ public class JCamera2VideoTextureView extends CameraView {
     private void startRecordingVideo() {
         CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
 
-        if (null == mCameraDevice || !mTextureView.isAvailable() || null == previewResolution) {
+        if (null == mCameraDevice || !isAvailable() || null == previewResolution) {
             return;
         }
         try {
             closePreviewSession();
             setUpMediaRecorder();
-            SurfaceTexture texture = mTextureView.getSurfaceTexture();
+            SurfaceTexture texture = getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);

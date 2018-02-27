@@ -61,10 +61,6 @@ public class JCamera2BasicTextureView extends CameraView {
     private CameraManager mCameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
     private WindowManager mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
 
-    private void init() {
-        mTextureView = this;
-    }
-
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -75,12 +71,12 @@ public class JCamera2BasicTextureView extends CameraView {
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
-        if (mTextureView.isAvailable()) {
+        if (isAvailable()) {
             openCamera();
 
             picture();
         } else {
-            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+            setSurfaceTextureListener(mSurfaceTextureListener);
         }
     }
 
@@ -163,20 +159,14 @@ public class JCamera2BasicTextureView extends CameraView {
 
     public JCamera2BasicTextureView(Context context) {
         this(context, null);
-
-        init();
     }
 
     public JCamera2BasicTextureView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
-
-        init();
     }
 
     public JCamera2BasicTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
-        init();
     }
 
     //*****************************************************************************************************************
@@ -240,11 +230,6 @@ public class JCamera2BasicTextureView extends CameraView {
         }
 
     };
-
-    /**
-     * An {@link JCamera2BasicTextureView} for camera preview.
-     */
-    private /*AutoFitTextureView*/ JCamera2BasicTextureView mTextureView;
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -499,7 +484,7 @@ public class JCamera2BasicTextureView extends CameraView {
         }
 
         try {
-            SurfaceTexture texture = mTextureView.getSurfaceTexture();
+            SurfaceTexture texture = getSurfaceTexture();
             assert texture != null;
 
             // We configure the size of default buffer to be the size of camera preview we want.

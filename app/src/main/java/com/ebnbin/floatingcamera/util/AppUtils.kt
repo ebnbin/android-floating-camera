@@ -28,6 +28,7 @@ val packageUri by lazy { Uri.parse("package:$packageName")!! }
 //*********************************************************************************************************************
 // System services.
 
+// TODO: Nullable 如果 Camera2 api 不支持.
 val cameraManager by lazy { app.getSystemService(Context.CAMERA_SERVICE) as CameraManager }
 val windowManager by lazy { app.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
 

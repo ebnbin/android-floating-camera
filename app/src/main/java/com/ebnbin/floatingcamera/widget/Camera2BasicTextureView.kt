@@ -68,7 +68,7 @@ class Camera2BasicTextureView constructor(
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
-        if (textureView.isAvailable) {
+        if (isAvailable) {
             openCamera()
 
             picture()
@@ -142,14 +142,6 @@ class Camera2BasicTextureView constructor(
 
         override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
 
-    }
-
-    /**
-     * An [Camera2BasicTextureView] for camera preview.
-     */
-    private lateinit var textureView: /*AutoFitTextureView*/Camera2BasicTextureView
-    init {
-        textureView = this
     }
 
     /**
@@ -375,7 +367,7 @@ class Camera2BasicTextureView constructor(
         val previewResolution = previewResolution ?: return
 
         try {
-            val texture = textureView.surfaceTexture
+            val texture = surfaceTexture
 
             // We configure the size of default buffer to be the size of camera preview we want.
             texture.setDefaultBufferSize(previewResolution.width, previewResolution.height)
