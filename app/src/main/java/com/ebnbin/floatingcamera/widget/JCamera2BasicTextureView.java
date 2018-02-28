@@ -32,8 +32,6 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -57,33 +55,6 @@ import java.util.concurrent.TimeUnit;
 
 public class JCamera2BasicTextureView extends CameraView {
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-
-        startBackgroundThread();
-
-        // When the screen is turned off and turned back on, the SurfaceTexture is already
-        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-        // the SurfaceTextureListener).
-        if (isAvailable()) {
-            openCamera();
-
-            picture();
-        } else {
-            setSurfaceTextureListener(this);
-        }
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        closeCamera();
-        stopBackgroundThread();
-
-        super.onDetachedFromWindow();
-    }
-
     private void onClick() {
         takePicture();
     }
@@ -97,14 +68,6 @@ public class JCamera2BasicTextureView extends CameraView {
                 onClick();
             }
         });
-    }
-
-    private void finish() {
-        if (isNotAttachedToWindow()) {
-            return;
-        }
-
-        AppUtilsKt.getWindowManager().removeView(this);
     }
 
     private void runOnUiThread(final Runnable action) {
@@ -158,6 +121,11 @@ public class JCamera2BasicTextureView extends CameraView {
         super.onSurfaceTextureSizeChanged(surface, width, height);
 
         configureTransform();
+    }
+
+    @Override
+    protected void onFinish() {
+        closeCamera();
     }
 
     //*****************************************************************************************************************
@@ -241,23 +209,10 @@ public class JCamera2BasicTextureView extends CameraView {
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             mCameraDevice = null;
-//            Activity activity = getActivity();
-//            if (null != activity) {
-                /*activity.*/finish();
-//            }
+            finish();
         }
 
     };
-
-    /**
-     * An additional thread for running tasks that shouldn't block the UI.
-     */
-    private HandlerThread mBackgroundThread;
-
-    /**
-     * A {@link Handler} for running tasks in the background.
-     */
-    private Handler mBackgroundHandler;
 
     /**
      * An {@link ImageReader} that handles still image capture.
@@ -278,7 +233,7 @@ public class JCamera2BasicTextureView extends CameraView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            getBackgroundHandler().post(new ImageSaver(reader.acquireNextImage(), mFile));
         }
 
     };
@@ -386,14 +341,14 @@ public class JCamera2BasicTextureView extends CameraView {
         mImageReader = ImageReader.newInstance(getResolution().getWidth(), getResolution().getHeight(),
                 ImageFormat.JPEG, /*maxImages*/2);
         mImageReader.setOnImageAvailableListener(
-                mOnImageAvailableListener, mBackgroundHandler);
+                mOnImageAvailableListener, getBackgroundHandler());
 
         configureTransform();
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, mBackgroundHandler);
+            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, getBackgroundHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -423,29 +378,6 @@ public class JCamera2BasicTextureView extends CameraView {
             throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
         } finally {
             mCameraOpenCloseLock.release();
-        }
-    }
-
-    /**
-     * Starts a background thread and its {@link Handler}.
-     */
-    private void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("CameraBackground");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-    }
-
-    /**
-     * Stops the background thread and its {@link Handler}.
-     */
-    private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
-        try {
-            mBackgroundThread.join();
-            mBackgroundThread = null;
-            mBackgroundHandler = null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 
@@ -496,7 +428,7 @@ public class JCamera2BasicTextureView extends CameraView {
                                 // Finally, we start displaying the camera preview.
                                 mPreviewRequest = mPreviewRequestBuilder.build();
                                 mCaptureSession.setRepeatingRequest(mPreviewRequest,
-                                        mCaptureCallback, mBackgroundHandler);
+                                        mCaptureCallback, getBackgroundHandler());
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
                             }
@@ -532,7 +464,7 @@ public class JCamera2BasicTextureView extends CameraView {
             // Tell #mCaptureCallback to wait for the lock.
             mState = STATE_WAITING_LOCK;
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-                    mBackgroundHandler);
+                    getBackgroundHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -550,7 +482,7 @@ public class JCamera2BasicTextureView extends CameraView {
             // Tell #mCaptureCallback to wait for the precapture sequence to be set.
             mState = STATE_WAITING_PRECAPTURE;
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-                    mBackgroundHandler);
+                    getBackgroundHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -611,11 +543,11 @@ public class JCamera2BasicTextureView extends CameraView {
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
             setAutoFlash(mPreviewRequestBuilder);
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
-                    mBackgroundHandler);
+                    getBackgroundHandler());
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
             mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback,
-                    mBackgroundHandler);
+                    getBackgroundHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }

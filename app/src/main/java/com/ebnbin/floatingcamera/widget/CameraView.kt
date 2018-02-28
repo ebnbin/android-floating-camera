@@ -5,8 +5,13 @@ import android.content.SharedPreferences
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraDevice
+import android.os.Handler
+import android.os.HandlerThread
 import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
@@ -51,9 +56,15 @@ abstract class CameraView : TextureView,
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
 
         RotationHelper.listeners.add(this)
+
+        startBackgroundThread()
+
+        surfaceTextureListener = this
     }
 
     override fun onDetachedFromWindow() {
+        stopBackgroundThread()
+
         RotationHelper.listeners.remove(this)
 
         defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
@@ -186,7 +197,7 @@ abstract class CameraView : TextureView,
 
         DebugHelper.log("onLongPress")
 
-        CameraService.stop()
+        finish()
     }
 
     /**
@@ -445,4 +456,50 @@ abstract class CameraView : TextureView,
             configureTransform()
         }
     }
+
+    //*****************************************************************************************************************
+
+    /**
+     * An additional thread for running tasks that shouldn't block the UI. This is used for all callbacks from the
+     * [CameraDevice] and [CameraCaptureSession]s.
+     */
+    private lateinit var backgroundThread: HandlerThread
+
+    /**
+     * A [Handler] for running tasks in the background.
+     */
+    protected lateinit var backgroundHandler: Handler private set
+
+    /**
+     * Starts a background thread and its [Handler].
+     */
+    private fun startBackgroundThread() {
+        backgroundThread = HandlerThread("CameraBackground")
+        backgroundThread.start()
+        backgroundHandler = Handler(backgroundThread.looper)
+    }
+
+    /**
+     * Stops the background thread and its [Handler].
+     */
+    private fun stopBackgroundThread() {
+        backgroundThread.quitSafely()
+        try {
+            backgroundThread.join()
+        } catch (e: InterruptedException) {
+            Log.e("ebnbin", "", e)
+        }
+    }
+
+    //*****************************************************************************************************************
+
+    protected fun finish() {
+        if (isNotAttachedToWindow()) return
+
+        onFinish()
+
+        CameraService.stop()
+    }
+
+    protected abstract fun onFinish()
 }

@@ -32,8 +32,6 @@ import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.media.Image
 import android.media.ImageReader
-import android.os.Handler
-import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Surface
@@ -41,7 +39,6 @@ import android.widget.Toast
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.cameraManager
-import com.ebnbin.floatingcamera.util.windowManager
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -55,43 +52,12 @@ class Camera2BasicTextureView constructor(
         defStyle: Int = 0
 ) : CameraView(context, attrs, defStyle) {
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-
-        startBackgroundThread()
-
-        // When the screen is turned off and turned back on, the SurfaceTexture is already
-        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-        // the SurfaceTextureListener).
-        if (isAvailable) {
-            openCamera()
-
-            picture()
-        } else {
-            surfaceTextureListener = this
-        }
-    }
-
-    override fun onDetachedFromWindow() {
-        closeCamera()
-        stopBackgroundThread()
-
-        super.onDetachedFromWindow()
-    }
-
     private fun onClick() = lockFocus()
 
     private fun picture() = runOnUiThreadDelayed {
         file = File(PreferenceHelper.path(), "${System.currentTimeMillis()}.jpg")
 
         onClick()
-    }
-
-    private fun finish() {
-        if (isNotAttachedToWindow()) return
-
-        windowManager.removeView(this)
     }
 
     private fun runOnUiThread(action: () -> Unit) = post {
@@ -122,6 +88,10 @@ class Camera2BasicTextureView constructor(
         super.onSurfaceTextureSizeChanged(surface, width, height)
 
         configureTransform()
+    }
+
+    override fun onFinish() {
+        closeCamera()
     }
 
     //*****************************************************************************************************************
@@ -155,20 +125,10 @@ class Camera2BasicTextureView constructor(
 
         override fun onError(cameraDevice: CameraDevice, error: Int) {
             onDisconnected(cameraDevice)
-            /*this@Camera2BasicTextureView.activity?.*/finish()
+            finish()
         }
 
     }
-
-    /**
-     * An additional thread for running tasks that shouldn't block the UI.
-     */
-    private var backgroundThread: HandlerThread? = null
-
-    /**
-     * A [Handler] for running tasks in the background.
-     */
-    private var backgroundHandler: Handler? = null
 
     /**
      * An [ImageReader] that handles still image capture.
@@ -185,7 +145,7 @@ class Camera2BasicTextureView constructor(
      * still image is ready to be saved.
      */
     private val onImageAvailableListener = ImageReader.OnImageAvailableListener {
-        backgroundHandler?.post(ImageSaver(it.acquireNextImage(), file))
+        backgroundHandler.post(ImageSaver(it.acquireNextImage(), file))
     }
 
     /**
@@ -317,29 +277,6 @@ class Camera2BasicTextureView constructor(
         } finally {
             cameraOpenCloseLock.release()
         }
-    }
-
-    /**
-     * Starts a background thread and its [Handler].
-     */
-    private fun startBackgroundThread() {
-        backgroundThread = HandlerThread("CameraBackground").also { it.start() }
-        backgroundHandler = Handler(backgroundThread?.looper)
-    }
-
-    /**
-     * Stops the background thread and its [Handler].
-     */
-    private fun stopBackgroundThread() {
-        backgroundThread?.quitSafely()
-        try {
-            backgroundThread?.join()
-            backgroundThread = null
-            backgroundHandler = null
-        } catch (e: InterruptedException) {
-            Log.e(TAG, e.toString())
-        }
-
     }
 
     /**

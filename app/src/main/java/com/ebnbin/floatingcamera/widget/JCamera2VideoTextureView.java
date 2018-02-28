@@ -27,7 +27,6 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.MediaRecorder;
-import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
@@ -52,30 +51,6 @@ import java.util.concurrent.TimeUnit;
 
 public class JCamera2VideoTextureView extends CameraView {
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-
-        startBackgroundThread();
-        if (isAvailable()) {
-            openCamera();
-
-            record();
-        } else {
-            setSurfaceTextureListener(this);
-        }
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        stop();
-
-        closeCamera();
-        stopBackgroundThread();
-
-        super.onDetachedFromWindow();
-    }
-
     private void onClick() {
         if (mIsRecordingVideo) {
             stopRecordingVideo();
@@ -98,24 +73,11 @@ public class JCamera2VideoTextureView extends CameraView {
     }
 
     private void stop() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (!mIsRecordingVideo) {
-                    return;
-                }
-
-                onClick();
-            }
-        });
-    }
-
-    private void finish() {
-        if (isNotAttachedToWindow()) {
+        if (!mIsRecordingVideo) {
             return;
         }
 
-        AppUtilsKt.getWindowManager().removeView(this);
+        onClick();
     }
 
     private void runOnUiThread(final Runnable action) {
@@ -176,6 +138,13 @@ public class JCamera2VideoTextureView extends CameraView {
         configureTransform();
     }
 
+    @Override
+    protected void onFinish() {
+        stop();
+
+        closeCamera();
+    }
+
     //*****************************************************************************************************************
 
     public JCamera2VideoTextureView(Context context) {
@@ -216,16 +185,6 @@ public class JCamera2VideoTextureView extends CameraView {
     private boolean mIsRecordingVideo;
 
     /**
-     * An additional thread for running tasks that shouldn't block the UI.
-     */
-    private HandlerThread mBackgroundThread;
-
-    /**
-     * A {@link Handler} for running tasks in the background.
-     */
-    private Handler mBackgroundHandler;
-
-    /**
      * A {@link Semaphore} to prevent the app from exiting before closing the camera.
      */
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
@@ -256,38 +215,12 @@ public class JCamera2VideoTextureView extends CameraView {
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             mCameraDevice = null;
-//            Activity activity = getActivity();
-//            if (null != activity) {
-                /*activity.*/finish();
-//            }
+            finish();
         }
 
     };
     private File mNextVideoAbsolutePath;
     private CaptureRequest.Builder mPreviewBuilder;
-
-    /**
-     * Starts a background thread and its {@link Handler}.
-     */
-    private void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("CameraBackground");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-    }
-
-    /**
-     * Stops the background thread and its {@link Handler}.
-     */
-    private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
-        try {
-            mBackgroundThread.join();
-            mBackgroundThread = null;
-            mBackgroundHandler = null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      * Tries to open a {@link CameraDevice}. The result is listened by `mStateCallback`.
@@ -315,7 +248,7 @@ public class JCamera2VideoTextureView extends CameraView {
         } catch (CameraAccessException e) {
 //            Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
             toast("Cannot access the camera.");
-            /*activity.*/finish();
+            finish();
         } catch (NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
@@ -382,7 +315,7 @@ public class JCamera2VideoTextureView extends CameraView {
 //                            }
                             toast("Failed");
                         }
-                    }, mBackgroundHandler);
+                    }, getBackgroundHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -399,7 +332,7 @@ public class JCamera2VideoTextureView extends CameraView {
             setUpCaptureRequestBuilder(mPreviewBuilder);
             HandlerThread thread = new HandlerThread("CameraPreview");
             thread.start();
-            mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
+            mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, getBackgroundHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -495,7 +428,7 @@ public class JCamera2VideoTextureView extends CameraView {
 //                    }
                     toast("Failed");
                 }
-            }, mBackgroundHandler);
+            }, getBackgroundHandler());
         } catch (CameraAccessException | IOException e) {
             e.printStackTrace();
         }

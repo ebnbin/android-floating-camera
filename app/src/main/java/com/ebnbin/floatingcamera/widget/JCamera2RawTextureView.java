@@ -39,7 +39,6 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -101,34 +100,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class JCamera2RawTextureView extends CameraView implements RotationHelper.Listener {
 
     @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-
-        startBackgroundThread();
-        openCamera();
-
-        // When the screen is turned off and turned back on, the SurfaceTexture is already
-        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we should
-        // configure the preview bounds here (otherwise, we wait until the surface is ready in
-        // the SurfaceTextureListener).
-        if (isAvailable()) {
-            configureTransform2();
-
-            picture();
-        } else {
-            setSurfaceTextureListener(this);
-        }
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        closeCamera();
-        stopBackgroundThread();
-
-        super.onDetachedFromWindow();
-    }
-
-    @Override
     public void onRotationChanged(int oldRotation, int newRotation) {
         if (isAvailable()) {
             configureTransform2();
@@ -146,14 +117,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                 onClick();
             }
         });
-    }
-
-    private void finish() {
-        if (isNotAttachedToWindow()) {
-            return;
-        }
-
-        AppUtilsKt.getWindowManager().removeView(this);
     }
 
     private void runOnUiThread(final Runnable action) {
@@ -197,6 +160,8 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
         super.onSurfaceTextureAvailable(surface, width, height);
 
+        openCamera();
+
         configureTransform2();
 
         picture();
@@ -216,6 +181,11 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         }
 
         return super.onSurfaceTextureDestroyed(surface);
+    }
+
+    @Override
+    protected void onFinish() {
+        closeCamera();
     }
 
     //*****************************************************************************************************************
@@ -277,12 +247,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     private static final int STATE_WAITING_FOR_3A_CONVERGENCE = 3;
 
     /**
-     * An additional thread for running tasks that shouldn't block the UI.  This is used for all
-     * callbacks from the {@link CameraDevice} and {@link CameraCaptureSession}s.
-     */
-    private HandlerThread mBackgroundThread;
-
-    /**
      * A counter for tracking corresponding {@link CaptureRequest}s and {@link CaptureResult}s
      * across the {@link CameraCaptureSession} capture callbacks.
      */
@@ -318,11 +282,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * The {@link CameraCharacteristics} for the currently configured camera device.
      */
     private CameraCharacteristics mCharacteristics;
-
-    /**
-     * A {@link Handler} for running tasks in the background.
-     */
-    private Handler mBackgroundHandler;
 
     /**
      * A reference counted holder wrapping the {@link ImageReader} that handles JPEG image
@@ -407,10 +366,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                 cameraDevice.close();
                 mCameraDevice = null;
             }
-//            Activity activity = getActivity();
-//            if (null != activity) {
-                /*activity.*/finish();
-//            }
+            finish();
         }
 
     };
@@ -593,7 +549,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                                     getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5));
                 }
                 mJpegImageReader.get().setOnImageAvailableListener(
-                        mOnJpegImageAvailableListener, mBackgroundHandler);
+                        mOnJpegImageAvailableListener, getBackgroundHandler());
 
                 mCharacteristics = characteristics;
             }
@@ -629,7 +585,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
             Handler backgroundHandler;
             synchronized (mCameraStateLock) {
-                backgroundHandler = mBackgroundHandler;
+                backgroundHandler = getBackgroundHandler();
             }
 
             // Attempt to open the camera. mStateCallback will be called on the background handler's
@@ -674,33 +630,33 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             mCameraOpenCloseLock.release();
         }
     }
-
-    /**
-     * Starts a background thread and its {@link Handler}.
-     */
-    private void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("CameraBackground");
-        mBackgroundThread.start();
-        synchronized (mCameraStateLock) {
-            mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-        }
-    }
-
-    /**
-     * Stops the background thread and its {@link Handler}.
-     */
-    private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
-        try {
-            mBackgroundThread.join();
-            mBackgroundThread = null;
-            synchronized (mCameraStateLock) {
-                mBackgroundHandler = null;
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
+//
+//    /**
+//     * Starts a background thread and its {@link Handler}.
+//     */
+//    private void startBackgroundThread() {
+//        mBackgroundThread = new HandlerThread("CameraBackground");
+//        mBackgroundThread.start();
+//        synchronized (mCameraStateLock) {
+//            mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+//        }
+//    }
+//
+//    /**
+//     * Stops the background thread and its {@link Handler}.
+//     */
+//    private void stopBackgroundThread() {
+//        mBackgroundThread.quitSafely();
+//        try {
+//            mBackgroundThread.join();
+//            mBackgroundThread = null;
+//            synchronized (mCameraStateLock) {
+//                mBackgroundHandler = null;
+//            }
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
@@ -742,7 +698,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                                     // Finally, we start displaying the camera preview.
                                     cameraCaptureSession.setRepeatingRequest(
                                             mPreviewRequestBuilder.build(),
-                                            mPreCaptureCallback, mBackgroundHandler);
+                                            mPreCaptureCallback, getBackgroundHandler());
                                     mState = STATE_PREVIEW;
                                 } catch (CameraAccessException | IllegalStateException e) {
                                     e.printStackTrace();
@@ -757,7 +713,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                         public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
                             /*showToast*/toast("Failed to configure camera.");
                         }
-                    }, mBackgroundHandler
+                    }, getBackgroundHandler()
             );
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -935,7 +891,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
                 // Replace the existing repeating request with one with updated 3A triggers.
                 mCaptureSession.capture(mPreviewRequestBuilder.build(), mPreCaptureCallback,
-                        mBackgroundHandler);
+                        getBackgroundHandler());
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
@@ -977,7 +933,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
             mJpegResultQueue.put((int) request.getTag(), jpegBuilder);
 
-            mCaptureSession.capture(request, mCaptureCallback, mBackgroundHandler);
+            mCaptureSession.capture(request, mCaptureCallback, getBackgroundHandler());
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -998,7 +954,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                         CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
 
                 mCaptureSession.capture(mPreviewRequestBuilder.build(), mPreCaptureCallback,
-                        mBackgroundHandler);
+                        getBackgroundHandler());
 
                 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                         CameraMetadata.CONTROL_AF_TRIGGER_IDLE);
