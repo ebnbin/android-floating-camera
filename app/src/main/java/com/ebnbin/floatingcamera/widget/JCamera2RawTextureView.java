@@ -21,8 +21,6 @@ package com.ebnbin.floatingcamera.widget;
 import android.Manifest;
 import android.content.Context;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -47,10 +45,8 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
-import com.ebnbin.floatingcamera.util.RotationHelper;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -62,7 +58,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -97,14 +92,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </li>
  * </ul>
  */
-public class JCamera2RawTextureView extends CameraView implements RotationHelper.Listener {
-
-    @Override
-    public void onRotationChanged(int oldRotation, int newRotation) {
-        if (isAvailable()) {
-            configureTransform2();
-        }
-    }
+public class JCamera2RawTextureView extends CameraView {
 
     private void onClick() {
         takePicture();
@@ -160,9 +148,9 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
         super.onSurfaceTextureAvailable(surface, width, height);
 
-        openCamera();
+        configureTransform();
 
-        configureTransform2();
+        openCamera();
 
         picture();
     }
@@ -171,16 +159,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
         super.onSurfaceTextureSizeChanged(surface, width, height);
 
-        configureTransform2();
-    }
-
-    @Override
-    public boolean onSurfaceTextureDestroyed(@Nullable SurfaceTexture surface) {
-        synchronized (mCameraStateLock) {
-            setPreviewResolution(null);
-        }
-
-        return super.onSurfaceTextureDestroyed(surface);
+        configureTransform();
     }
 
     @Override
@@ -252,21 +231,11 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      */
     private final AtomicInteger mRequestCounter = new AtomicInteger();
 
-    /**
-     * A {@link Semaphore} to prevent the app from exiting before closing the camera.
-     */
-    private final Semaphore mCameraOpenCloseLock = new Semaphore(1);
-
-    /**
-     * A lock protecting camera state.
-     */
-    private final Object mCameraStateLock = new Object();
-
     // *********************************************************************************************
-    // State protected by mCameraStateLock.
+    // State protected by getCameraStateLock().
     //
     // The following state is used across both the UI and background threads.  Methods with "Locked"
-    // in the name expect mCameraStateLock to be held while calling.
+    // in the name expect getCameraStateLock() to be held while calling.
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -335,13 +304,13 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         public void onOpened(CameraDevice cameraDevice) {
             // This method is called when the camera is opened.  We start camera preview here if
             // the TextureView displaying this has been set up.
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 mState = STATE_OPENED;
-                mCameraOpenCloseLock.release();
+                getCameraOpenCloseLock().release();
                 mCameraDevice = cameraDevice;
 
                 // Start the preview session if the TextureView has been set up already.
-                if (getPreviewResolution() != null && isAvailable()) {
+                if (isAvailable()) {
                     createCameraPreviewSessionLocked();
                 }
             }
@@ -349,24 +318,19 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
         @Override
         public void onDisconnected(CameraDevice cameraDevice) {
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 mState = STATE_CLOSED;
-                mCameraOpenCloseLock.release();
+                getCameraOpenCloseLock().release();
                 cameraDevice.close();
                 mCameraDevice = null;
             }
+            finish();
         }
 
         @Override
         public void onError(CameraDevice cameraDevice, int error) {
             Log.e(TAG, "Received camera device error: " + error);
-            synchronized (mCameraStateLock) {
-                mState = STATE_CLOSED;
-                mCameraOpenCloseLock.release();
-                cameraDevice.close();
-                mCameraDevice = null;
-            }
-            finish();
+            onDisconnected(cameraDevice);
         }
 
     };
@@ -393,7 +357,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             = new CameraCaptureSession.CaptureCallback() {
 
         private void process(CaptureResult result) {
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 switch (mState) {
                     case STATE_PREVIEW: {
                         // We have nothing to do when the camera preview is running normally.
@@ -478,7 +442,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             // based on the capture start time.
             ImageSaver.ImageSaverBuilder jpegBuilder;
             int requestId = (int) request.getTag();
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 jpegBuilder = mJpegResultQueue.get(requestId);
             }
 
@@ -493,7 +457,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
             StringBuilder sb = new StringBuilder();
 
             // Look up the ImageSaverBuilder for this request and update it with the CaptureResult
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 jpegBuilder = mJpegResultQueue.get(requestId);
 
                 if (jpegBuilder != null) {
@@ -514,7 +478,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
                                     CaptureFailure failure) {
             int requestId = (int) request.getTag();
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 mJpegResultQueue.remove(requestId);
                 finishedCaptureLocked();
             }
@@ -539,7 +503,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 ////                continue;
 //            }
 
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 // Set up ImageReaders for JPEG outputs.  Place these in a reference
                 // counted wrapper to ensure they are only closed when all background tasks
                 // using them are finished.
@@ -579,12 +543,12 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
 
         try {
             // Wait for any previously running session to finish.
-            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+            if (!getCameraOpenCloseLock().tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
             Handler backgroundHandler;
-            synchronized (mCameraStateLock) {
+            synchronized (getCameraStateLock()) {
                 backgroundHandler = getBackgroundHandler();
             }
 
@@ -603,8 +567,8 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      */
     private void closeCamera() {
         try {
-            mCameraOpenCloseLock.acquire();
-            synchronized (mCameraStateLock) {
+            getCameraOpenCloseLock().acquire();
+            synchronized (getCameraStateLock()) {
 
                 // Reset state and clean up resources used by the camera.
                 // Note: After calling this, the ImageReaders will be closed after any background
@@ -627,52 +591,20 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
         } finally {
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
         }
     }
-//
-//    /**
-//     * Starts a background thread and its {@link Handler}.
-//     */
-//    private void startBackgroundThread() {
-//        mBackgroundThread = new HandlerThread("CameraBackground");
-//        mBackgroundThread.start();
-//        synchronized (mCameraStateLock) {
-//            mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-//        }
-//    }
-//
-//    /**
-//     * Stops the background thread and its {@link Handler}.
-//     */
-//    private void stopBackgroundThread() {
-//        mBackgroundThread.quitSafely();
-//        try {
-//            mBackgroundThread.join();
-//            mBackgroundThread = null;
-//            synchronized (mCameraStateLock) {
-//                mBackgroundHandler = null;
-//            }
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void createCameraPreviewSessionLocked() {
-        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
-        if (previewResolution == null) {
-            return;
-        }
-
         try {
             SurfaceTexture texture = getSurfaceTexture();
             // We configure the size of default buffer to be the size of camera preview we want.
-            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
+            texture.setDefaultBufferSize(getPreviewResolution().getWidth(), getPreviewResolution().getHeight());
 
             // This is the output Surface we need to start preview.
             Surface surface = new Surface(texture);
@@ -687,7 +619,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
                             mJpegImageReader.get().getSurface()), new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-                            synchronized (mCameraStateLock) {
+                            synchronized (getCameraStateLock()) {
                                 // The camera is already closed
                                 if (null == mCameraDevice) {
                                     return;
@@ -724,7 +656,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * Configure the given {@link CaptureRequest.Builder} to use auto-focus, auto-exposure, and
      * auto-white-balance controls if available.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      *
      * @param builder the builder to configure.
      */
@@ -775,80 +707,6 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     }
 
     /**
-     * Configure the necessary {@link android.graphics.Matrix} transformation to `mTextureView`,
-     * and start/restart the preview capture session if necessary.
-     * <p/>
-     * This method should be called after the camera state has been initialized in
-     * setUpCameraOutputs.
-     */
-    private void configureTransform2() {
-        synchronized (mCameraStateLock) {
-            if (isNotAttachedToWindow()) {
-                return;
-            }
-
-            int viewWidth = getWidth();
-            int viewHeight = getHeight();
-
-            // Find the rotation of the device relative to the native device orientation.
-            int deviceRotation = AppUtilsKt.displayRotation();
-
-            CameraHelper.Device.Resolution previewResolution = PreferenceHelper.INSTANCE.previewResolution();
-
-            // Find rotation of device in degrees (reverse device orientation for front-facing
-            // cameras).
-            int rotation = (mCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
-                    CameraCharacteristics.LENS_FACING_FRONT) ?
-                    (360 + ORIENTATIONS.get(deviceRotation)) % 360 :
-                    (360 - ORIENTATIONS.get(deviceRotation)) % 360;
-
-            Matrix matrix = new Matrix();
-            RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-            RectF bufferRect = new RectF(0, 0, previewResolution.getHeight(), previewResolution.getWidth());
-            float centerX = viewRect.centerX();
-            float centerY = viewRect.centerY();
-
-            // Initially, output stream images from the Camera2 API will be rotated to the native
-            // device orientation from the sensor's orientation, and the TextureView will default to
-            // scaling these buffers to fill it's view bounds.  If the aspect ratios and relative
-            // orientations are correct, this is fine.
-            //
-            // However, if the device orientation has been rotated relative to its native
-            // orientation so that the TextureView's dimensions are swapped relative to the
-            // native device orientation, we must do the following to ensure the output stream
-            // images are not incorrectly scaled by the TextureView:
-            //   - Undo the scale-to-fill from the output buffer's dimensions (i.e. its dimensions
-            //     in the native device orientation) to the TextureView's dimension.
-            //   - Apply a scale-to-fill from the output buffer's rotated dimensions
-            //     (i.e. its dimensions in the current device orientation) to the TextureView's
-            //     dimensions.
-            //   - Apply the rotation from the native device orientation to the current device
-            //     rotation.
-            if (Surface.ROTATION_90 == deviceRotation || Surface.ROTATION_270 == deviceRotation) {
-                bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                float scale = Math.max(
-                        (float) viewHeight / previewResolution.getHeight(),
-                        (float) viewWidth / previewResolution.getWidth());
-                matrix.postScale(scale, scale, centerX, centerY);
-
-            }
-            matrix.postRotate(rotation, centerX, centerY);
-
-            setTransform(matrix);
-
-            // Start or restart the active capture session if the preview was initialized or
-            // if its aspect ratio changed significantly.
-            if (getPreviewResolution() == null) {
-                setPreviewResolution(previewResolution);
-                if (mState != STATE_CLOSED) {
-                    createCameraPreviewSessionLocked();
-                }
-            }
-        }
-    }
-
-    /**
      * Initiate a still image capture.
      * <p/>
      * This function sends a capture request that initiates a pre-capture sequence in our state
@@ -857,7 +715,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * auto-white-balance to converge.
      */
     private void takePicture() {
-        synchronized (mCameraStateLock) {
+        synchronized (getCameraStateLock()) {
             mPendingUserCaptures++;
 
             // If we already triggered a pre-capture sequence, or are in a state where we cannot
@@ -902,7 +760,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * Send a capture request to the camera device that initiates a capture targeting the JPEG
      * outputs.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void captureStillPictureLocked() {
         try {
@@ -944,7 +802,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * Called after a JPEG capture has completed; resets the AF trigger state for the
      * pre-capture sequence.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void finishedCaptureLocked() {
         try {
@@ -977,7 +835,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      */
     private void dequeueAndSaveImage(TreeMap<Integer, ImageSaver.ImageSaverBuilder> pendingQueue,
                                      RefCountedAutoCloseable<ImageReader> reader) {
-        synchronized (mCameraStateLock) {
+        synchronized (getCameraStateLock()) {
             Map.Entry<Integer, ImageSaver.ImageSaverBuilder> entry =
                     pendingQueue.firstEntry();
             ImageSaver.ImageSaverBuilder builder = entry.getValue();
@@ -1277,7 +1135,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
      * send an {@link ImageSaver} with the results from this request to a background thread to
      * save a file.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      *
      * @param requestId the ID of the {@link CaptureRequest} to handle.
      * @param builder   the {@link ImageSaver.ImageSaverBuilder} for this request.
@@ -1296,7 +1154,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     /**
      * Check if we are using a device that only supports the LEGACY hardware level.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      *
      * @return true if this is a legacy device.
      */
@@ -1308,7 +1166,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     /**
      * Start the timer for the pre-capture sequence.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void startTimerLocked() {
         mCaptureTimer = SystemClock.elapsedRealtime();
@@ -1317,7 +1175,7 @@ public class JCamera2RawTextureView extends CameraView implements RotationHelper
     /**
      * Check if the timer for the pre-capture sequence has been hit.
      * <p/>
-     * Call this only with {@link #mCameraStateLock} held.
+     * Call this only with {@link #getCameraStateLock()} held.
      *
      * @return true if the timeout occurred.
      */

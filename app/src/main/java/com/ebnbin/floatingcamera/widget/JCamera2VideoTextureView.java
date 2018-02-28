@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class JCamera2VideoTextureView extends CameraView {
@@ -185,11 +184,6 @@ public class JCamera2VideoTextureView extends CameraView {
     private boolean mIsRecordingVideo;
 
     /**
-     * A {@link Semaphore} to prevent the app from exiting before closing the camera.
-     */
-    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
-
-    /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its status.
      */
     private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
@@ -198,24 +192,22 @@ public class JCamera2VideoTextureView extends CameraView {
         public void onOpened(@NonNull CameraDevice cameraDevice) {
             mCameraDevice = cameraDevice;
             startPreview();
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
 
             configureTransform();
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
             cameraDevice.close();
             mCameraDevice = null;
+            finish();
         }
 
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int error) {
-            mCameraOpenCloseLock.release();
-            cameraDevice.close();
-            mCameraDevice = null;
-            finish();
+            onDisconnected(cameraDevice);
         }
 
     };
@@ -238,7 +230,7 @@ public class JCamera2VideoTextureView extends CameraView {
         }
         try {
             Log.d(TAG, "tryAcquire");
-            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+            if (!getCameraOpenCloseLock().tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
@@ -262,7 +254,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
     private void closeCamera() {
         try {
-            mCameraOpenCloseLock.acquire();
+            getCameraOpenCloseLock().acquire();
             closePreviewSession();
             if (null != mCameraDevice) {
                 mCameraDevice.close();
@@ -275,7 +267,7 @@ public class JCamera2VideoTextureView extends CameraView {
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera closing.");
         } finally {
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
         }
     }
 

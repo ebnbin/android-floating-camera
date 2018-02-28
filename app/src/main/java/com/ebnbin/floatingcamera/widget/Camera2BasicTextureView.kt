@@ -43,7 +43,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Arrays
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 class Camera2BasicTextureView constructor(
@@ -121,11 +120,11 @@ class Camera2BasicTextureView constructor(
             cameraOpenCloseLock.release()
             cameraDevice.close()
             this@Camera2BasicTextureView.cameraDevice = null
+            finish()
         }
 
         override fun onError(cameraDevice: CameraDevice, error: Int) {
             onDisconnected(cameraDevice)
-            finish()
         }
 
     }
@@ -164,11 +163,6 @@ class Camera2BasicTextureView constructor(
      * @see .captureCallback
      */
     private var state = STATE_PREVIEW
-
-    /**
-     * A [Semaphore] to prevent the app from exiting before closing the camera.
-     */
-    private val cameraOpenCloseLock = Semaphore(1)
 
     /**
      * A [CameraCaptureSession.CaptureCallback] that handles events related to JPEG capture.
@@ -283,8 +277,6 @@ class Camera2BasicTextureView constructor(
      * Creates a new [CameraCaptureSession] for camera preview.
      */
     private fun createCameraPreviewSession() {
-        val previewResolution = previewResolution ?: return
-
         try {
             val texture = surfaceTexture
 

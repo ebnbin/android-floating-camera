@@ -39,7 +39,6 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
@@ -50,7 +49,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class JCamera2BasicTextureView extends CameraView {
@@ -192,24 +190,22 @@ public class JCamera2BasicTextureView extends CameraView {
         @Override
         public void onOpened(@NonNull CameraDevice cameraDevice) {
             // This method is called when the camera is opened.  We start camera preview here.
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
             mCameraDevice = cameraDevice;
             createCameraPreviewSession();
         }
 
         @Override
         public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
             cameraDevice.close();
             mCameraDevice = null;
+            finish();
         }
 
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int error) {
-            mCameraOpenCloseLock.release();
-            cameraDevice.close();
-            mCameraDevice = null;
-            finish();
+            onDisconnected(cameraDevice);
         }
 
     };
@@ -254,11 +250,6 @@ public class JCamera2BasicTextureView extends CameraView {
      * @see #mCaptureCallback
      */
     private int mState = STATE_PREVIEW;
-
-    /**
-     * A {@link Semaphore} to prevent the app from exiting before closing the camera.
-     */
-    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
     /**
      * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
@@ -345,7 +336,7 @@ public class JCamera2BasicTextureView extends CameraView {
 
         configureTransform();
         try {
-            if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+            if (!getCameraOpenCloseLock().tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
             AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, getBackgroundHandler());
@@ -361,7 +352,7 @@ public class JCamera2BasicTextureView extends CameraView {
      */
     private void closeCamera() {
         try {
-            mCameraOpenCloseLock.acquire();
+            getCameraOpenCloseLock().acquire();
             if (null != mCaptureSession) {
                 mCaptureSession.close();
                 mCaptureSession = null;
@@ -377,7 +368,7 @@ public class JCamera2BasicTextureView extends CameraView {
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
         } finally {
-            mCameraOpenCloseLock.release();
+            getCameraOpenCloseLock().release();
         }
     }
 
@@ -385,17 +376,12 @@ public class JCamera2BasicTextureView extends CameraView {
      * Creates a new {@link CameraCaptureSession} for camera preview.
      */
     private void createCameraPreviewSession() {
-        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
-        if (previewResolution == null) {
-            return;
-        }
-
         try {
             SurfaceTexture texture = getSurfaceTexture();
             assert texture != null;
 
             // We configure the size of default buffer to be the size of camera preview we want.
-            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
+            texture.setDefaultBufferSize(getPreviewResolution().getWidth(), getPreviewResolution().getHeight());
 
             // This is the output Surface we need to start preview.
             Surface surface = new Surface(texture);

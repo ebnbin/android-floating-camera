@@ -20,7 +20,6 @@ import android.view.WindowManager
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
-import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
@@ -29,6 +28,7 @@ import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.windowManager
+import java.util.concurrent.Semaphore
 import kotlin.math.max
 import kotlin.math.min
 
@@ -390,7 +390,7 @@ abstract class CameraView : TextureView,
 
     protected val device = PreferenceHelper.device()
 
-    protected var previewResolution: CameraHelper.Device.Resolution? = null
+    protected val previewResolution = PreferenceHelper.previewResolution()
 
     protected val resolution = PreferenceHelper.resolution()
 
@@ -411,8 +411,6 @@ abstract class CameraView : TextureView,
      */
     protected fun configureTransform() {
         if (isNotAttachedToWindow()) return
-
-        val previewResolution = PreferenceHelper.previewResolution()
 
         val viewWidth = width.toFloat()
         val viewHeight = height.toFloat()
@@ -445,8 +443,6 @@ abstract class CameraView : TextureView,
         matrix.postRotate(degrees, viewCenterX, viewCenterY)
 
         setTransform(matrix)
-
-        this.previewResolution = previewResolution
     }
 
     //*****************************************************************************************************************
@@ -476,7 +472,9 @@ abstract class CameraView : TextureView,
     private fun startBackgroundThread() {
         backgroundThread = HandlerThread("CameraBackground")
         backgroundThread.start()
-        backgroundHandler = Handler(backgroundThread.looper)
+        synchronized(cameraStateLock) {
+            backgroundHandler = Handler(backgroundThread.looper)
+        }
     }
 
     /**
@@ -490,6 +488,18 @@ abstract class CameraView : TextureView,
             Log.e("ebnbin", "", e)
         }
     }
+
+    //*****************************************************************************************************************
+
+    /**
+     * A [Semaphore] to prevent the app from exiting before closing the camera.
+     */
+    protected val cameraOpenCloseLock = Semaphore(1)
+
+    /**
+     * A lock protecting camera state.
+     */
+    protected val cameraStateLock = Any()
 
     //*****************************************************************************************************************
 
