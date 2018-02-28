@@ -18,7 +18,6 @@
 
 package com.ebnbin.floatingcamera.widget;
 
-import android.Manifest;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -32,21 +31,16 @@ import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
-import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
-import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class JCamera2VideoTextureView extends CameraView {
 
@@ -59,16 +53,16 @@ public class JCamera2VideoTextureView extends CameraView {
     }
 
     private void record() {
-        runOnUiThreadDelayed(new Runnable() {
+        postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (mIsRecordingVideo) {
+                if (isNotAttachedToWindow()) {
                     return;
                 }
 
                 onClick();
             }
-        });
+        }, 1000L);
     }
 
     private void stop() {
@@ -92,56 +86,39 @@ public class JCamera2VideoTextureView extends CameraView {
         });
     }
 
-    private void runOnUiThreadDelayed(final Runnable action) {
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (isNotAttachedToWindow()) {
-                    return;
-                }
-
-                action.run();
-            }
-        }, 1000L);
-    }
-
-    private void toast(final CharSequence text) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(getContext(), text, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void error(String message) {
-        toast(message);
-        Log.e("ebnbin", message);
-    }
-
     //*****************************************************************************************************************
 
     @Override
-    public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
-        super.onSurfaceTextureAvailable(surface, width, height);
+    protected void beforeOpenCamera() {
+        super.beforeOpenCamera();
 
-        openCamera();
+        mMediaRecorder = new MediaRecorder();
+    }
+
+    @Override
+    protected void onOpened() {
+        super.onOpened();
+
+        startPreview();
 
         record();
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
-        super.onSurfaceTextureSizeChanged(surface, width, height);
+    protected void onCloseCamera() {
+        super.onCloseCamera();
 
-        configureTransform();
+        if (null != mMediaRecorder) {
+            mMediaRecorder.release();
+            mMediaRecorder = null;
+        }
     }
 
     @Override
-    protected void onFinish() {
-        stop();
+    protected void beforeFinish() {
+        super.beforeFinish();
 
-        closeCamera();
+        stop();
     }
 
     //*****************************************************************************************************************
@@ -163,11 +140,6 @@ public class JCamera2VideoTextureView extends CameraView {
     private static final String TAG = "JCamera2VideoTextureVie";
 
     /**
-     * A reference to the opened {@link android.hardware.camera2.CameraDevice}.
-     */
-    private CameraDevice mCameraDevice;
-
-    /**
      * A reference to the current {@link android.hardware.camera2.CameraCaptureSession} for
      * preview.
      */
@@ -183,93 +155,8 @@ public class JCamera2VideoTextureView extends CameraView {
      */
     private boolean mIsRecordingVideo;
 
-    /**
-     * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its status.
-     */
-    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-
-        @Override
-        public void onOpened(@NonNull CameraDevice cameraDevice) {
-            mCameraDevice = cameraDevice;
-            startPreview();
-            getCameraOpenCloseLock().release();
-
-            configureTransform();
-        }
-
-        @Override
-        public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-            getCameraOpenCloseLock().release();
-            cameraDevice.close();
-            mCameraDevice = null;
-            finish();
-        }
-
-        @Override
-        public void onError(@NonNull CameraDevice cameraDevice, int error) {
-            onDisconnected(cameraDevice);
-        }
-
-    };
     private File mNextVideoAbsolutePath;
     private CaptureRequest.Builder mPreviewBuilder;
-
-    /**
-     * Tries to open a {@link CameraDevice}. The result is listened by `mStateCallback`.
-     */
-    @SuppressWarnings("MissingPermission")
-    private void openCamera() {
-        if (PermissionHelper.INSTANCE.isPermissionsDenied(Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO)) {
-            finish();
-            return;
-        }
-
-        if (isNotAttachedToWindow()) {
-            return;
-        }
-        try {
-            Log.d(TAG, "tryAcquire");
-            if (!getCameraOpenCloseLock().tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Time out waiting to lock camera opening.");
-            }
-
-            configureTransform();
-            mMediaRecorder = new MediaRecorder();
-            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, null);
-        } catch (CameraAccessException e) {
-//            Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
-            toast("Cannot access the camera.");
-            finish();
-        } catch (NullPointerException e) {
-            // Currently an NPE is thrown when the Camera2API is used but not supported on the
-            // device this code runs.
-//            ErrorDialog.newInstance(/*getString(R.string.camera_error)*/"This device doesn't support Camera2 API.")
-//                    .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-            error("This device doesn't support Camera2 API.");
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.");
-        }
-    }
-
-    private void closeCamera() {
-        try {
-            getCameraOpenCloseLock().acquire();
-            closePreviewSession();
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
-            }
-            if (null != mMediaRecorder) {
-                mMediaRecorder.release();
-                mMediaRecorder = null;
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera closing.");
-        } finally {
-            getCameraOpenCloseLock().release();
-        }
-    }
 
     /**
      * Start the camera preview.
@@ -277,7 +164,7 @@ public class JCamera2VideoTextureView extends CameraView {
     private void startPreview() {
         CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
 
-        if (null == mCameraDevice || !isAvailable() || null == previewResolution) {
+        if (null == getCameraDevice() || !isAvailable()) {
             return;
         }
         try {
@@ -285,12 +172,12 @@ public class JCamera2VideoTextureView extends CameraView {
             SurfaceTexture texture = getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
-            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewBuilder = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
             Surface previewSurface = new Surface(texture);
             mPreviewBuilder.addTarget(previewSurface);
 
-            mCameraDevice.createCaptureSession(Collections.singletonList(previewSurface),
+            getCameraDevice().createCaptureSession(Collections.singletonList(previewSurface),
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
@@ -317,7 +204,7 @@ public class JCamera2VideoTextureView extends CameraView {
      * Update the camera preview. {@link #startPreview()} needs to be called in advance.
      */
     private void updatePreview() {
-        if (null == mCameraDevice) {
+        if (null == getCameraDevice()) {
             return;
         }
         try {
@@ -369,7 +256,7 @@ public class JCamera2VideoTextureView extends CameraView {
     private void startRecordingVideo() {
         CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
 
-        if (null == mCameraDevice || !isAvailable() || null == previewResolution) {
+        if (null == getCameraDevice() || !isAvailable()) {
             return;
         }
         try {
@@ -378,7 +265,7 @@ public class JCamera2VideoTextureView extends CameraView {
             SurfaceTexture texture = getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
-            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+            mPreviewBuilder = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
 
             // Set up Surface for the camera preview
@@ -393,7 +280,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
             // Start a capture session
             // Once the session starts, we can update the UI and start recording
-            mCameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+            getCameraDevice().createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
 
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {

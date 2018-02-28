@@ -1,10 +1,13 @@
 package com.ebnbin.floatingcamera.widget
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.os.Handler
@@ -17,18 +20,22 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.TextureView
 import android.view.WindowManager
+import android.widget.Toast
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.DebugHelper
+import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.WindowSize
+import com.ebnbin.floatingcamera.util.cameraManager
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.windowManager
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 
@@ -394,15 +401,27 @@ abstract class CameraView : TextureView,
 
     protected val resolution = PreferenceHelper.resolution()
 
+    protected fun toast(text: CharSequence) {
+        post {
+            if (isNotAttachedToWindow()) return@post
+
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     //*****************************************************************************************************************
 
-    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) = Unit
+    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
+        openCamera()
+    }
 
-    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) = Unit
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
+        configureTransform()
+    }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = true
 
-    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) = Unit
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) = Unit
 
     //*****************************************************************************************************************
 
@@ -501,15 +520,105 @@ abstract class CameraView : TextureView,
      */
     protected val cameraStateLock = Any()
 
+    /**
+     * A reference to the opened [CameraDevice].
+     */
+    protected var cameraDevice: CameraDevice? = null
+
+    protected open fun beforeOpenCamera() = Unit
+
+    /**
+     * Tries to open a [CameraDevice].
+     */
+    @SuppressLint("MissingPermission")
+    private fun openCamera() {
+        if (isNotAttachedToWindow()) return
+
+        if (PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
+            finish()
+            return
+        }
+
+        beforeOpenCamera()
+
+        configureTransform()
+
+        try {
+            Log.d("ebnbin", "tryAcquire")
+
+            // Wait for camera to open - 2.5 seconds is sufficient
+
+            // Wait for any previously running session to finish.
+            if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+                throw RuntimeException("Time out waiting to lock camera opening.")
+            }
+
+            // Attempt to open the camera. StateCallback will be called on the background handler's
+            // thread when this succeeds or fails.
+            cameraManager.openCamera(device.id2, object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice?) {
+                    // This method is called when the camera is opened.  We start camera preview here if
+                    // the TextureView displaying this has been set up.
+                    cameraOpenCloseLock.release()
+                    cameraDevice = camera
+                    onOpened()
+                }
+
+                override fun onDisconnected(camera: CameraDevice?) {
+                    cameraOpenCloseLock.release()
+                    camera?.close()
+                    cameraDevice = null
+                    finish()
+                }
+
+                override fun onError(camera: CameraDevice?, error: Int) {
+                    Log.e("ebnbin", "Received camera device error: $error")
+
+                    onDisconnected(camera)
+                }
+            }, backgroundHandler)
+        } catch (e: CameraAccessException) {
+            Log.e("ebnbin", "Cannot access the camera.", e)
+
+            finish()
+        } catch (e: InterruptedException) {
+            throw RuntimeException("Interrupted while trying to lock camera opening.", e)
+        }
+    }
+
+    protected open fun onOpened() = Unit
+
+    /**
+     * Closes the current [CameraDevice].
+     */
+    private fun closeCamera() {
+        try {
+            cameraOpenCloseLock.acquire()
+            synchronized(cameraStateLock) {
+                cameraDevice?.close()
+                cameraDevice = null
+                onCloseCamera()
+            }
+        } catch (e: InterruptedException) {
+            throw RuntimeException("Interrupted while trying to lock camera closing.", e)
+        } finally {
+            cameraOpenCloseLock.release()
+        }
+    }
+
+    protected open fun onCloseCamera() = Unit
+
     //*****************************************************************************************************************
 
     protected fun finish() {
         if (isNotAttachedToWindow()) return
 
-        onFinish()
+        beforeFinish()
+
+        closeCamera()
 
         CameraService.stop()
     }
 
-    protected abstract fun onFinish()
+    protected open fun beforeFinish() = Unit
 }

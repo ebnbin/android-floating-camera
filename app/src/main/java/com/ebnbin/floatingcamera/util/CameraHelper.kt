@@ -240,7 +240,10 @@ class CameraHelper private constructor() {
         /**
          * 获取拍摄方向.
          */
-        fun getOrientation(rotation: Int = displayRotation()) = (sensorOrientation - (90 * rotation) + 360) % 360
+        fun getOrientation(rotation: Int = displayRotation()) =
+                if(isFront)
+                    (sensorOrientation + (90 * rotation) + 360) % 360 else
+                    (sensorOrientation - (90 * rotation) + 360) % 360
 
         /**
          * Camera2 闪光灯是否可用.

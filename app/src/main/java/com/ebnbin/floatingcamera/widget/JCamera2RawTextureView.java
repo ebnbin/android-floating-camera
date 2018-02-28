@@ -18,7 +18,6 @@
 
 package com.ebnbin.floatingcamera.widget;
 
-import android.Manifest;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -36,19 +35,13 @@ import android.media.ImageReader;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.SparseIntArray;
 import android.view.Surface;
-import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -58,7 +51,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -99,28 +91,6 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     private void picture() {
-        runOnUiThreadDelayed(new Runnable() {
-            @Override
-            public void run() {
-                onClick();
-            }
-        });
-    }
-
-    private void runOnUiThread(final Runnable action) {
-        post(new Runnable() {
-            @Override
-            public void run() {
-                if (isNotAttachedToWindow()) {
-                    return;
-                }
-
-                action.run();
-            }
-        });
-    }
-
-    private void runOnUiThreadDelayed(final Runnable action) {
         postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -128,43 +98,49 @@ public class JCamera2RawTextureView extends CameraView {
                     return;
                 }
 
-                action.run();
+                onClick();
             }
         }, 1000L);
-    }
-
-    private void toast(final CharSequence text) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(getContext(), text, Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     //*****************************************************************************************************************
 
     @Override
-    public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
-        super.onSurfaceTextureAvailable(surface, width, height);
+    protected void beforeOpenCamera() {
+        super.beforeOpenCamera();
 
-        configureTransform();
+        setUpCameraOutputs();
+    }
 
-        openCamera();
+    @Override
+    protected void onOpened() {
+        super.onOpened();
+
+        // Start the preview session if the TextureView has been set up already.
+        if (isAvailable()) {
+            createCameraPreviewSessionLocked();
+        }
 
         picture();
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
-        super.onSurfaceTextureSizeChanged(surface, width, height);
+    protected void onCloseCamera() {
+        super.onCloseCamera();
 
-        configureTransform();
-    }
-
-    @Override
-    protected void onFinish() {
-        closeCamera();
+        // Reset state and clean up resources used by the camera.
+        // Note: After calling this, the ImageReaders will be closed after any background
+        // tasks saving Images from these readers have been completed.
+        mPendingUserCaptures = 0;
+        mState = STATE_CLOSED;
+        if (null != mCaptureSession) {
+            mCaptureSession.close();
+            mCaptureSession = null;
+        }
+        if (null != mJpegImageReader) {
+            mJpegImageReader.close();
+            mJpegImageReader = null;
+        }
     }
 
     //*****************************************************************************************************************
@@ -184,18 +160,6 @@ public class JCamera2RawTextureView extends CameraView {
     //*****************************************************************************************************************
 
     /**
-     * Conversion from screen rotation to JPEG orientation.
-     */
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 0);
-        ORIENTATIONS.append(Surface.ROTATION_90, 90);
-        ORIENTATIONS.append(Surface.ROTATION_180, 180);
-        ORIENTATIONS.append(Surface.ROTATION_270, 270);
-    }
-
-    /**
      * Timeout for the pre-capture sequence.
      */
     private static final long PRECAPTURE_TIMEOUT_MS = 1000;
@@ -209,11 +173,11 @@ public class JCamera2RawTextureView extends CameraView {
      * Camera state: Device is closed.
      */
     private static final int STATE_CLOSED = 0;
-
-    /**
-     * Camera state: Device is opened, but is not capturing.
-     */
-    private static final int STATE_OPENED = 1;
+//
+//    /**
+//     * Camera state: Device is opened, but is not capturing.
+//     */
+//    private static final int STATE_OPENED = 1;
 
     /**
      * Camera state: Showing camera preview.
@@ -241,11 +205,6 @@ public class JCamera2RawTextureView extends CameraView {
      * A {@link CameraCaptureSession } for camera preview.
      */
     private CameraCaptureSession mCaptureSession;
-
-    /**
-     * A reference to the open {@link CameraDevice}.
-     */
-    private CameraDevice mCameraDevice;
 
     /**
      * The {@link CameraCharacteristics} for the currently configured camera device.
@@ -293,47 +252,6 @@ public class JCamera2RawTextureView extends CameraView {
     private long mCaptureTimer;
 
     //**********************************************************************************************
-
-    /**
-     * {@link CameraDevice.StateCallback} is called when the currently active {@link CameraDevice}
-     * changes its state.
-     */
-    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-
-        @Override
-        public void onOpened(CameraDevice cameraDevice) {
-            // This method is called when the camera is opened.  We start camera preview here if
-            // the TextureView displaying this has been set up.
-            synchronized (getCameraStateLock()) {
-                mState = STATE_OPENED;
-                getCameraOpenCloseLock().release();
-                mCameraDevice = cameraDevice;
-
-                // Start the preview session if the TextureView has been set up already.
-                if (isAvailable()) {
-                    createCameraPreviewSessionLocked();
-                }
-            }
-        }
-
-        @Override
-        public void onDisconnected(CameraDevice cameraDevice) {
-            synchronized (getCameraStateLock()) {
-                mState = STATE_CLOSED;
-                getCameraOpenCloseLock().release();
-                cameraDevice.close();
-                mCameraDevice = null;
-            }
-            finish();
-        }
-
-        @Override
-        public void onError(CameraDevice cameraDevice, int error) {
-            Log.e(TAG, "Received camera device error: " + error);
-            onDisconnected(cameraDevice);
-        }
-
-    };
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -490,7 +408,7 @@ public class JCamera2RawTextureView extends CameraView {
     /**
      * Sets up state related to camera that is needed before opening a {@link CameraDevice}.
      */
-    private boolean setUpCameraOutputs() {
+    private void setUpCameraOutputs() {
         try {
             // Configure state.
             CameraCharacteristics characteristics
@@ -517,81 +435,8 @@ public class JCamera2RawTextureView extends CameraView {
 
                 mCharacteristics = characteristics;
             }
-            return true;
         } catch (CameraAccessException e) {
             e.printStackTrace();
-        }
-
-        return false;
-    }
-
-    /**
-     * Opens the camera.
-     */
-    @SuppressWarnings("MissingPermission")
-    private void openCamera() {
-        if (!setUpCameraOutputs()) {
-            return;
-        }
-
-        if (PermissionHelper.INSTANCE.isPermissionsDenied(Manifest.permission.CAMERA,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            finish();
-            return;
-        }
-
-        try {
-            // Wait for any previously running session to finish.
-            if (!getCameraOpenCloseLock().tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Time out waiting to lock camera opening.");
-            }
-
-            Handler backgroundHandler;
-            synchronized (getCameraStateLock()) {
-                backgroundHandler = getBackgroundHandler();
-            }
-
-            // Attempt to open the camera. mStateCallback will be called on the background handler's
-            // thread when this succeeds or fails.
-            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, backgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
-        }
-    }
-
-    /**
-     * Closes the current {@link CameraDevice}.
-     */
-    private void closeCamera() {
-        try {
-            getCameraOpenCloseLock().acquire();
-            synchronized (getCameraStateLock()) {
-
-                // Reset state and clean up resources used by the camera.
-                // Note: After calling this, the ImageReaders will be closed after any background
-                // tasks saving Images from these readers have been completed.
-                mPendingUserCaptures = 0;
-                mState = STATE_CLOSED;
-                if (null != mCaptureSession) {
-                    mCaptureSession.close();
-                    mCaptureSession = null;
-                }
-                if (null != mCameraDevice) {
-                    mCameraDevice.close();
-                    mCameraDevice = null;
-                }
-                if (null != mJpegImageReader) {
-                    mJpegImageReader.close();
-                    mJpegImageReader = null;
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
-        } finally {
-            getCameraOpenCloseLock().release();
         }
     }
 
@@ -611,17 +456,17 @@ public class JCamera2RawTextureView extends CameraView {
 
             // We set up a CaptureRequest.Builder with the output Surface.
             mPreviewRequestBuilder
-                    = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                    = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
 
             // Here, we create a CameraCaptureSession for camera preview.
-            mCameraDevice.createCaptureSession(Arrays.asList(surface,
+            getCameraDevice().createCaptureSession(Arrays.asList(surface,
                             mJpegImageReader.get().getSurface()), new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession cameraCaptureSession) {
                             synchronized (getCameraStateLock()) {
                                 // The camera is already closed
-                                if (null == mCameraDevice) {
+                                if (null == getCameraDevice()) {
                                     return;
                                 }
 
@@ -764,12 +609,12 @@ public class JCamera2RawTextureView extends CameraView {
      */
     private void captureStillPictureLocked() {
         try {
-            if (isNotAttachedToWindow() || null == mCameraDevice) {
+            if (isNotAttachedToWindow() || null == getCameraDevice()) {
                 return;
             }
             // This is the CaptureRequest.Builder that we use to take a picture.
             final CaptureRequest.Builder captureBuilder =
-                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
 
             captureBuilder.addTarget(mJpegImageReader.get().getSurface());
 
@@ -778,7 +623,7 @@ public class JCamera2RawTextureView extends CameraView {
 
             // Set orientation.
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
-                    sensorToDeviceRotation(mCharacteristics, AppUtilsKt.displayRotation()));
+                    getDevice().getOrientation(AppUtilsKt.displayRotation()));
 
             // Set request tag to easily track results in callbacks.
             captureBuilder.setTag(mRequestCounter.getAndIncrement());
@@ -1102,32 +947,6 @@ public class JCamera2RawTextureView extends CameraView {
             }
         }
         return false;
-    }
-
-    /**
-     * Rotation need to transform from the camera sensor orientation to the device's current
-     * orientation.
-     *
-     * @param c                 the {@link CameraCharacteristics} to query for the camera sensor
-     *                          orientation.
-     * @param deviceOrientation the current device orientation relative to the native device
-     *                          orientation.
-     * @return the total rotation from the sensor orientation to the current device orientation.
-     */
-    private static int sensorToDeviceRotation(CameraCharacteristics c, int deviceOrientation) {
-        int sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION);
-
-        // Get device orientation in degrees
-        deviceOrientation = ORIENTATIONS.get(deviceOrientation);
-
-        // Reverse device orientation for front-facing cameras
-        if (c.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
-            deviceOrientation = -deviceOrientation;
-        }
-
-        // Calculate desired JPEG orientation relative to camera orientation to make
-        // the image upright relative to the device orientation
-        return (sensorOrientation + deviceOrientation + 360) % 360;
     }
 
     /**

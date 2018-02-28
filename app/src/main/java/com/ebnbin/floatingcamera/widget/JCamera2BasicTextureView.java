@@ -18,8 +18,6 @@
 
 package com.ebnbin.floatingcamera.widget;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -36,20 +34,15 @@ import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
-import android.widget.Toast;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.PermissionHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 public class JCamera2BasicTextureView extends CameraView {
 
@@ -58,30 +51,6 @@ public class JCamera2BasicTextureView extends CameraView {
     }
 
     private void picture() {
-        runOnUiThreadDelayed(new Runnable() {
-            @Override
-            public void run() {
-                mFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
-
-                onClick();
-            }
-        });
-    }
-
-    private void runOnUiThread(final Runnable action) {
-        post(new Runnable() {
-            @Override
-            public void run() {
-                if (isNotAttachedToWindow()) {
-                    return;
-                }
-
-                action.run();
-            }
-        });
-    }
-
-    private void runOnUiThreadDelayed(final Runnable action) {
         postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -89,41 +58,46 @@ public class JCamera2BasicTextureView extends CameraView {
                     return;
                 }
 
-                action.run();
+                mFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
+
+                onClick();
             }
         }, 1000L);
-    }
-
-    private void toast(final CharSequence text) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(getContext(), text, Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     //*****************************************************************************************************************
 
     @Override
-    public void onSurfaceTextureAvailable(@Nullable SurfaceTexture surface, int width, int height) {
-        super.onSurfaceTextureAvailable(surface, width, height);
+    protected void beforeOpenCamera() {
+        super.beforeOpenCamera();
 
-        openCamera();
+        mImageReader = ImageReader.newInstance(getResolution().getWidth(), getResolution().getHeight(),
+                ImageFormat.JPEG, /*maxImages*/2);
+        mImageReader.setOnImageAvailableListener(
+                mOnImageAvailableListener, getBackgroundHandler());
+    }
+
+    @Override
+    protected void onOpened() {
+        super.onOpened();
+
+        createCameraPreviewSession();
 
         picture();
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(@Nullable SurfaceTexture surface, int width, int height) {
-        super.onSurfaceTextureSizeChanged(surface, width, height);
+    protected void onCloseCamera() {
+        super.onCloseCamera();
 
-        configureTransform();
-    }
-
-    @Override
-    protected void onFinish() {
-        closeCamera();
+        if (null != mCaptureSession) {
+            mCaptureSession.close();
+            mCaptureSession = null;
+        }
+        if (null != mImageReader) {
+            mImageReader.close();
+            mImageReader = null;
+        }
     }
 
     //*****************************************************************************************************************
@@ -176,39 +150,6 @@ public class JCamera2BasicTextureView extends CameraView {
      * A {@link CameraCaptureSession } for camera preview.
      */
     private CameraCaptureSession mCaptureSession;
-
-    /**
-     * A reference to the opened {@link CameraDevice}.
-     */
-    private CameraDevice mCameraDevice;
-
-    /**
-     * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
-     */
-    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-
-        @Override
-        public void onOpened(@NonNull CameraDevice cameraDevice) {
-            // This method is called when the camera is opened.  We start camera preview here.
-            getCameraOpenCloseLock().release();
-            mCameraDevice = cameraDevice;
-            createCameraPreviewSession();
-        }
-
-        @Override
-        public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-            getCameraOpenCloseLock().release();
-            cameraDevice.close();
-            mCameraDevice = null;
-            finish();
-        }
-
-        @Override
-        public void onError(@NonNull CameraDevice cameraDevice, int error) {
-            onDisconnected(cameraDevice);
-        }
-
-    };
 
     /**
      * An {@link ImageReader} that handles still image capture.
@@ -320,59 +261,6 @@ public class JCamera2BasicTextureView extends CameraView {
     };
 
     /**
-     * Opens the camera.
-     */
-    @SuppressLint("MissingPermission")
-    private void openCamera() {
-        if (PermissionHelper.INSTANCE.isPermissionsDenied(Manifest.permission.CAMERA)) {
-            finish();
-            return;
-        }
-
-        mImageReader = ImageReader.newInstance(getResolution().getWidth(), getResolution().getHeight(),
-                ImageFormat.JPEG, /*maxImages*/2);
-        mImageReader.setOnImageAvailableListener(
-                mOnImageAvailableListener, getBackgroundHandler());
-
-        configureTransform();
-        try {
-            if (!getCameraOpenCloseLock().tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Time out waiting to lock camera opening.");
-            }
-            AppUtilsKt.getCameraManager().openCamera(getDevice().getId2(), mStateCallback, getBackgroundHandler());
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
-        }
-    }
-
-    /**
-     * Closes the current {@link CameraDevice}.
-     */
-    private void closeCamera() {
-        try {
-            getCameraOpenCloseLock().acquire();
-            if (null != mCaptureSession) {
-                mCaptureSession.close();
-                mCaptureSession = null;
-            }
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
-            }
-            if (null != mImageReader) {
-                mImageReader.close();
-                mImageReader = null;
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
-        } finally {
-            getCameraOpenCloseLock().release();
-        }
-    }
-
-    /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
      */
     private void createCameraPreviewSession() {
@@ -388,17 +276,17 @@ public class JCamera2BasicTextureView extends CameraView {
 
             // We set up a CaptureRequest.Builder with the output Surface.
             mPreviewRequestBuilder
-                    = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                    = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
 
             // Here, we create a CameraCaptureSession for camera preview.
-            mCameraDevice.createCaptureSession(Arrays.asList(surface, mImageReader.getSurface()),
+            getCameraDevice().createCaptureSession(Arrays.asList(surface, mImageReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
                             // The camera is already closed
-                            if (null == mCameraDevice) {
+                            if (null == getCameraDevice()) {
                                 return;
                             }
 
@@ -480,12 +368,12 @@ public class JCamera2BasicTextureView extends CameraView {
      */
     private void captureStillPicture() {
         try {
-            if (isNotAttachedToWindow() || null == mCameraDevice) {
+            if (isNotAttachedToWindow() || null == getCameraDevice()) {
                 return;
             }
             // This is the CaptureRequest.Builder that we use to take a picture.
             final CaptureRequest.Builder captureBuilder =
-                    mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader.getSurface());
 
             // Use the same AE and AF modes as the preview.

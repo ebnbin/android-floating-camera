@@ -18,11 +18,8 @@
 
 package com.ebnbin.floatingcamera.widget
 
-import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageFormat
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
@@ -35,15 +32,11 @@ import android.media.ImageReader
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Surface
-import android.widget.Toast
-import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
-import com.ebnbin.floatingcamera.util.cameraManager
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Arrays
-import java.util.concurrent.TimeUnit
 
 class Camera2BasicTextureView constructor(
         context: Context,
@@ -53,44 +46,42 @@ class Camera2BasicTextureView constructor(
 
     private fun onClick() = lockFocus()
 
-    private fun picture() = runOnUiThreadDelayed {
-        file = File(PreferenceHelper.path(), "${System.currentTimeMillis()}.jpg")
+    private fun picture() {
+        postDelayed({
+            if (isNotAttachedToWindow()) return@postDelayed
 
-        onClick()
+            file = File(PreferenceHelper.path(), "${System.currentTimeMillis()}.jpg")
+
+            onClick()
+        }, 1000L)
     }
-
-    private fun runOnUiThread(action: () -> Unit) = post {
-        if (isNotAttachedToWindow()) return@post
-
-        action()
-    }
-
-    private fun runOnUiThreadDelayed(action: () -> Unit) = postDelayed({
-        if (isNotAttachedToWindow()) return@postDelayed
-
-        action()
-    }, 1000L)
-
-    private fun toast(text: CharSequence) = runOnUiThread { Toast.makeText(context, text, Toast.LENGTH_SHORT).show() }
 
     //*****************************************************************************************************************
 
-    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
-        super.onSurfaceTextureAvailable(surface, width, height)
+    override fun beforeOpenCamera() {
+        super.beforeOpenCamera()
 
-        openCamera()
+        imageReader = ImageReader.newInstance(resolution.width, resolution.height,
+                ImageFormat.JPEG, /*maxImages*/ 2).apply {
+            setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
+        }
+    }
+
+    override fun onOpened() {
+        super.onOpened()
+
+        createCameraPreviewSession()
 
         picture()
     }
 
-    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
-        super.onSurfaceTextureSizeChanged(surface, width, height)
+    override fun onCloseCamera() {
+        super.onCloseCamera()
 
-        configureTransform()
-    }
-
-    override fun onFinish() {
-        closeCamera()
+        captureSession?.close()
+        captureSession = null
+        imageReader?.close()
+        imageReader = null
     }
 
     //*****************************************************************************************************************
@@ -99,35 +90,6 @@ class Camera2BasicTextureView constructor(
      * A [CameraCaptureSession] for camera preview.
      */
     private var captureSession: CameraCaptureSession? = null
-
-    /**
-     * A reference to the opened [CameraDevice].
-     */
-    private var cameraDevice: CameraDevice? = null
-
-    /**
-     * [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.
-     */
-    private val stateCallback = object : CameraDevice.StateCallback() {
-
-        override fun onOpened(cameraDevice: CameraDevice) {
-            cameraOpenCloseLock.release()
-            this@Camera2BasicTextureView.cameraDevice = cameraDevice
-            createCameraPreviewSession()
-        }
-
-        override fun onDisconnected(cameraDevice: CameraDevice) {
-            cameraOpenCloseLock.release()
-            cameraDevice.close()
-            this@Camera2BasicTextureView.cameraDevice = null
-            finish()
-        }
-
-        override fun onError(cameraDevice: CameraDevice, error: Int) {
-            onDisconnected(cameraDevice)
-        }
-
-    }
 
     /**
      * An [ImageReader] that handles still image capture.
@@ -222,55 +184,6 @@ class Camera2BasicTextureView constructor(
             process(result)
         }
 
-    }
-
-    /**
-     * Opens the camera.
-     */
-    @SuppressLint("MissingPermission")
-    private fun openCamera() {
-        if (PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
-            finish()
-            return
-        }
-
-        imageReader = ImageReader.newInstance(resolution.width, resolution.height,
-                ImageFormat.JPEG, /*maxImages*/ 2).apply {
-            setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
-        }
-
-        configureTransform()
-        try {
-            // Wait for camera to open - 2.5 seconds is sufficient
-            if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw RuntimeException("Time out waiting to lock camera opening.")
-            }
-            cameraManager.openCamera(device.id2, stateCallback, backgroundHandler)
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
-        } catch (e: InterruptedException) {
-            throw RuntimeException("Interrupted while trying to lock camera opening.", e)
-        }
-
-    }
-
-    /**
-     * Closes the current [CameraDevice].
-     */
-    private fun closeCamera() {
-        try {
-            cameraOpenCloseLock.acquire()
-            captureSession?.close()
-            captureSession = null
-            cameraDevice?.close()
-            cameraDevice = null
-            imageReader?.close()
-            imageReader = null
-        } catch (e: InterruptedException) {
-            throw RuntimeException("Interrupted while trying to lock camera closing.", e)
-        } finally {
-            cameraOpenCloseLock.release()
-        }
     }
 
     /**
