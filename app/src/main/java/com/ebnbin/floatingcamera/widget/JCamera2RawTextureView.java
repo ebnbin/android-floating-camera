@@ -49,8 +49,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -64,23 +62,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <li>
  * {@link #takePicture()} initiates a pre-capture sequence that triggers the camera's built-in
  * auto-focus, auto-exposure, and auto-white-balance algorithms (aka. "3A") to run.
- * </li>
- * <li>
- * When the pre-capture sequence has finished, a {@link CaptureRequest} with a monotonically
- * increasing request ID set by calls to {@link CaptureRequest.Builder#setTag(Object)} is sent to
- * the camera to begin the JPEG capture sequence, and an
- * {@link ImageSaver.ImageSaverBuilder} is stored for this request in the
- * {@link #mJpegResultQueue}.
- * </li>
- * <li>
- * As {@link CaptureResult}s and {@link Image}s become available via callbacks in a background
- * thread, a {@link ImageSaver.ImageSaverBuilder} is looked up by the request ID in
- * {@link #mJpegResultQueue} and updated.
- * </li>
- * <li>
- * When all of the necessary results to save an image are available, the an {@link ImageSaver} is
- * constructed by the {@link ImageSaver.ImageSaverBuilder} and passed to a separate background
- * thread to save to a file.
  * </li>
  * </ul>
  */
@@ -137,9 +118,9 @@ public class JCamera2RawTextureView extends CameraView {
             mCaptureSession.close();
             mCaptureSession = null;
         }
-        if (null != mJpegImageReader) {
-            mJpegImageReader.close();
-            mJpegImageReader = null;
+        if (null != mImageReader) {
+            mImageReader.close();
+            mImageReader = null;
         }
     }
 
@@ -212,11 +193,9 @@ public class JCamera2RawTextureView extends CameraView {
     private CameraCharacteristics mCharacteristics;
 
     /**
-     * A reference counted holder wrapping the {@link ImageReader} that handles JPEG image
-     * captures. This is used to allow us to clean up the {@link ImageReader} when all background
-     * tasks using its {@link Image}s have completed.
+     * The {@link ImageReader} that handles JPEG image captures.
      */
-    private RefCountedAutoCloseable<ImageReader> mJpegImageReader;
+    private ImageReader mImageReader;
 
     /**
      * Whether or not the currently configured camera device is fixed-focus.
@@ -227,11 +206,6 @@ public class JCamera2RawTextureView extends CameraView {
      * Number of pending user requests to capture a photo.
      */
     private int mPendingUserCaptures = 0;
-
-    /**
-     * Request ID to {@link ImageSaver.ImageSaverBuilder} mapping for in-progress JPEG captures.
-     */
-    private final TreeMap<Integer, ImageSaver.ImageSaverBuilder> mJpegResultQueue = new TreeMap<>();
 
     /**
      * {@link CaptureRequest.Builder} for the camera preview
@@ -251,6 +225,8 @@ public class JCamera2RawTextureView extends CameraView {
      */
     private long mCaptureTimer;
 
+    private File mFile;
+
     //**********************************************************************************************
 
     /**
@@ -262,7 +238,7 @@ public class JCamera2RawTextureView extends CameraView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            dequeueAndSaveImage(mJpegResultQueue, mJpegImageReader);
+            dequeueAndSaveImage();
         }
 
     };
@@ -354,37 +330,20 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                                      long timestamp, long frameNumber) {
-            File jpegFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
-
-            // Look up the ImageSaverBuilder for this request and update it with the file name
-            // based on the capture start time.
-            ImageSaver.ImageSaverBuilder jpegBuilder;
-            int requestId = (int) request.getTag();
-            synchronized (getCameraStateLock()) {
-                jpegBuilder = mJpegResultQueue.get(requestId);
-            }
-
-            if (jpegBuilder != null) jpegBuilder.setFile(jpegFile);
+            mFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
         }
 
         @Override
         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
                                        TotalCaptureResult result) {
-            int requestId = (int) request.getTag();
-            ImageSaver.ImageSaverBuilder jpegBuilder;
             StringBuilder sb = new StringBuilder();
 
             // Look up the ImageSaverBuilder for this request and update it with the CaptureResult
             synchronized (getCameraStateLock()) {
-                jpegBuilder = mJpegResultQueue.get(requestId);
-
-                if (jpegBuilder != null) {
+                if (mFile != null) {
                     sb.append("Saving JPEG as: ");
-                    sb.append(jpegBuilder.getSaveLocation());
+                    sb.append(mFile);
                 }
-
-                // If we have all the results necessary, save the image to a file in the background.
-                handleCompletionLocked(requestId, jpegBuilder, mJpegResultQueue);
 
                 finishedCaptureLocked();
             }
@@ -395,9 +354,7 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
                                     CaptureFailure failure) {
-            int requestId = (int) request.getTag();
             synchronized (getCameraStateLock()) {
-                mJpegResultQueue.remove(requestId);
                 finishedCaptureLocked();
             }
             /*showToast*/toast("Capture failed!");
@@ -422,15 +379,10 @@ public class JCamera2RawTextureView extends CameraView {
 //            }
 
             synchronized (getCameraStateLock()) {
-                // Set up ImageReaders for JPEG outputs.  Place these in a reference
-                // counted wrapper to ensure they are only closed when all background tasks
-                // using them are finished.
-                if (mJpegImageReader == null || mJpegImageReader.getAndRetain() == null) {
-                    mJpegImageReader = new RefCountedAutoCloseable<>(
-                            ImageReader.newInstance(getResolution().getWidth(),
-                                    getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5));
-                }
-                mJpegImageReader.get().setOnImageAvailableListener(
+                // Set up ImageReaders for JPEG outputs.
+                mImageReader = ImageReader.newInstance(getResolution().getWidth(),
+                        getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5);
+                mImageReader.setOnImageAvailableListener(
                         mOnJpegImageAvailableListener, getBackgroundHandler());
 
                 mCharacteristics = characteristics;
@@ -461,7 +413,7 @@ public class JCamera2RawTextureView extends CameraView {
 
             // Here, we create a CameraCaptureSession for camera preview.
             getCameraDevice().createCaptureSession(Arrays.asList(surface,
-                            mJpegImageReader.get().getSurface()), new CameraCaptureSession.StateCallback() {
+                            mImageReader.getSurface()), new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession cameraCaptureSession) {
                             synchronized (getCameraStateLock()) {
@@ -616,7 +568,7 @@ public class JCamera2RawTextureView extends CameraView {
             final CaptureRequest.Builder captureBuilder =
                     getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
 
-            captureBuilder.addTarget(mJpegImageReader.get().getSurface());
+            captureBuilder.addTarget(mImageReader.getSurface());
 
             // Use the same AE and AF modes as the preview.
             setup3AControlsLocked(captureBuilder);
@@ -629,12 +581,6 @@ public class JCamera2RawTextureView extends CameraView {
             captureBuilder.setTag(mRequestCounter.getAndIncrement());
 
             CaptureRequest request = captureBuilder.build();
-
-            // Create an ImageSaverBuilder in which to collect results, and add it to the queue
-            // of active requests.
-            ImageSaver.ImageSaverBuilder jpegBuilder = new ImageSaver.ImageSaverBuilder(/*activity*/getContext());
-
-            mJpegResultQueue.put((int) request.getTag(), jpegBuilder);
 
             mCaptureSession.capture(request, mCaptureCallback, getBackgroundHandler());
 
@@ -668,55 +614,36 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     /**
-     * Retrieve the next {@link Image} from a reference counted {@link ImageReader}, retaining
-     * that {@link ImageReader} until that {@link Image} is no longer in use, and set this
-     * {@link Image} as the result for the next request in the queue of pending requests.  If
-     * all necessary information is available, begin saving the image to a file in a background
+     * If all necessary information is available, begin saving the image to a file in a background
      * thread.
-     *
-     * @param pendingQueue the currently active requests.
-     * @param reader       a reference counted wrapper containing an {@link ImageReader} from which
-     *                     to acquire an image.
      */
-    private void dequeueAndSaveImage(TreeMap<Integer, ImageSaver.ImageSaverBuilder> pendingQueue,
-                                     RefCountedAutoCloseable<ImageReader> reader) {
+    private void dequeueAndSaveImage() {
         synchronized (getCameraStateLock()) {
-            Map.Entry<Integer, ImageSaver.ImageSaverBuilder> entry =
-                    pendingQueue.firstEntry();
-            ImageSaver.ImageSaverBuilder builder = entry.getValue();
-
             // Increment reference count to prevent ImageReader from being closed while we
             // are saving its Images in a background thread (otherwise their resources may
             // be freed while we are writing to a file).
-            if (reader == null || reader.getAndRetain() == null) {
+            if (mImageReader == null) {
                 Log.e(TAG, "Paused the activity before we could save the image," +
                         " ImageReader already closed.");
-                pendingQueue.remove(entry.getKey());
                 return;
             }
 
             Image image;
             try {
-                image = reader.get().acquireNextImage();
+                image = mImageReader.acquireNextImage();
             } catch (IllegalStateException e) {
-                Log.e(TAG, "Too many images queued for saving, dropping image for request: " +
-                        entry.getKey());
-                pendingQueue.remove(entry.getKey());
+                Log.e(TAG, "Too many images queued for saving, dropping image.");
                 return;
             }
 
-            builder.setRefCountedReader(reader).setImage(image);
-
-            handleCompletionLocked(entry.getKey(), builder, pendingQueue);
+            ImageSaver saver = new ImageSaver(image, mFile, getContext(), mImageReader);
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(saver);
         }
     }
 
     /**
      * Runnable that saves an {@link Image} into the specified {@link File}, and updates
      * {@link android.provider.MediaStore} to include the resulting file.
-     * <p/>
-     * This can be constructed through an {@link ImageSaverBuilder} as the necessary image and
-     * result information becomes available.
      */
     private static class ImageSaver implements Runnable {
 
@@ -735,17 +662,17 @@ public class JCamera2RawTextureView extends CameraView {
         private final Context mContext;
 
         /**
-         * A reference counted wrapper for the ImageReader that owns the given image.
+         * The ImageReader that owns the given image.
          */
-        private final RefCountedAutoCloseable<ImageReader> mReader;
+        private final ImageReader mImageReader;
 
-        private ImageSaver(Image image, File file,
+        ImageSaver(Image image, File file,
                            Context context,
-                           RefCountedAutoCloseable<ImageReader> reader) {
+                           ImageReader imageReader) {
             mImage = image;
             mFile = file;
             mContext = context;
-            mReader = reader;
+            mImageReader = imageReader;
         }
 
         @Override
@@ -772,7 +699,7 @@ public class JCamera2RawTextureView extends CameraView {
             }
 
             // Decrement reference count to allow ImageReader to be closed to free up resources.
-            mReader.close();
+            mImageReader.close();
 
             // If saving the file succeeded, update MediaStore.
             if (success) {
@@ -791,129 +718,10 @@ public class JCamera2RawTextureView extends CameraView {
                 });
             }
         }
-
-        /**
-         * Builder class for constructing {@link ImageSaver}s.
-         * <p/>
-         * This class is thread safe.
-         */
-        public static class ImageSaverBuilder {
-            private Image mImage;
-            private File mFile;
-            private Context mContext;
-            private RefCountedAutoCloseable<ImageReader> mReader;
-
-            /**
-             * Construct a new ImageSaverBuilder using the given {@link Context}.
-             *
-             * @param context a {@link Context} to for accessing the
-             *                {@link android.provider.MediaStore}.
-             */
-            public ImageSaverBuilder(final Context context) {
-                mContext = context;
-            }
-
-            public synchronized ImageSaverBuilder setRefCountedReader(
-                    RefCountedAutoCloseable<ImageReader> reader) {
-                if (reader == null) throw new NullPointerException();
-
-                mReader = reader;
-                return this;
-            }
-
-            public synchronized ImageSaverBuilder setImage(final Image image) {
-                if (image == null) throw new NullPointerException();
-                mImage = image;
-                return this;
-            }
-
-            public synchronized ImageSaverBuilder setFile(final File file) {
-                if (file == null) throw new NullPointerException();
-                mFile = file;
-                return this;
-            }
-
-            public synchronized ImageSaver buildIfComplete() {
-                if (!isComplete()) {
-                    return null;
-                }
-                return new ImageSaver(mImage, mFile, mContext,
-                        mReader);
-            }
-
-            public synchronized String getSaveLocation() {
-                return (mFile == null) ? "Unknown" : mFile.toString();
-            }
-
-            private boolean isComplete() {
-                return mImage != null && mFile != null;
-            }
-        }
     }
 
     // Utility classes and methods:
     // *********************************************************************************************
-
-    /**
-     * A wrapper for an {@link AutoCloseable} object that implements reference counting to allow
-     * for resource management.
-     */
-    public static class RefCountedAutoCloseable<T extends AutoCloseable> implements AutoCloseable {
-        private T mObject;
-        private long mRefCount = 0;
-
-        /**
-         * Wrap the given object.
-         *
-         * @param object an object to wrap.
-         */
-        public RefCountedAutoCloseable(T object) {
-            if (object == null) throw new NullPointerException();
-            mObject = object;
-        }
-
-        /**
-         * Increment the reference count and return the wrapped object.
-         *
-         * @return the wrapped object, or null if the object has been released.
-         */
-        public synchronized T getAndRetain() {
-            if (mRefCount < 0) {
-                return null;
-            }
-            mRefCount++;
-            return mObject;
-        }
-
-        /**
-         * Return the wrapped object.
-         *
-         * @return the wrapped object, or null if the object has been released.
-         */
-        public synchronized T get() {
-            return mObject;
-        }
-
-        /**
-         * Decrement the reference count and release the wrapped object if there are no other
-         * users retaining this object.
-         */
-        @Override
-        public synchronized void close() {
-            if (mRefCount >= 0) {
-                mRefCount--;
-                if (mRefCount < 0) {
-                    try {
-                        mObject.close();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    } finally {
-                        mObject = null;
-                    }
-                }
-            }
-        }
-    }
 
     /**
      * Cleanup the given {@link OutputStream}.
@@ -947,27 +755,6 @@ public class JCamera2RawTextureView extends CameraView {
             }
         }
         return false;
-    }
-
-    /**
-     * If the given request has been completed, remove it from the queue of active requests and
-     * send an {@link ImageSaver} with the results from this request to a background thread to
-     * save a file.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
-     *
-     * @param requestId the ID of the {@link CaptureRequest} to handle.
-     * @param builder   the {@link ImageSaver.ImageSaverBuilder} for this request.
-     * @param queue     the queue to remove this request from, if completed.
-     */
-    private void handleCompletionLocked(int requestId, ImageSaver.ImageSaverBuilder builder,
-                                        TreeMap<Integer, ImageSaver.ImageSaverBuilder> queue) {
-        if (builder == null) return;
-        ImageSaver saver = builder.buildIfComplete();
-        if (saver != null) {
-            queue.remove(requestId);
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(saver);
-        }
     }
 
     /**
