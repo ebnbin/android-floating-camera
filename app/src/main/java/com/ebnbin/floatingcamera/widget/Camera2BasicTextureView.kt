@@ -32,7 +32,7 @@ import android.media.ImageReader
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Surface
-import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.FileUtil
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -50,7 +50,7 @@ class Camera2BasicTextureView constructor(
         postDelayed({
             if (isNotAttachedToWindow()) return@postDelayed
 
-            file = File(PreferenceHelper.path(), "${System.currentTimeMillis()}.jpg")
+            file = File(FileUtil.path, "${System.currentTimeMillis()}.jpg")
 
             onClick()
         }, 1000L)

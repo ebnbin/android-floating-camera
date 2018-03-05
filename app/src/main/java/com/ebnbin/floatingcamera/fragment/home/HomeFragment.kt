@@ -40,13 +40,9 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
             val recordAudioPermission = if (PreferenceHelper.isPhoto())
                 arrayOf() else
                 arrayOf(Manifest.permission.RECORD_AUDIO)
-            val externalStoragePermissions = if (PreferenceHelper.isExternal())
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE) else
-                arrayOf()
-
             PermissionFragment.request(childFragmentManager, REQUEST_CODE_PERMISSION,
                     Manifest.permission.SYSTEM_ALERT_WINDOW, Manifest.permission.CAMERA, *recordAudioPermission,
-                    *externalStoragePermissions)
+                    Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
 
         if (savedInstanceState != null) return

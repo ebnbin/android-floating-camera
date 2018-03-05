@@ -41,7 +41,7 @@ import android.util.Log;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.PreferenceHelper;
+import com.ebnbin.floatingcamera.util.FileUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -330,7 +330,7 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                                      long timestamp, long frameNumber) {
-            mFile = new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".jpg");
+            mFile = new File(FileUtil.INSTANCE.getPath(), "" + System.currentTimeMillis() + ".jpg");
         }
 
         @Override

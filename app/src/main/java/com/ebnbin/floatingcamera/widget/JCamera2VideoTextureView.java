@@ -34,6 +34,7 @@ import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
+import com.ebnbin.floatingcamera.util.FileUtil;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
 import java.io.File;
@@ -250,7 +251,7 @@ public class JCamera2VideoTextureView extends CameraView {
     }
 
     private File getVideoFilePath() {
-        return new File(PreferenceHelper.INSTANCE.path(), "" + System.currentTimeMillis() + ".mp4");
+        return new File(FileUtil.INSTANCE.getPath(), "" + System.currentTimeMillis() + ".mp4");
     }
 
     private void startRecordingVideo() {

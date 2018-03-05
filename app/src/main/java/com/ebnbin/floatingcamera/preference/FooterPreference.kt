@@ -8,4 +8,6 @@ import com.ebnbin.floatingcamera.R
  */
 class FooterPreference(context: Context) : Preference(context,
         isEnabled = false,
-        layoutResource = R.layout.footer_preference)
+        layoutResource = R.layout.footer_preference,
+        title = null,
+        summary = null)

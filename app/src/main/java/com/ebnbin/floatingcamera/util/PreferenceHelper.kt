@@ -151,16 +151,6 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     }
 
     /**
-     * 是否为外部存储 (or 内部存储).
-     */
-    fun isExternal() = OtherRootPreferenceGroup.isExternal
-
-    /**
-     * 存储路径.
-     */
-    fun path() = if (isExternal()) FileUtil.externalPath else FileUtil.internalPath
-
-    /**
      * 是否为暗色主题 (or 亮色主题).
      */
     fun isDarkTheme() = OtherRootPreferenceGroup.isDarkTheme

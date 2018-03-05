@@ -51,9 +51,8 @@
     <string name="window_y_title">悬浮窗垂直方向位置</string>
     <string name="window_y_summary">悬浮窗垂直方向位置</string>
 
-    <string name="is_external_title">存储路径</string>
-    <string name="is_external_summary_off">内部存储路径: %s</string>
-    <string name="is_external_summary_on">外部存储路径 (需要“存储空间”权限): %s</string>
+    <string name="path_title">存储路径</string>
+    <string name="path_summary">%s</string>
 
     <string name="is_dark_theme_title">主题</string>
     <string name="is_dark_theme_summary_off">亮色主题</string>
