@@ -32,11 +32,9 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.FileUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -57,8 +55,6 @@ public class JCamera2BasicTextureView extends CameraView {
                 if (isNotAttachedToWindow()) {
                     return;
                 }
-
-                mFile = new File(FileUtil.INSTANCE.getPath(), "" + System.currentTimeMillis() + ".jpg");
 
                 onClick();
             }
@@ -117,11 +113,6 @@ public class JCamera2BasicTextureView extends CameraView {
     //*****************************************************************************************************************
 
     /**
-     * Tag for the {@link Log}.
-     */
-    private static final String TAG = "JCamera2BasicTextureVie";
-
-    /**
      * Camera state: Showing camera preview.
      */
     private static final int STATE_PREVIEW = 0;
@@ -157,11 +148,6 @@ public class JCamera2BasicTextureView extends CameraView {
     private ImageReader mImageReader;
 
     /**
-     * This is the output file for our picture.
-     */
-    private File mFile;
-
-    /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
      */
@@ -170,7 +156,7 @@ public class JCamera2BasicTextureView extends CameraView {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            getBackgroundHandler().post(new ImageSaver(reader.acquireNextImage(), mFile));
+            getBackgroundHandler().post(new ImageSaver(reader.acquireNextImage(), getFile()));
         }
 
     };
@@ -311,7 +297,7 @@ public class JCamera2BasicTextureView extends CameraView {
                         @Override
                         public void onConfigureFailed(
                                 @NonNull CameraCaptureSession cameraCaptureSession) {
-                            /*showToast*/toast("Failed");
+                            toast("Failed");
                         }
                     }, null
             );
@@ -387,13 +373,19 @@ public class JCamera2BasicTextureView extends CameraView {
 
             CameraCaptureSession.CaptureCallback CaptureCallback
                     = new CameraCaptureSession.CaptureCallback() {
+                @Override
+                public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request,
+                        long timestamp, long frameNumber) {
+                    super.onCaptureStarted(session, request, timestamp, frameNumber);
+
+                    setUpFile(true);
+                }
 
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    /*showToast*/toast("Saved: " + mFile);
-                    Log.d(TAG, mFile.toString());
+                    toastFile();
                     unlockFocus();
                 }
             };

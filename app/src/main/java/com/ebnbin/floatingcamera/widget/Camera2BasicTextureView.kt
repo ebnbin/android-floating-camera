@@ -32,7 +32,6 @@ import android.media.ImageReader
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Surface
-import com.ebnbin.floatingcamera.util.FileUtil
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -49,8 +48,6 @@ class Camera2BasicTextureView constructor(
     private fun picture() {
         postDelayed({
             if (isNotAttachedToWindow()) return@postDelayed
-
-            file = File(FileUtil.path, "${System.currentTimeMillis()}.jpg")
 
             onClick()
         }, 1000L)
@@ -95,11 +92,6 @@ class Camera2BasicTextureView constructor(
      * An [ImageReader] that handles still image capture.
      */
     private var imageReader: ImageReader? = null
-
-    /**
-     * This is the output file for our picture.
-     */
-    private lateinit var file: File
 
     /**
      * This a callback object for the [ImageReader]. "onImageAvailable" will be called when a
@@ -227,17 +219,17 @@ class Camera2BasicTextureView constructor(
                                 captureSession?.setRepeatingRequest(previewRequest,
                                         captureCallback, backgroundHandler)
                             } catch (e: CameraAccessException) {
-                                Log.e(TAG, e.toString())
+                                Log.e("ebnbin", e.toString())
                             }
 
                         }
 
                         override fun onConfigureFailed(session: CameraCaptureSession) {
-                            /*activity.showToast*/toast("Failed")
+                            toast("Failed")
                         }
                     }, null)
         } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
+            Log.e("ebnbin", e.toString())
         }
 
     }
@@ -255,7 +247,7 @@ class Camera2BasicTextureView constructor(
             captureSession?.capture(previewRequestBuilder.build(), captureCallback,
                     backgroundHandler)
         } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
+            Log.e("ebnbin", e.toString())
         }
 
     }
@@ -274,7 +266,7 @@ class Camera2BasicTextureView constructor(
             captureSession?.capture(previewRequestBuilder.build(), captureCallback,
                     backgroundHandler)
         } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
+            Log.e("ebnbin", e.toString())
         }
 
     }
@@ -304,12 +296,17 @@ class Camera2BasicTextureView constructor(
             }?.also { setAutoFlash(it) }
 
             val captureCallback = object : CameraCaptureSession.CaptureCallback() {
+                override fun onCaptureStarted(session: CameraCaptureSession?, request: CaptureRequest?,
+                        timestamp: Long, frameNumber: Long) {
+                    super.onCaptureStarted(session, request, timestamp, frameNumber)
+
+                    setUpFile(true)
+                }
 
                 override fun onCaptureCompleted(session: CameraCaptureSession,
                         request: CaptureRequest,
                         result: TotalCaptureResult) {
-                    /*activity.showToast*/toast("Saved: $file")
-                    Log.d(TAG, file.toString())
+                    toastFile()
                     unlockFocus()
                 }
             }
@@ -320,7 +317,7 @@ class Camera2BasicTextureView constructor(
                 capture(captureBuilder?.build(), captureCallback, null)
             }
         } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
+            Log.e("ebnbin", e.toString())
         }
 
     }
@@ -342,7 +339,7 @@ class Camera2BasicTextureView constructor(
             captureSession?.setRepeatingRequest(previewRequest, captureCallback,
                     backgroundHandler)
         } catch (e: CameraAccessException) {
-            Log.e(TAG, e.toString())
+            Log.e("ebnbin", e.toString())
         }
 
     }
@@ -355,11 +352,6 @@ class Camera2BasicTextureView constructor(
     }
 
     companion object {
-
-        /**
-         * Tag for the [Log].
-         */
-        private val TAG = "Camera2BasicTextureView"
 
         /**
          * Camera state: Showing camera preview.
@@ -413,23 +405,16 @@ internal class ImageSaver(
                 write(bytes)
             }
         } catch (e: IOException) {
-            Log.e(TAG, e.toString())
+            Log.e("ebnbin", e.toString())
         } finally {
             image.close()
             output?.let {
                 try {
                     it.close()
                 } catch (e: IOException) {
-                    Log.e(TAG, e.toString())
+                    Log.e("ebnbin", e.toString())
                 }
             }
         }
-    }
-
-    companion object {
-        /**
-         * Tag for the [Log].
-         */
-        private val TAG = "ImageSaver"
     }
 }

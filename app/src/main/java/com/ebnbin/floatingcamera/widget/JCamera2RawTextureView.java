@@ -41,7 +41,6 @@ import android.util.Log;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-import com.ebnbin.floatingcamera.util.FileUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -225,8 +224,6 @@ public class JCamera2RawTextureView extends CameraView {
      */
     private long mCaptureTimer;
 
-    private File mFile;
-
     //**********************************************************************************************
 
     /**
@@ -330,25 +327,18 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                                      long timestamp, long frameNumber) {
-            mFile = new File(FileUtil.INSTANCE.getPath(), "" + System.currentTimeMillis() + ".jpg");
+            setUpFile(true);
         }
 
         @Override
         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
                                        TotalCaptureResult result) {
-            StringBuilder sb = new StringBuilder();
-
             // Look up the ImageSaverBuilder for this request and update it with the CaptureResult
             synchronized (getCameraStateLock()) {
-                if (mFile != null) {
-                    sb.append("Saving JPEG as: ");
-                    sb.append(mFile);
-                }
-
                 finishedCaptureLocked();
             }
 
-            /*showToast*/toast(sb.toString());
+            toastFile();
         }
 
         @Override
@@ -357,7 +347,7 @@ public class JCamera2RawTextureView extends CameraView {
             synchronized (getCameraStateLock()) {
                 finishedCaptureLocked();
             }
-            /*showToast*/toast("Capture failed!");
+            toast("Capture failed!");
         }
 
     };
@@ -440,7 +430,7 @@ public class JCamera2RawTextureView extends CameraView {
 
                         @Override
                         public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-                            /*showToast*/toast("Failed to configure camera.");
+                            toast("Failed to configure camera.");
                         }
                     }, getBackgroundHandler()
             );
@@ -636,7 +626,7 @@ public class JCamera2RawTextureView extends CameraView {
                 return;
             }
 
-            ImageSaver saver = new ImageSaver(image, mFile, getContext(), mImageReader);
+            ImageSaver saver = new ImageSaver(image, getFile(), getContext(), mImageReader);
             AsyncTask.THREAD_POOL_EXECUTOR.execute(saver);
         }
     }

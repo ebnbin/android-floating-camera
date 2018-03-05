@@ -29,15 +29,12 @@ import android.media.MediaRecorder;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
-import com.ebnbin.floatingcamera.util.FileUtil;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -138,8 +135,6 @@ public class JCamera2VideoTextureView extends CameraView {
 
     //*****************************************************************************************************************
 
-    private static final String TAG = "JCamera2VideoTextureVie";
-
     /**
      * A reference to the current {@link android.hardware.camera2.CameraCaptureSession} for
      * preview.
@@ -156,7 +151,6 @@ public class JCamera2VideoTextureView extends CameraView {
      */
     private boolean mIsRecordingVideo;
 
-    private File mNextVideoAbsolutePath;
     private CaptureRequest.Builder mPreviewBuilder;
 
     /**
@@ -189,10 +183,6 @@ public class JCamera2VideoTextureView extends CameraView {
 
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-//                            Activity activity = getActivity();
-//                            if (null != activity) {
-//                                Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show();
-//                            }
                             toast("Failed");
                         }
                     }, getBackgroundHandler());
@@ -229,10 +219,8 @@ public class JCamera2VideoTextureView extends CameraView {
 
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        if (mNextVideoAbsolutePath == null) {
-            mNextVideoAbsolutePath = getVideoFilePath();
-        }
-        mMediaRecorder.setOutputFile(mNextVideoAbsolutePath.getAbsolutePath());
+        setUpFile(false);
+        mMediaRecorder.setOutputFile(getFile().getAbsolutePath());
         mMediaRecorder.setOrientationHint(getDevice().getOrientation(AppUtilsKt.displayRotation()));
 
         CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.videoProfile();
@@ -248,10 +236,6 @@ public class JCamera2VideoTextureView extends CameraView {
         }
 
         mMediaRecorder.prepare();
-    }
-
-    private File getVideoFilePath() {
-        return new File(FileUtil.INSTANCE.getPath(), "" + System.currentTimeMillis() + ".mp4");
     }
 
     private void startRecordingVideo() {
@@ -302,10 +286,6 @@ public class JCamera2VideoTextureView extends CameraView {
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-//                    Activity activity = getActivity();
-//                    if (null != activity) {
-//                        Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show();
-//                    }
                     toast("Failed");
                 }
             }, getBackgroundHandler());
@@ -330,14 +310,9 @@ public class JCamera2VideoTextureView extends CameraView {
         mMediaRecorder.stop();
         mMediaRecorder.reset();
 
-//        Activity activity = getActivity();
         if (isAttachedToWindow()) {
-//            Toast.makeText(activity, "Video saved: " + mNextVideoAbsolutePath,
-//                    Toast.LENGTH_SHORT).show();
-            toast("Video saved: " + mNextVideoAbsolutePath);
-            Log.d(TAG, "Video saved: " + mNextVideoAbsolutePath);
+            toastFile();
         }
-        mNextVideoAbsolutePath = null;
 //        startPreview();
     }
 

@@ -39,7 +39,7 @@ class OtherRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) 
                 isEnabled = true,
                 layoutResource = null,
                 title = getString(R.string.path_title),
-                summary = resources.getString(R.string.path_summary, FileUtil.path))
+                summary = resources.getString(R.string.path_summary, FileUtil.getPath()))
     }
 
     /**

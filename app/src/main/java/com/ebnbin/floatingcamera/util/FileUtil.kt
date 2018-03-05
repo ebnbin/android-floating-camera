@@ -7,9 +7,11 @@ import java.io.File
  * 文件工具类.
  */
 object FileUtil {
-    val path: File get() {
-        val result = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), packageName)
-        if (!result.exists()) result.mkdirs()
-        return result
+    fun getPath(): File {
+        val path = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), packageName)
+        if (!path.exists()) path.mkdirs()
+        return path
     }
+
+    fun getFile(isPhoto: Boolean) = File(getPath(), "${System.currentTimeMillis()}.${if (isPhoto) "jpg" else "mp4"}")
 }

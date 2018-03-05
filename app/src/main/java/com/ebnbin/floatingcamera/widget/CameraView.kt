@@ -25,6 +25,7 @@ import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
 import com.ebnbin.floatingcamera.util.DebugHelper
+import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
@@ -34,6 +35,7 @@ import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.windowManager
+import java.io.File
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -621,4 +623,20 @@ abstract class CameraView : TextureView,
     }
 
     protected open fun beforeFinish() = Unit
+
+    //*****************************************************************************************************************
+
+    /**
+     * This is the output file.
+     */
+    protected lateinit var file: File private set
+
+    protected fun setUpFile(isPhoto: Boolean) {
+        file = FileUtil.getFile(isPhoto)
+    }
+
+    protected fun toastFile() {
+        toast("$file")
+        Log.d("ebnbin", "$file")
+    }
 }
