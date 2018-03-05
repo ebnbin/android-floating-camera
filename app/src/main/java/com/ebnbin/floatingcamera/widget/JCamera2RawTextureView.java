@@ -42,7 +42,6 @@ import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -618,7 +617,7 @@ public class JCamera2RawTextureView extends CameraView {
                 return;
             }
 
-            Image image;
+            final Image image;
             try {
                 image = mImageReader.acquireNextImage();
             } catch (IllegalStateException e) {
@@ -626,87 +625,51 @@ public class JCamera2RawTextureView extends CameraView {
                 return;
             }
 
-            ImageSaver saver = new ImageSaver(image, getFile(), getContext(), mImageReader);
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(saver);
-        }
-    }
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
+                @Override
+                public void run() {
+                    boolean success = false;
+                    int format = image.getFormat();
+                    if (format == ImageFormat.JPEG) {
+                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                        byte[] bytes = new byte[buffer.remaining()];
+                        buffer.get(bytes);
+                        FileOutputStream output = null;
+                        try {
+                            output = new FileOutputStream(getFile());
+                            output.write(bytes);
+                            success = true;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            image.close();
+                            closeOutput(output);
+                        }
+                    } else {
+                        Log.e(TAG, "Cannot save image, unexpected image format:" + format);
+                    }
 
-    /**
-     * Runnable that saves an {@link Image} into the specified {@link File}, and updates
-     * {@link android.provider.MediaStore} to include the resulting file.
-     */
-    private static class ImageSaver implements Runnable {
+                    // Decrement reference count to allow ImageReader to be closed to free up resources.
+                    mImageReader.close();
 
-        /**
-         * The image to save.
-         */
-        private final Image mImage;
-        /**
-         * The file we save the image into.
-         */
-        private final File mFile;
+                    // If saving the file succeeded, update MediaStore.
+                    if (success) {
+                        MediaScannerConnection.scanFile(getContext(), new String[]{getFile().getPath()},
+                        /*mimeTypes*/null, new MediaScannerConnection.MediaScannerConnectionClient() {
+                                    @Override
+                                    public void onMediaScannerConnected() {
+                                        // Do nothing
+                                    }
 
-        /**
-         * The Context to use when updating MediaStore with the saved images.
-         */
-        private final Context mContext;
-
-        /**
-         * The ImageReader that owns the given image.
-         */
-        private final ImageReader mImageReader;
-
-        ImageSaver(Image image, File file,
-                           Context context,
-                           ImageReader imageReader) {
-            mImage = image;
-            mFile = file;
-            mContext = context;
-            mImageReader = imageReader;
-        }
-
-        @Override
-        public void run() {
-            boolean success = false;
-            int format = mImage.getFormat();
-            if (format == ImageFormat.JPEG) {
-                ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-                byte[] bytes = new byte[buffer.remaining()];
-                buffer.get(bytes);
-                FileOutputStream output = null;
-                try {
-                    output = new FileOutputStream(mFile);
-                    output.write(bytes);
-                    success = true;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    mImage.close();
-                    closeOutput(output);
+                                    @Override
+                                    public void onScanCompleted(String path, Uri uri) {
+                                        Log.i(TAG, "Scanned " + path + ":");
+                                        Log.i(TAG, "-> uri=" + uri);
+                                    }
+                                });
+                    }
                 }
-            } else {
-                Log.e(TAG, "Cannot save image, unexpected image format:" + format);
-            }
-
-            // Decrement reference count to allow ImageReader to be closed to free up resources.
-            mImageReader.close();
-
-            // If saving the file succeeded, update MediaStore.
-            if (success) {
-                MediaScannerConnection.scanFile(mContext, new String[]{mFile.getPath()},
-                /*mimeTypes*/null, new MediaScannerConnection.MediaScannerConnectionClient() {
-                    @Override
-                    public void onMediaScannerConnected() {
-                        // Do nothing
-                    }
-
-                    @Override
-                    public void onScanCompleted(String path, Uri uri) {
-                        Log.i(TAG, "Scanned " + path + ":");
-                        Log.i(TAG, "-> uri=" + uri);
-                    }
-                });
-            }
+            });
         }
     }
 

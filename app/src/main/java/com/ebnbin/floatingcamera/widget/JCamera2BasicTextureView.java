@@ -36,7 +36,6 @@ import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -155,8 +154,33 @@ public class JCamera2BasicTextureView extends CameraView {
             = new ImageReader.OnImageAvailableListener() {
 
         @Override
-        public void onImageAvailable(ImageReader reader) {
-            getBackgroundHandler().post(new ImageSaver(reader.acquireNextImage(), getFile()));
+        public void onImageAvailable(final ImageReader reader) {
+            getBackgroundHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    Image image = reader.acquireNextImage();
+
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    FileOutputStream output = null;
+                    try {
+                        output = new FileOutputStream(getFile());
+                        output.write(bytes);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        image.close();
+                        if (null != output) {
+                            try {
+                                output.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            });
         }
 
     };
@@ -424,50 +448,6 @@ public class JCamera2BasicTextureView extends CameraView {
 //            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
 //                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 //        }
-    }
-
-    /**
-     * Saves a JPEG {@link Image} into the specified {@link File}.
-     */
-    private static class ImageSaver implements Runnable {
-
-        /**
-         * The JPEG image
-         */
-        private final Image mImage;
-        /**
-         * The file we save the image into.
-         */
-        private final File mFile;
-
-        ImageSaver(Image image, File file) {
-            mImage = image;
-            mFile = file;
-        }
-
-        @Override
-        public void run() {
-            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            FileOutputStream output = null;
-            try {
-                output = new FileOutputStream(mFile);
-                output.write(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                mImage.close();
-                if (null != output) {
-                    try {
-                        output.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-
     }
 
 }
