@@ -6,34 +6,32 @@ import android.support.v7.preference.PreferenceManager
 /**
  * [android.support.v7.preference.ListPreference].
  */
-open class ListPreference(
-        context: Context,
-        key: String? = null,
-        defaultValue: String? = null,
-        title: CharSequence? = null,
-        entries: Array<out CharSequence>? = null,
-        private val summaries: Array<out CharSequence>? = null,
-        dialogTitle: CharSequence? = null) :
-        android.support.v7.preference.ListPreference(context) {
-    init {
-        if (key != null) this.key = key
-        if (defaultValue != null) super.setDefaultValue(defaultValue)
-        if (title != null) this.title = title
-        if (entries != null) {
-            this.entries = entries
-            entryValues = Array(this.entries.size) { it.toString() }
-            if (summaries != null) {
-                setOnPreferenceChangeListener { _, newValue ->
-                    newValue as String
+open class ListPreference(context: Context) : android.support.v7.preference.ListPreference(context) {
+    var summaries: Array<out CharSequence>? = null
+        set(value) {
+            field = value
 
-                    invalidateSummary(newValue)
-
-                    true
-                }
+            if (field != null) {
+                onPreferenceChangeListener = superOnPreferenceChangeListener
             }
         }
-        if (dialogTitle != null) this.dialogTitle = dialogTitle
+
+    private var superOnPreferenceChangeListener: OnPreferenceChangeListener? = null
+
+    override fun setOnPreferenceChangeListener(onPreferenceChangeListener: OnPreferenceChangeListener?) {
+        superOnPreferenceChangeListener = onPreferenceChangeListener
+
+        super.setOnPreferenceChangeListener { preference, newValue ->
+            val result = superOnPreferenceChangeListener?.onPreferenceChange(preference, newValue)
+
+            newValue as String
+            invalidateSummary(newValue)
+
+            result ?: true
+        }
     }
+
+    override fun getOnPreferenceChangeListener() = superOnPreferenceChangeListener
 
     private var isFirstAttachedToHierarchy = true
 
@@ -54,8 +52,24 @@ open class ListPreference(
         if (summaries == null) return
 
         val index = getValueIndex(value)
-        summary = if (index in 0 until summaries.size) summaries[index] else null
+        summary = if (index in 0 until (summaries?.size ?: 0)) summaries!![index] else null
     }
 
     private fun getValueIndex(value: String = this.value) = findIndexOfValue(value)
+
+    @Deprecated("使用 setEntriesAndEntryValues 代替.", ReplaceWith("setEntriesAndEntryValues(entries)",
+            "com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues"))
+    override fun setEntries(entries: Array<out CharSequence>?) = super.setEntries(entries)
+
+    @Deprecated("使用 setEntriesAndEntryValues 代替.", ReplaceWith("setEntriesAndEntryValues(entries)",
+            "com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues"))
+    override fun setEntries(entriesResId: Int) = super.setEntries(entriesResId)
+
+    @Deprecated("使用 setEntriesAndEntryValues 代替.", ReplaceWith("setEntriesAndEntryValues(entries)",
+            "com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues"))
+    override fun setEntryValues(entryValues: Array<out CharSequence>?) = super.setEntryValues(entryValues)
+
+    @Deprecated("使用 setEntriesAndEntryValues 代替.", ReplaceWith("setEntriesAndEntryValues(entries)",
+            "com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues"))
+    override fun setEntryValues(entryValuesResId: Int) = super.setEntryValues(entryValuesResId)
 }

@@ -2,17 +2,17 @@ package com.ebnbin.floatingcamera.fragment.preference.window
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.support.v7.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.FooterPreference
 import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
-import com.ebnbin.floatingcamera.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
-import com.ebnbin.floatingcamera.util.getString
+import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 
 /**
  * 窗口根偏好组.
@@ -41,52 +41,56 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 悬浮窗大小.
      */
     private val windowSizePreference by lazy {
-        SeekBarPreference(context,
-                key = KEY_WINDOW_SIZE,
-                defaultValue = DEF_VALUE_WINDOW_SIZE,
-                title = getString(R.string.window_size_title),
-                summary = getString(R.string.window_size_summary),
-                min = 1,
-                max = 100)
+        SeekBarPreference(context).apply {
+            key = KEY_WINDOW_SIZE
+            setDefaultValue(DEF_VALUE_WINDOW_SIZE)
+            setTitle(R.string.window_size_title)
+            setSummary(R.string.window_size_summary)
+            min = 1
+            max = 100
+        }
     }
 
     /**
      * 悬浮窗水平方向位置.
      */
     private val windowXPreference by lazy {
-        SeekBarPreference(context,
-                key = KEY_WINDOW_X,
-                defaultValue = DEF_VALUE_WINDOW_X,
-                title = getString(R.string.window_x_title),
-                summary = getString(R.string.window_x_summary),
-                min = -100,
-                max = 200)
+        SeekBarPreference(context).apply {
+            key = KEY_WINDOW_X
+            setDefaultValue(DEF_VALUE_WINDOW_X)
+            setTitle(R.string.window_x_title)
+            setSummary(R.string.window_x_summary)
+            min = -100
+            max = 200
+        }
     }
 
     /**
      * 悬浮窗垂直方向位置.
      */
     private val windowYPreference by lazy {
-        SeekBarPreference(context,
-                key = KEY_WINDOW_Y,
-                defaultValue = DEF_VALUE_WINDOW_Y,
-                title = getString(R.string.window_y_title),
-                summary = getString(R.string.window_y_summary),
-                min = -100,
-                max = 200)
+        SeekBarPreference(context).apply {
+            key = KEY_WINDOW_Y
+            setDefaultValue(DEF_VALUE_WINDOW_Y)
+            setTitle(R.string.window_y_title)
+            setSummary(R.string.window_y_summary)
+            min = -100
+            max = 200
+        }
     }
 
     /**
      * 预览.
      */
     private val previewPreference by lazy {
-        ListPreference(context,
-                key = KEY_PREVIEW,
-                defaultValue = DEF_VALUE_PREVIEW,
-                title = getString(R.string.preview_title),
-                entries = Preview.entries,
-                summaries = Preview.entries,
-                dialogTitle = getString(R.string.preview_title))
+        ListPreference(context).apply {
+            key = KEY_PREVIEW
+            setDefaultValue(DEF_VALUE_PREVIEW)
+            setTitle(R.string.preview_title)
+            setEntriesAndEntryValues(Preview.entries)
+            summaries = Preview.entries
+            setDialogTitle(R.string.preview_title)
+        }
     }
 
     /**

@@ -2,18 +2,18 @@ package com.ebnbin.floatingcamera.fragment.preference.camera
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.support.v14.preference.SwitchPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.FooterPreference
 import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
-import com.ebnbin.floatingcamera.preference.SwitchPreference
 import com.ebnbin.floatingcamera.util.cameraHelper
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.getValueIndex
 import com.ebnbin.floatingcamera.util.extension.getValueSize
-import com.ebnbin.floatingcamera.util.getString
+import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 
 /**
  * 相机根偏好组.
@@ -66,13 +66,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置/前置摄像头.
      */
     private val isFrontPreference by lazy {
-        SwitchPreference(context,
-                key = KEY_IS_FRONT,
-                defaultValue = DEF_VALUE_IS_FRONT,
-                isEnabled = cameraHelper.hasBothDevices,
-                title = getString(R.string.is_front_title),
-                summaryOff = getString(R.string.is_front_summary_off),
-                summaryOn = getString(R.string.is_front_summary_on))
+        SwitchPreference(context).apply {
+            key = KEY_IS_FRONT
+            setDefaultValue(DEF_VALUE_IS_FRONT)
+            isEnabled = cameraHelper.hasBothDevices
+            setTitle(R.string.is_front_title)
+            setSummaryOff(R.string.is_front_summary_off)
+            setSummaryOn(R.string.is_front_summary_on)
+        }
     }
 
     /**
@@ -95,13 +96,13 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置摄像头视频/照片.
      */
     private val backIsPhotoPreference by lazy {
-        SwitchPreference(context,
-                key = KEY_BACK_IS_PHOTO,
-                defaultValue = DEF_VALUE_BACK_IS_PHOTO,
-                isEnabled = null,
-                title = getString(R.string.is_photo_title),
-                summaryOff = getString(R.string.back_is_photo_summary_off),
-                summaryOn = getString(R.string.back_is_photo_summary_on))
+        SwitchPreference(context).apply {
+            key = KEY_BACK_IS_PHOTO
+            setDefaultValue(DEF_VALUE_BACK_IS_PHOTO)
+            setTitle(R.string.is_photo_title)
+            setSummaryOff(R.string.back_is_photo_summary_off)
+            setSummaryOn(R.string.back_is_photo_summary_on)
+        }
     }
 
     /**
@@ -130,13 +131,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置摄像头视频配置.
      */
     private val backVideoProfilePreference by lazy {
-        ListPreference(context,
-                key = KEY_BACK_VIDEO_PROFILE,
-                defaultValue = DEF_VALUE_BACK_VIDEO_PROFILE,
-                title = getString(R.string.back_video_profile_title),
-                entries = cameraHelper.backDevice.videoProfileSummaries,
-                summaries = cameraHelper.backDevice.videoProfileSummaries,
-                dialogTitle = getString(R.string.back_video_profile_title))
+        ListPreference(context).apply {
+            key = KEY_BACK_VIDEO_PROFILE
+            setDefaultValue(DEF_VALUE_BACK_VIDEO_PROFILE)
+            setTitle(R.string.back_video_profile_title)
+            setEntriesAndEntryValues(cameraHelper.backDevice.videoProfileSummaries)
+            summaries = cameraHelper.backDevice.videoProfileSummaries
+            setDialogTitle(R.string.back_video_profile_title)
+        }
     }
 
     /**
@@ -156,13 +158,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置摄像头视频分辨率.
      */
     private val backVideoResolutionPreference by lazy {
-        ListPreference(context,
-                key = KEY_BACK_VIDEO_RESOLUTION,
-                defaultValue = DEF_VALUE_BACK_VIDEO_RESOLUTION,
-                title = getString(R.string.back_video_resolution_title),
-                entries = cameraHelper.backDevice.videoResolutionSummaries,
-                summaries = cameraHelper.backDevice.videoResolutionSummaries,
-                dialogTitle = getString(R.string.back_video_resolution_title))
+        ListPreference(context).apply {
+            key = KEY_BACK_VIDEO_RESOLUTION
+            setDefaultValue(DEF_VALUE_BACK_VIDEO_RESOLUTION)
+            setTitle(R.string.back_video_resolution_title)
+            setEntriesAndEntryValues(cameraHelper.backDevice.videoResolutionSummaries)
+            summaries = cameraHelper.backDevice.videoResolutionSummaries
+            setDialogTitle(R.string.back_video_resolution_title)
+        }
     }
 
     /**
@@ -181,13 +184,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置摄像头照片分辨率.
      */
     private val backPhotoResolutionPreference by lazy {
-        ListPreference(context,
-                key = KEY_BACK_PHOTO_RESOLUTION,
-                defaultValue = DEF_VALUE_BACK_PHOTO_RESOLUTION,
-                title = getString(R.string.back_photo_resolution_title),
-                entries = cameraHelper.backDevice.photoResolutionSummaries,
-                summaries = cameraHelper.backDevice.photoResolutionSummaries,
-                dialogTitle = getString(R.string.back_photo_resolution_title))
+        ListPreference(context).apply {
+            key = KEY_BACK_PHOTO_RESOLUTION
+            setDefaultValue(DEF_VALUE_BACK_PHOTO_RESOLUTION)
+            setTitle(R.string.back_photo_resolution_title)
+            setEntriesAndEntryValues(cameraHelper.backDevice.photoResolutionSummaries)
+            summaries = cameraHelper.backDevice.photoResolutionSummaries
+            setDialogTitle(R.string.back_photo_resolution_title)
+        }
     }
 
     /**
@@ -210,13 +214,13 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 前置摄像头视频/照片.
      */
     private val frontIsPhotoPreference by lazy {
-        SwitchPreference(context,
-                key = KEY_FRONT_IS_PHOTO,
-                defaultValue = DEF_VALUE_FRONT_IS_PHOTO,
-                isEnabled = null,
-                title = getString(R.string.is_photo_title),
-                summaryOff = getString(R.string.front_is_photo_summary_off),
-                summaryOn = getString(R.string.front_is_photo_summary_on))
+        SwitchPreference(context).apply {
+            key = KEY_FRONT_IS_PHOTO
+            setDefaultValue(DEF_VALUE_FRONT_IS_PHOTO)
+            setTitle(R.string.is_photo_title)
+            setSummaryOff(R.string.front_is_photo_summary_off)
+            setSummaryOn(R.string.front_is_photo_summary_on)
+        }
     }
 
     /**
@@ -245,13 +249,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 前置摄像头视频配置.
      */
     private val frontVideoProfilePreference by lazy {
-        ListPreference(context,
-                key = KEY_FRONT_VIDEO_PROFILE,
-                defaultValue = DEF_VALUE_FRONT_VIDEO_PROFILE,
-                title = getString(R.string.front_video_profile_title),
-                entries = cameraHelper.frontDevice.videoProfileSummaries,
-                summaries = cameraHelper.frontDevice.videoProfileSummaries,
-                dialogTitle = getString(R.string.front_video_profile_title))
+        ListPreference(context).apply {
+            key = KEY_FRONT_VIDEO_PROFILE
+            setDefaultValue(DEF_VALUE_FRONT_VIDEO_PROFILE)
+            setTitle(R.string.front_video_profile_title)
+            setEntriesAndEntryValues(cameraHelper.frontDevice.videoProfileSummaries)
+            summaries = cameraHelper.frontDevice.videoProfileSummaries
+            setDialogTitle(R.string.front_video_profile_title)
+        }
     }
 
     /**
@@ -271,13 +276,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 前置摄像头视频分辨率.
      */
     private val frontVideoResolutionPreference by lazy {
-        ListPreference(context,
-                key = KEY_FRONT_VIDEO_RESOLUTION,
-                defaultValue = DEF_VALUE_FRONT_VIDEO_RESOLUTION,
-                title = getString(R.string.front_video_resolution_title),
-                entries = cameraHelper.frontDevice.videoResolutionSummaries,
-                summaries = cameraHelper.frontDevice.videoResolutionSummaries,
-                dialogTitle = getString(R.string.front_video_resolution_title))
+        ListPreference(context).apply {
+            key = KEY_FRONT_VIDEO_RESOLUTION
+            setDefaultValue(DEF_VALUE_FRONT_VIDEO_RESOLUTION)
+            setTitle(R.string.front_video_resolution_title)
+            setEntriesAndEntryValues(cameraHelper.frontDevice.videoResolutionSummaries)
+            summaries = cameraHelper.frontDevice.videoResolutionSummaries
+            setDialogTitle(R.string.front_video_resolution_title)
+        }
     }
 
     /**
@@ -296,13 +302,14 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 前置摄像头照片分辨率.
      */
     private val frontPhotoResolutionPreference by lazy {
-        ListPreference(context,
-                key = KEY_FRONT_PHOTO_RESOLUTION,
-                defaultValue = DEF_VALUE_FRONT_PHOTO_RESOLUTION,
-                title = getString(R.string.front_photo_resolution_title),
-                entries = cameraHelper.frontDevice.photoResolutionSummaries,
-                summaries = cameraHelper.frontDevice.photoResolutionSummaries,
-                dialogTitle = getString(R.string.front_photo_resolution_title))
+        ListPreference(context).apply {
+            key = KEY_FRONT_PHOTO_RESOLUTION
+            setDefaultValue(DEF_VALUE_FRONT_PHOTO_RESOLUTION)
+            setTitle(R.string.front_photo_resolution_title)
+            setEntriesAndEntryValues(cameraHelper.frontDevice.photoResolutionSummaries)
+            summaries = cameraHelper.frontDevice.photoResolutionSummaries
+            setDialogTitle(R.string.front_photo_resolution_title)
+        }
     }
 
     /**
