@@ -1,6 +1,10 @@
 package com.ebnbin.floatingcamera.fragment.home
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.view.ViewPager
@@ -14,6 +18,7 @@ import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
+import com.ebnbin.floatingcamera.util.localBroadcastManager
 import kotlinx.android.synthetic.main.home_fragment.cameraFab
 import kotlinx.android.synthetic.main.home_fragment.tabLayout
 import kotlinx.android.synthetic.main.home_fragment.viewPager
@@ -22,6 +27,19 @@ import kotlinx.android.synthetic.main.home_fragment.viewPager
  * 首页.
  */
 class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragment.Callback {
+    private val cameraServiceIsRunningReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            invalidateCameraServiceIsRunning()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        localBroadcastManager.registerReceiver(cameraServiceIsRunningReceiver,
+                IntentFilter(CameraService.ACTION_CAMERA_SERVICE_IS_RUNNING))
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.home_fragment, container, false)
     }
@@ -37,6 +55,8 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
         viewPager.offscreenPageLimit = adapter.count
 
         cameraFab.setOnClickListener {
+            cameraFab.isEnabled = false
+
             val recordAudioPermission = if (PreferenceHelper.isPhoto())
                 arrayOf() else
                 arrayOf(Manifest.permission.RECORD_AUDIO)
@@ -55,15 +75,34 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
             REQUEST_CODE_PERMISSION -> {
                 if (!granted) return
 
-                CameraService.start()
+                if (CameraService.isRunning)
+                    CameraService.postStop() else
+                    CameraService.start()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        invalidateCameraServiceIsRunning()
+    }
+
+    private fun invalidateCameraServiceIsRunning() {
+        cameraFab.isEnabled = true
+        cameraFab.setImageResource(if (CameraService.isRunning) R.drawable.stop else R.drawable.camera)
     }
 
     override fun onDestroyView() {
         viewPager.removeOnPageChangeListener(this)
 
         super.onDestroyView()
+    }
+
+    override fun onDestroy() {
+        localBroadcastManager.unregisterReceiver(cameraServiceIsRunningReceiver)
+
+        super.onDestroy()
     }
 
     override fun onPageScrollStateChanged(state: Int) = Unit

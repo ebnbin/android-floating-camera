@@ -612,7 +612,7 @@ abstract class CameraView : TextureView,
 
     //*****************************************************************************************************************
 
-    protected fun finish() {
+    fun finish() {
         if (isNotAttachedToWindow()) return
 
         beforeFinish()
