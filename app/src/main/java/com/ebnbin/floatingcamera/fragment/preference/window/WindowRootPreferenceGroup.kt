@@ -46,7 +46,7 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
                 defaultValue = DEF_VALUE_WINDOW_SIZE,
                 title = getString(R.string.window_size_title),
                 summary = getString(R.string.window_size_summary),
-                min = 0,
+                min = 1,
                 max = 100)
     }
 
