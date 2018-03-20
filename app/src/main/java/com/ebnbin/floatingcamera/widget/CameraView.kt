@@ -631,8 +631,8 @@ abstract class CameraView : TextureView,
      */
     protected lateinit var file: File private set
 
-    protected fun setUpFile(isPhoto: Boolean) {
-        file = FileUtil.getFile(isPhoto)
+    protected fun setUpFile(extension: String) {
+        file = FileUtil.getFile(extension)
     }
 
     protected fun toastFile() {

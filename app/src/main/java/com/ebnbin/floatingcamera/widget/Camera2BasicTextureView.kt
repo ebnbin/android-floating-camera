@@ -312,7 +312,7 @@ class Camera2BasicTextureView constructor(
                         timestamp: Long, frameNumber: Long) {
                     super.onCaptureStarted(session, request, timestamp, frameNumber)
 
-                    setUpFile(true)
+                    setUpFile(".jpg")
                 }
 
                 override fun onCaptureCompleted(session: CameraCaptureSession,

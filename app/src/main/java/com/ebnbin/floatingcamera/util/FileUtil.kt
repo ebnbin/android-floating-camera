@@ -13,5 +13,5 @@ object FileUtil {
         return path
     }
 
-    fun getFile(isPhoto: Boolean) = File(getPath(), "${System.currentTimeMillis()}.${if (isPhoto) "jpg" else "mp4"}")
+    fun getFile(extension: String) = File(getPath(), "${System.currentTimeMillis()}$extension")
 }

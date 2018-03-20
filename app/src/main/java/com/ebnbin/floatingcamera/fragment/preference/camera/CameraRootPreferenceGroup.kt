@@ -11,8 +11,6 @@ import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.cameraHelper
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
-import com.ebnbin.floatingcamera.util.extension.getValueIndex
-import com.ebnbin.floatingcamera.util.extension.getValueSize
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 
 /**
@@ -26,8 +24,6 @@ import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
  *                 BackVideoPreferenceGroup
  *                     BackVideoProfilePreferenceGroup
  *                         BackVideoProfilePreference
- *                         BackVideoProfileCustomPreferenceGroup
- *                             BackVideoResolutionPreference
  *                 BackPhotoPreferenceGroup
  *                     BackPhotoResolutionPreference
  *             FrontPreferenceGroup?
@@ -35,8 +31,6 @@ import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
  *                 FrontVideoPreferenceGroup
  *                     FrontVideoProfilePreferenceGroup
  *                         FrontVideoProfilePreference
- *                         FrontVideoProfileCustomPreferenceGroup
- *                             FrontVideoResolutionPreference
  *                 FrontPhotoPreferenceGroup
  *                     FrontPhotoResolutionPreference
  *     FooterPreference
@@ -123,8 +117,7 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     private val backVideoProfilePreferenceGroup by lazy {
         PreferenceGroup(context,
                 preferences = arrayOf(
-                        backVideoProfilePreference,
-                        backVideoProfileCustomPreferenceGroup))
+                        backVideoProfilePreference))
     }
 
     /**
@@ -138,33 +131,6 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
             setEntriesAndEntryValues(cameraHelper.backDevice.videoProfileSummaries)
             summaries = cameraHelper.backDevice.videoProfileSummaries
             setDialogTitle(R.string.back_video_profile_title)
-        }
-    }
-
-    /**
-     * 后置摄像头视频自定义配置组.
-     */
-    private val backVideoProfileCustomPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        backVideoResolutionPreference),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = backVideoProfilePreference.getValueIndex() ==
-                            backVideoProfilePreference.getValueSize() - 1
-                })
-    }
-
-    /**
-     * 后置摄像头视频分辨率.
-     */
-    private val backVideoResolutionPreference by lazy {
-        ListPreference(context).apply {
-            key = KEY_BACK_VIDEO_RESOLUTION
-            setDefaultValue(DEF_VALUE_BACK_VIDEO_RESOLUTION)
-            setTitle(R.string.back_video_resolution_title)
-            setEntriesAndEntryValues(cameraHelper.backDevice.videoResolutionSummaries)
-            summaries = cameraHelper.backDevice.videoResolutionSummaries
-            setDialogTitle(R.string.back_video_resolution_title)
         }
     }
 
@@ -241,8 +207,7 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     private val frontVideoProfilePreferenceGroup by lazy {
         PreferenceGroup(context,
                 preferences = arrayOf(
-                        frontVideoProfilePreference,
-                        frontVideoProfileCustomPreferenceGroup))
+                        frontVideoProfilePreference))
     }
 
     /**
@@ -256,33 +221,6 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
             setEntriesAndEntryValues(cameraHelper.frontDevice.videoProfileSummaries)
             summaries = cameraHelper.frontDevice.videoProfileSummaries
             setDialogTitle(R.string.front_video_profile_title)
-        }
-    }
-
-    /**
-     * 前置摄像头视频自定义配置组.
-     */
-    private val frontVideoProfileCustomPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        frontVideoResolutionPreference),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = frontVideoProfilePreference.getValueIndex() ==
-                            frontVideoProfilePreference.getValueSize() - 1
-                })
-    }
-
-    /**
-     * 前置摄像头视频分辨率.
-     */
-    private val frontVideoResolutionPreference by lazy {
-        ListPreference(context).apply {
-            key = KEY_FRONT_VIDEO_RESOLUTION
-            setDefaultValue(DEF_VALUE_FRONT_VIDEO_RESOLUTION)
-            setTitle(R.string.front_video_resolution_title)
-            setEntriesAndEntryValues(cameraHelper.frontDevice.videoResolutionSummaries)
-            summaries = cameraHelper.frontDevice.videoResolutionSummaries
-            setDialogTitle(R.string.front_video_resolution_title)
         }
     }
 
@@ -331,25 +269,11 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
                 backPreferenceGroup?.isGroupVisible = !newValue
                 frontPreferenceGroup?.isGroupVisible = newValue
             }
-            KEY_BACK_VIDEO_PROFILE -> {
-                val preference = backVideoProfilePreference
-                val newValue = backVideoProfile
-
-                backVideoProfileCustomPreferenceGroup.isGroupVisible =
-                        newValue == preference.entryValues[preference.getValueSize() - 1].toString()
-            }
             KEY_BACK_IS_PHOTO -> {
                 val newValue = backIsPhoto
 
                 backVideoPreferenceGroup.isGroupVisible = !newValue
                 backPhotoPreferenceGroup.isGroupVisible = newValue
-            }
-            KEY_FRONT_VIDEO_PROFILE -> {
-                val preference = frontVideoProfilePreference
-                val newValue = frontVideoProfile
-
-                frontVideoProfileCustomPreferenceGroup.isGroupVisible =
-                        newValue == preference.entryValues[preference.getValueSize() - 1].toString()
             }
             KEY_FRONT_IS_PHOTO -> {
                 val newValue = frontIsPhoto
@@ -364,35 +288,27 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         private const val KEY_IS_FRONT = "is_front"
         private const val KEY_BACK_IS_PHOTO = "back_is_photo"
         private const val KEY_BACK_VIDEO_PROFILE = "back_video_profile"
-        private const val KEY_BACK_VIDEO_RESOLUTION = "back_video_resolution"
         private const val KEY_BACK_PHOTO_RESOLUTION = "back_photo_resolution"
         private const val KEY_FRONT_IS_PHOTO = "front_is_photo"
         private const val KEY_FRONT_VIDEO_PROFILE = "front_video_profile"
-        private const val KEY_FRONT_VIDEO_RESOLUTION = "front_video_resolution"
         private const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
 
         private val DEF_VALUE_IS_FRONT get() = !cameraHelper.hasBothDevices && cameraHelper.hasFrontDevice
         private const val DEF_VALUE_BACK_IS_PHOTO = false
         private const val DEF_VALUE_BACK_VIDEO_PROFILE = "0"
-        private const val DEF_VALUE_BACK_VIDEO_RESOLUTION = "0"
         private const val DEF_VALUE_BACK_PHOTO_RESOLUTION = "0"
         private const val DEF_VALUE_FRONT_IS_PHOTO = false
         private const val DEF_VALUE_FRONT_VIDEO_PROFILE = "0"
-        private const val DEF_VALUE_FRONT_VIDEO_RESOLUTION = "0"
         private const val DEF_VALUE_FRONT_PHOTO_RESOLUTION = "0"
 
         val isFront get() = defaultSharedPreferences.get(KEY_IS_FRONT, DEF_VALUE_IS_FRONT)
         val backIsPhoto get() = defaultSharedPreferences.get(KEY_BACK_IS_PHOTO, DEF_VALUE_BACK_IS_PHOTO)
         val backVideoProfile get() = defaultSharedPreferences.get(KEY_BACK_VIDEO_PROFILE, DEF_VALUE_BACK_VIDEO_PROFILE)
-        val backVideoResolution get() = defaultSharedPreferences.get(KEY_BACK_VIDEO_RESOLUTION,
-                DEF_VALUE_BACK_VIDEO_RESOLUTION)
         val backPhotoResolution get() = defaultSharedPreferences.get(KEY_BACK_PHOTO_RESOLUTION,
                 DEF_VALUE_BACK_PHOTO_RESOLUTION)
         val frontIsPhoto get() = defaultSharedPreferences.get(KEY_FRONT_IS_PHOTO, DEF_VALUE_FRONT_IS_PHOTO)
         val frontVideoProfile get() = defaultSharedPreferences.get(KEY_FRONT_VIDEO_PROFILE,
                 DEF_VALUE_FRONT_VIDEO_PROFILE)
-        val frontVideoResolution get() = defaultSharedPreferences.get(KEY_FRONT_VIDEO_RESOLUTION,
-                DEF_VALUE_FRONT_VIDEO_RESOLUTION)
         val frontPhotoResolution get() = defaultSharedPreferences.get(KEY_FRONT_PHOTO_RESOLUTION,
                 DEF_VALUE_FRONT_PHOTO_RESOLUTION)
     }

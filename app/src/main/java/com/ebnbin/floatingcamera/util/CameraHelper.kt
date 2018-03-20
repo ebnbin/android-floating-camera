@@ -7,16 +7,12 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
-import android.media.MediaRecorder
 import android.util.Size
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.util.extension.audioCodecString
 import com.ebnbin.floatingcamera.util.extension.extensionEquals
 import com.ebnbin.floatingcamera.util.extension.extensionHashCode
-import com.ebnbin.floatingcamera.util.extension.fileFormatString
 import com.ebnbin.floatingcamera.util.extension.gcd
 import com.ebnbin.floatingcamera.util.extension.qualityString
-import com.ebnbin.floatingcamera.util.extension.videoCodecString
 import kotlin.math.min
 
 /**
@@ -195,11 +191,6 @@ class CameraHelper private constructor() {
         private val surfaceTextureSizes: Array<Size> = scalerStreamConfigurationMap.getOutputSizes(
                 SurfaceTexture::class.java) ?: throw CameraException("SurfaceTexture 输出尺寸列表获取失败.")
         /**
-         * [MediaRecorder] 输出尺寸列表.
-         */
-        private val mediaRecorderSizes: Array<Size> = scalerStreamConfigurationMap.getOutputSizes(
-                MediaRecorder::class.java) ?: throw CameraException("MediaRecorder 输出尺寸列表获取失败.")
-        /**
          * [ImageFormat.JPEG] 输出尺寸列表.
          */
         private val jpegSizes: Array<Size> = scalerStreamConfigurationMap.getOutputSizes(ImageFormat.JPEG)
@@ -226,12 +217,6 @@ class CameraHelper private constructor() {
         private val previewResolutions = createResolutions(
                 { throw CameraException("预览分辨率数量为 0.") },
                 surfaceTextureSizes)
-        /**
-         * 视频分辨率列表.
-         */
-        val videoResolutions = createResolutions(
-                { throw CameraException("视频分辨率数量为 0.") },
-                mediaRecorderSizes)
         /**
          * 照片分辨率列表.
          */
@@ -263,10 +248,6 @@ class CameraHelper private constructor() {
             return resolutionList.toTypedArray()
         }
 
-        /**
-         * 视频分辨率摘要列表.
-         */
-        val videoResolutionSummaries = Array(videoResolutions.size) { videoResolutions[it].videoSummary }
         /**
          * 照片分辨率摘要列表.
          */
@@ -322,8 +303,7 @@ class CameraHelper private constructor() {
             val videoProfileList = ArrayList<VideoProfile>()
             for (camcorderProfile in camcorderProfiles) {
                 try {
-                    val videoProfile = VideoProfile(camcorderProfile, camcorderProfiles, isSensorOrientationLandscape,
-                            videoResolutions)
+                    val videoProfile = VideoProfile(camcorderProfile, camcorderProfiles, isSensorOrientationLandscape)
                     if (!videoProfileList.contains(videoProfile)) videoProfileList.add(videoProfile)
                 } catch (e: CameraException) {
                     e.printStackTrace()
@@ -338,13 +318,12 @@ class CameraHelper private constructor() {
         }
 
         /**
-         * 视频配置摘要列表. 在底部添加 "自定义配置".
+         * 视频配置摘要列表.
          */
         val videoProfileSummaries: Array<String>
         init {
             val videoProfileSummaryList = ArrayList<String>()
             videoProfiles.mapTo(videoProfileSummaryList) { it.summary }
-            videoProfileSummaryList.add(getString(R.string.video_profile_summary_custom))
 
             videoProfileSummaries = videoProfileSummaryList.toTypedArray()
         }
@@ -488,37 +467,20 @@ class CameraHelper private constructor() {
          *
          * @param isSensorOrientationLandscape 传感器方向是否为横向.
          *
-         * @param videoResolutions 视频分辨率列表.
-         *
          * @throws CameraException
          */
         class VideoProfile(
                 val camcorderProfile: CamcorderProfile,
                 camcorderProfiles: Array<CamcorderProfile>,
-                isSensorOrientationLandscape: Boolean,
-                videoResolutions: Array<Resolution>):
+                isSensorOrientationLandscape: Boolean):
                 Comparable<VideoProfile> {
             val videoResolution = Resolution(camcorderProfile.videoFrameWidth, camcorderProfile.videoFrameHeight,
                     isSensorOrientationLandscape, camcorderProfiles)
-            init {
-                if (!videoResolutions.contains(videoResolution)) throw CameraException("CamcorderProfile 分辨率不支持.")
-            }
 
             /**
              * 摘要.
              */
-            val summary = "duration=${camcorderProfile.duration}, " +
-                    "quality=${camcorderProfile.qualityString}, " +
-                    "fileFormat=${camcorderProfile.fileFormatString}, " +
-                    "videoCodec=${camcorderProfile.videoCodecString}, " +
-                    "videoBitRate=${camcorderProfile.videoBitRate}, " +
-                    "videoFrameRate=${camcorderProfile.videoFrameRate}, " +
-                    "videoFrameWidth=${camcorderProfile.videoFrameWidth}, " +
-                    "videoFrameHeight=${camcorderProfile.videoFrameHeight}, " +
-                    "audioCodec=${camcorderProfile.audioCodecString}, " +
-                    "audioBitRate=${camcorderProfile.audioBitRate}, " +
-                    "audioSampleRate=${camcorderProfile.audioSampleRate}, " +
-                    "audioChannels=${camcorderProfile.audioChannels}"
+            val summary = videoResolution.videoSummary
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true

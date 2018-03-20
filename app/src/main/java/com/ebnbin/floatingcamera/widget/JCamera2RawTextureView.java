@@ -312,7 +312,7 @@ public class JCamera2RawTextureView extends CameraView {
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                                      long timestamp, long frameNumber) {
-            setUpFile(true);
+            setUpFile(".jpg");
         }
 
         @Override

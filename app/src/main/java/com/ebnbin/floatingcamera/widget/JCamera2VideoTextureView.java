@@ -34,6 +34,7 @@ import android.view.Surface;
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
+import com.ebnbin.floatingcamera.util.extension.CamcorderProfileExtensionsKt;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -219,21 +220,12 @@ public class JCamera2VideoTextureView extends CameraView {
 
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        setUpFile(false);
-        mMediaRecorder.setOutputFile(getFile().getAbsolutePath());
         mMediaRecorder.setOrientationHint(getDevice().getOrientation(AppUtilsKt.displayRotation()));
 
         CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.videoProfile();
-        if (videoProfile == null) {
-            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            mMediaRecorder.setVideoEncodingBitRate(10000000);
-            mMediaRecorder.setVideoFrameRate(30);
-            mMediaRecorder.setVideoSize(getResolution().getWidth(), getResolution().getHeight());
-            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-        } else {
-            mMediaRecorder.setProfile(videoProfile.getCamcorderProfile());
-        }
+        mMediaRecorder.setProfile(videoProfile.getCamcorderProfile());
+        setUpFile(CamcorderProfileExtensionsKt.getFileFormatExtension(videoProfile.getCamcorderProfile()));
+        mMediaRecorder.setOutputFile(getFile().getAbsolutePath());
 
         mMediaRecorder.prepare();
     }

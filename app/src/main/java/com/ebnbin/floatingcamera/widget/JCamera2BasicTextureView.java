@@ -389,7 +389,7 @@ public class JCamera2BasicTextureView extends CameraView {
                         long timestamp, long frameNumber) {
                     super.onCaptureStarted(session, request, timestamp, frameNumber);
 
-                    setUpFile(true);
+                    setUpFile(".jpg");
                 }
 
                 @Override

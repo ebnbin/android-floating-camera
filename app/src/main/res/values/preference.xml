@@ -10,8 +10,6 @@
 
     <string name="is_photo_title">视频/照片</string>
 
-    <string name="video_profile_summary_custom">自定义视频配置</string>
-
     <string name="preview_resolution_summary">%dx%d (%d:%d)</string>
 
     <string name="video_resolution_summary_quality">, %s</string>
@@ -24,16 +22,12 @@
 
     <string name="back_video_profile_title">后置摄像头视频配置</string>
 
-    <string name="back_video_resolution_title">后置摄像头视频分辨率</string>
-
     <string name="back_photo_resolution_title">后置摄像头照片分辨率</string>
 
     <string name="front_is_photo_summary_off">前置摄像头视频</string>
     <string name="front_is_photo_summary_on">前置摄像头照片</string>
 
     <string name="front_video_profile_title">前置摄像头视频配置</string>
-
-    <string name="front_video_resolution_title">前置摄像头视频分辨率</string>
 
     <string name="front_photo_resolution_title">前置摄像头照片分辨率</string>
 

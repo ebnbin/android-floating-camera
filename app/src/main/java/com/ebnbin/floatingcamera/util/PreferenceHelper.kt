@@ -50,15 +50,10 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
                 // 前置摄像头视频.
                 val frontVideoProfileInt = CameraRootPreferenceGroup.frontVideoProfile.toInt()
                 val videoProfiles = device.videoProfiles
-                if (frontVideoProfileInt == videoProfiles.size/* - 1*/) {
-                    // 前置摄像头视频自定义配置.
-                    device.videoResolutions[CameraRootPreferenceGroup.frontVideoResolution.toInt()]
-                } else if (frontVideoProfileInt in 0 until videoProfiles.size/* - 1*/) {
+                if (frontVideoProfileInt in 0 until videoProfiles.size) {
                     // 前置摄像头视频配置.
                     videoProfiles[frontVideoProfileInt].videoResolution
-                } else {
-                    throw BaseRuntimeException()
-                }
+                } else throw BaseRuntimeException()
             }
         } else {
             // 后置摄像头.
@@ -70,37 +65,30 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
                 // 后置摄像头视频.
                 val backVideoProfileInt = CameraRootPreferenceGroup.backVideoProfile.toInt()
                 val videoProfiles = device.videoProfiles
-                if (backVideoProfileInt == videoProfiles.size/* - 1*/) {
-                    // 后置摄像头视频自定义配置.
-                    device.videoResolutions[CameraRootPreferenceGroup.backVideoResolution.toInt()]
-                } else if (backVideoProfileInt in 0 until videoProfiles.size/* - 1*/) {
+                if (backVideoProfileInt in 0 until videoProfiles.size) {
                     // 后置摄像头视频配置.
                     videoProfiles[backVideoProfileInt].videoResolution
-                } else {
-                    throw BaseRuntimeException()
-                }
+                } else throw BaseRuntimeException()
             }
         }
 
     /**
      * 视频配置.
      */
-    fun videoProfile(): CameraHelper.Device.VideoProfile? {
-        if (CameraRootPreferenceGroup.isFront && !CameraRootPreferenceGroup.frontIsPhoto) {
+    fun videoProfile(): CameraHelper.Device.VideoProfile {
+        return if (CameraRootPreferenceGroup.isFront && !CameraRootPreferenceGroup.frontIsPhoto) {
             val frontVideoProfileInt = CameraRootPreferenceGroup.frontVideoProfile.toInt()
             val videoProfiles = cameraHelper.frontDevice.videoProfiles
-            if (frontVideoProfileInt in 0 until videoProfiles.size/* - 1*/) {
-                return videoProfiles[frontVideoProfileInt]
-            }
+            if (frontVideoProfileInt in 0 until videoProfiles.size) {
+                videoProfiles[frontVideoProfileInt]
+            } else throw BaseRuntimeException()
         } else if (!CameraRootPreferenceGroup.backIsPhoto) {
             val backVideoProfileInt = CameraRootPreferenceGroup.backVideoProfile.toInt()
             val videoProfiles = cameraHelper.backDevice.videoProfiles
-            if (backVideoProfileInt in 0 until videoProfiles.size/* - 1*/) {
-                return videoProfiles[backVideoProfileInt]
-            }
-        }
-
-        return null
+            if (backVideoProfileInt in 0 until videoProfiles.size) {
+                videoProfiles[backVideoProfileInt]
+            } else throw BaseRuntimeException()
+        } else throw BaseRuntimeException()
     }
 
     /**

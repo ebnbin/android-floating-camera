@@ -87,6 +87,21 @@ val CamcorderProfile.fileFormatString get() = when (fileFormat) {
 }
 
 /**
+ * [CamcorderProfile] 文件格式后缀名.
+ */
+val CamcorderProfile.fileFormatExtension get() = when (fileFormat) {
+    MediaRecorder.OutputFormat.DEFAULT -> ""
+    MediaRecorder.OutputFormat.THREE_GPP -> ".3gp"
+    MediaRecorder.OutputFormat.MPEG_4 -> ".mp4"
+    MediaRecorder.OutputFormat.AMR_NB -> ".amr"
+    MediaRecorder.OutputFormat.AMR_WB -> ".awb"
+    MediaRecorder.OutputFormat.AAC_ADTS -> ".aac"
+    MediaRecorder.OutputFormat.MPEG_2_TS -> ".aac"
+    MediaRecorder.OutputFormat.WEBM -> ".webm"
+    else -> ""
+}
+
+/**
  * [CamcorderProfile.videoCodec] 字符串.
  */
 val CamcorderProfile.videoCodecString get() = when (videoCodec) {
