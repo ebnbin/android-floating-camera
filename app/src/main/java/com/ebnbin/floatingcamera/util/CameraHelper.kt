@@ -183,18 +183,6 @@ class CameraHelper private constructor() {
                     (sensorOrientation - (90 * rotation) + 360) % 360
 
         /**
-         * 闪光灯是否可用.
-         */
-        private val flashInfoAvailable = cameraCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)
-                ?: throw CameraException("闪光灯是否可用获取失败.")
-
-        /**
-         * 闪光灯模式.
-         */
-        private val controlAeAvailableModes = cameraCharacteristics.get(
-                CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES) ?: throw CameraException("闪光灯模式获取失败.")
-
-        /**
          * [StreamConfigurationMap].
          */
         private val scalerStreamConfigurationMap = cameraCharacteristics.get(

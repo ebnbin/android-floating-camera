@@ -152,8 +152,7 @@ class Camera2BasicTextureView constructor(
                     // CONTROL_AE_STATE can be null on some devices
                     val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
                     if (aeState == null ||
-                            aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
-                            aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
+                            aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
                         state = STATE_WAITING_NON_PRECAPTURE
                     }
                 }
@@ -232,8 +231,6 @@ class Camera2BasicTextureView constructor(
                                 // Auto focus should be continuous for camera preview.
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                                // Flash is automatically enabled when necessary.
-                                setAutoFlash(previewRequestBuilder)
 
                                 // Finally, we start displaying the camera preview.
                                 previewRequest = previewRequestBuilder.build()
@@ -314,7 +311,7 @@ class Camera2BasicTextureView constructor(
                 // Use the same AE and AF modes as the preview.
                 set(CaptureRequest.CONTROL_AF_MODE,
                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-            }?.also { setAutoFlash(it) }
+            }
 
             val captureCallback = object : CameraCaptureSession.CaptureCallback() {
                 override fun onCaptureStarted(session: CameraCaptureSession?, request: CaptureRequest?,
@@ -352,7 +349,6 @@ class Camera2BasicTextureView constructor(
             // Reset the auto-focus trigger
             previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL)
-            setAutoFlash(previewRequestBuilder)
             captureSession?.capture(previewRequestBuilder.build(), captureCallback,
                     backgroundHandler)
             // After this, the camera will go back to the normal state of preview.
@@ -363,13 +359,6 @@ class Camera2BasicTextureView constructor(
             Log.e("ebnbin", e.toString())
         }
 
-    }
-
-    private fun setAutoFlash(requestBuilder: CaptureRequest.Builder) {
-//        if (flashSupported) {
-//            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-//                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
-//        }
     }
 
     companion object {

@@ -236,8 +236,7 @@ public class JCamera2BasicTextureView extends CameraView {
                     // CONTROL_AE_STATE can be null on some devices
                     Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
                     if (aeState == null ||
-                            aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
-                            aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
+                            aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
                         mState = STATE_WAITING_NON_PRECAPTURE;
                     }
                     break;
@@ -306,8 +305,6 @@ public class JCamera2BasicTextureView extends CameraView {
                                 // Auto focus should be continuous for camera preview.
                                 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                                // Flash is automatically enabled when necessary.
-                                setAutoFlash(mPreviewRequestBuilder);
 
                                 // Finally, we start displaying the camera preview.
                                 mPreviewRequest = mPreviewRequestBuilder.build();
@@ -389,7 +386,6 @@ public class JCamera2BasicTextureView extends CameraView {
             // Use the same AE and AF modes as the preview.
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            setAutoFlash(captureBuilder);
 
             // Orientation
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
@@ -431,7 +427,6 @@ public class JCamera2BasicTextureView extends CameraView {
             // Reset the auto-focus trigger
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-            setAutoFlash(mPreviewRequestBuilder);
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
                     getBackgroundHandler());
             // After this, the camera will go back to the normal state of preview.
@@ -441,13 +436,6 @@ public class JCamera2BasicTextureView extends CameraView {
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-    }
-
-    private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
-//        if (mFlashSupported) {
-//            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-//                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-//        }
     }
 
 }

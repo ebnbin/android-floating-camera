@@ -469,18 +469,6 @@ public class JCamera2RawTextureView extends CameraView {
                         CaptureRequest.CONTROL_AF_MODE_AUTO);
             }
         }
-//
-//        // If there is an auto-magical flash control mode available, use it, otherwise default to
-//        // the "on" mode, which is guaranteed to always be available.
-//        if (contains(mCharacteristics.get(
-//                        CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES),
-//                CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)) {
-//            builder.set(CaptureRequest.CONTROL_AE_MODE,
-//                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-//        } else {
-//            builder.set(CaptureRequest.CONTROL_AE_MODE,
-//                    CaptureRequest.CONTROL_AE_MODE_ON);
-//        }
 
         // If there is an auto-magical white balance control mode available, use it.
         if (contains(mCharacteristics.get(
