@@ -226,20 +226,6 @@ public class JCamera2RawTextureView extends CameraView {
     //**********************************************************************************************
 
     /**
-     * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
-     * JPEG image is ready to be saved.
-     */
-    private final ImageReader.OnImageAvailableListener mOnJpegImageAvailableListener
-            = new ImageReader.OnImageAvailableListener() {
-
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            dequeueAndSaveImage();
-        }
-
-    };
-
-    /**
      * A {@link CameraCaptureSession.CaptureCallback} that handles events for the preview and
      * pre-capture sequence.
      */
@@ -372,7 +358,12 @@ public class JCamera2RawTextureView extends CameraView {
                 mImageReader = ImageReader.newInstance(getResolution().getWidth(),
                         getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5);
                 mImageReader.setOnImageAvailableListener(
-                        mOnJpegImageAvailableListener, getBackgroundHandler());
+                        new ImageReader.OnImageAvailableListener() {
+                            @Override
+                            public void onImageAvailable(ImageReader reader) {
+                                dequeueAndSaveImage();
+                            }
+                        }, getBackgroundHandler());
 
                 mCharacteristics = characteristics;
             }

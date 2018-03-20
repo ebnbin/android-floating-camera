@@ -58,7 +58,32 @@ class Camera2BasicTextureView constructor(
 
         imageReader = ImageReader.newInstance(resolution.width, resolution.height,
                 ImageFormat.JPEG, /*maxImages*/ 2).apply {
-            setOnImageAvailableListener(onImageAvailableListener, backgroundHandler)
+            setOnImageAvailableListener({
+                backgroundHandler.post {
+                    val image = it.acquireNextImage()
+
+                    val buffer = image.planes[0].buffer
+                    val bytes = ByteArray(buffer.remaining())
+                    buffer.get(bytes)
+                    var output: FileOutputStream? = null
+                    try {
+                        output = FileOutputStream(file).apply {
+                            write(bytes)
+                        }
+                    } catch (e: IOException) {
+                        Log.e("ebnbin", e.toString())
+                    } finally {
+                        image.close()
+                        output?.let {
+                            try {
+                                it.close()
+                            } catch (e: IOException) {
+                                Log.e("ebnbin", e.toString())
+                            }
+                        }
+                    }
+                }
+            }, backgroundHandler)
         }
     }
 
@@ -90,37 +115,6 @@ class Camera2BasicTextureView constructor(
      * An [ImageReader] that handles still image capture.
      */
     private var imageReader: ImageReader? = null
-
-    /**
-     * This a callback object for the [ImageReader]. "onImageAvailable" will be called when a
-     * still image is ready to be saved.
-     */
-    private val onImageAvailableListener = ImageReader.OnImageAvailableListener {
-        backgroundHandler.post {
-            val image = it.acquireNextImage()
-
-            val buffer = image.planes[0].buffer
-            val bytes = ByteArray(buffer.remaining())
-            buffer.get(bytes)
-            var output: FileOutputStream? = null
-            try {
-                output = FileOutputStream(file).apply {
-                    write(bytes)
-                }
-            } catch (e: IOException) {
-                Log.e("ebnbin", e.toString())
-            } finally {
-                image.close()
-                output?.let {
-                    try {
-                        it.close()
-                    } catch (e: IOException) {
-                        Log.e("ebnbin", e.toString())
-                    }
-                }
-            }
-        }
-    }
 
     /**
      * [CaptureRequest.Builder] for the camera preview

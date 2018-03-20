@@ -69,7 +69,37 @@ public class JCamera2BasicTextureView extends CameraView {
         mImageReader = ImageReader.newInstance(getResolution().getWidth(), getResolution().getHeight(),
                 ImageFormat.JPEG, /*maxImages*/2);
         mImageReader.setOnImageAvailableListener(
-                mOnImageAvailableListener, getBackgroundHandler());
+                new ImageReader.OnImageAvailableListener() {
+                    @Override
+                    public void onImageAvailable(final ImageReader reader) {
+                        getBackgroundHandler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Image image = reader.acquireNextImage();
+
+                                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                                byte[] bytes = new byte[buffer.remaining()];
+                                buffer.get(bytes);
+                                FileOutputStream output = null;
+                                try {
+                                    output = new FileOutputStream(getFile());
+                                    output.write(bytes);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                } finally {
+                                    image.close();
+                                    if (null != output) {
+                                        try {
+                                            output.close();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }, getBackgroundHandler());
     }
 
     @Override
@@ -145,45 +175,6 @@ public class JCamera2BasicTextureView extends CameraView {
      * An {@link ImageReader} that handles still image capture.
      */
     private ImageReader mImageReader;
-
-    /**
-     * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
-     * still image is ready to be saved.
-     */
-    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
-            = new ImageReader.OnImageAvailableListener() {
-
-        @Override
-        public void onImageAvailable(final ImageReader reader) {
-            getBackgroundHandler().post(new Runnable() {
-                @Override
-                public void run() {
-                    Image image = reader.acquireNextImage();
-
-                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    FileOutputStream output = null;
-                    try {
-                        output = new FileOutputStream(getFile());
-                        output.write(bytes);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        image.close();
-                        if (null != output) {
-                            try {
-                                output.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-    };
 
     /**
      * {@link CaptureRequest.Builder} for the camera preview
