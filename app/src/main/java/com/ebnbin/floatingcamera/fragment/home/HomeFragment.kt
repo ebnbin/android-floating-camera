@@ -73,6 +73,8 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
     override fun onPermissionsResult(requestCode: Int, granted: Boolean) {
         when (requestCode) {
             REQUEST_CODE_PERMISSION -> {
+                cameraFab.isEnabled = true
+
                 if (!granted) return
 
                 if (CameraService.isRunning)

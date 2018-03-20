@@ -1,15 +1,13 @@
-@file:Suppress("DEPRECATION")
-
 package com.ebnbin.floatingcamera.util
 
+import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.hardware.Camera
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
-import android.support.v4.util.ArrayMap
+import android.media.MediaRecorder
 import android.util.Size
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.extension.audioCodecString
@@ -28,39 +26,26 @@ import kotlin.math.min
  */
 class CameraHelper private constructor() {
     /**
-     * Camera2 id.
+     * Id.
      */
-    private val ids2: Array<String> = try {
+    private val ids: Array<String> = try {
         cameraManager.cameraIdList
     } catch (e: Exception) {
         throw when (e) {
             is CameraAccessException, is NullPointerException -> {
-                CameraException("Camera2 id 获取失败.", e)
+                CameraException("Id 获取失败.", e)
             }
             else -> e
         }
     }
 
     /**
-     * Camera2 id 数量.
+     * Id 数量.
      */
-    private val idSize2 = ids2.size
+    private val idSize = ids.size
     init {
-        if (idSize2 <= 0) throw CameraException("Camera2 id 数量为 0.")
+        if (idSize <= 0) throw CameraException("Id 数量为 0.")
     }
-
-    /**
-     * Camera1 id 数量.
-     */
-    private val idSize1 = Camera.getNumberOfCameras()
-    init {
-        if (idSize1 <= 0) throw CameraException("Camera1 id 数量为 0.")
-    }
-
-    /**
-     * Id 数量. [idSize2] 和 [idSize1] 取小值.
-     */
-    private val idSize = min(idSize2, idSize1)
 
     /**
      * 是否拥有后置摄像头.
@@ -101,15 +86,8 @@ class CameraHelper private constructor() {
 //            // 如果两个摄像头都检测到了, 就跳出循环.
 //            if (hasBackDevice && hasFrontDevice) break
 //
-            var camera1: Camera? = null
             try {
-                try {
-                    camera1 = Camera.open(index)
-                } catch (e: RuntimeException) {
-                    throw CameraException("Camera1 打开失败.", e)
-                }
-
-                val device = Device(ids2[index], index, camera1, hasBackDevice, hasFrontDevice)
+                val device = Device(ids[index], index, hasBackDevice, hasFrontDevice)
                 if (device.isFront) {
                     if (hasFrontDevice) throw BaseRuntimeException()
 
@@ -123,8 +101,6 @@ class CameraHelper private constructor() {
                 }
             } catch (e: CameraException) {
                 e.printStackTrace()
-            } finally {
-                camera1?.release()
             }
         }
 
@@ -140,76 +116,42 @@ class CameraHelper private constructor() {
     /**
      * 摄像头.
      *
-     * @param id2 Camera2 id.
+     * @param id Id.
      *
-     * @param id1 Camera1 id.
-     *
-     * @param camera1 Camera1 摄像头. 已打开, 不需要释放. 用于检测 Camera1 参数.
+     * @param idIndex Camera1 id.
      *
      * @param hasBackDevice 是否已检测到后置摄像头. 如果为 `true` 且当前摄像头也是后置摄像头则抛出 [CameraException].
      *
      * @param hasFrontDevice 是否已检测到前置摄像头. 如果为 `true` 且当前摄像头也是前置摄像头则抛出 [CameraException].
      */
-    class Device(val id2: String, private val id1: Int, camera1: Camera, hasBackDevice: Boolean,
-            hasFrontDevice: Boolean) {
+    class Device(val id: String, private val idIndex: Int, hasBackDevice: Boolean, hasFrontDevice: Boolean) {
         /**
-         * Camera2 [CameraCharacteristics].
+         * [CameraCharacteristics].
          */
-        private val cameraCharacteristics2 = try {
-            cameraManager.getCameraCharacteristics(id2)
-                    ?: throw CameraException("Camera2 CameraCharacteristics 获取失败.")
+        private val cameraCharacteristics = try {
+            cameraManager.getCameraCharacteristics(id) ?: throw CameraException("CameraCharacteristics 获取失败.")
         } catch (e: Exception) {
             throw when (e) {
                 is CameraAccessException, is NullPointerException -> {
-                    CameraException("Camera2 CameraCharacteristics 获取失败.", e)
+                    CameraException("CameraCharacteristics 获取失败.", e)
                 }
                 else -> e
             }
         }
 
         /**
-         * Camera1 [Camera.CameraInfo].
+         * 朝向.
          */
-        private val cameraInfo1 = Camera.CameraInfo()
-        init {
-            try {
-                Camera.getCameraInfo(id1, cameraInfo1)
-            } catch (e: RuntimeException) {
-                throw CameraException("Camera1 CameraInfo 获取失败.", e)
-            }
-        }
-
-        /**
-         * Camera1 [Camera.Parameters].
-         */
-        private val parameters1 = camera1.parameters ?: throw CameraException("Camera1 Parameters 获取失败.")
-
-        /**
-         * Camera2 朝向.
-         */
-        private val lensFacing2 = cameraCharacteristics2.get(CameraCharacteristics.LENS_FACING)
-                ?: throw CameraException("Camera2 朝向获取失败.")
-
-        /**
-         * Camera1 朝向.
-         */
-        private val facing1 = cameraInfo1.facing
+        private val lensFacing = cameraCharacteristics.get(CameraCharacteristics.LENS_FACING)
+                ?: throw CameraException("朝向获取失败.")
 
         init {
-            when (lensFacing2) {
+            when (lensFacing) {
                 CameraMetadata.LENS_FACING_FRONT -> {
                     if (hasFrontDevice) throw CameraException("超过 1 个前置摄像头.")
-
-                    if (facing1 != Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                        throw CameraException("Camera2 和 Camera1 朝向参数异常.")
-                    }
                 }
                 CameraMetadata.LENS_FACING_BACK -> {
                     if (hasBackDevice) throw CameraException("超过 1 个后置摄像头.")
-
-                    if (facing1 != Camera.CameraInfo.CAMERA_FACING_BACK) {
-                        throw CameraException("Camera2 和 Camera1 朝向参数异常.")
-                    }
                 }
                 CameraMetadata.LENS_FACING_EXTERNAL -> throw CameraException("不支持外置摄像头.")
                 else -> throw BaseRuntimeException()
@@ -219,18 +161,13 @@ class CameraHelper private constructor() {
         /**
          * 是否为前置摄像头.
          */
-        val isFront = lensFacing2 == CameraMetadata.LENS_FACING_FRONT
-
-        /**
-         * Camera2 传感器方向.
-         */
-        private val sensorOrientation2 = cameraCharacteristics2.get(CameraCharacteristics.SENSOR_ORIENTATION)
-                ?: throw CameraException("Camera2 传感器方向获取失败.")
+        val isFront = lensFacing == CameraMetadata.LENS_FACING_FRONT
 
         /**
          * 传感器方向.
          */
-        private val sensorOrientation = sensorOrientation2
+        private val sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+                ?: throw CameraException("传感器方向获取失败.")
 
         /**
          * 传感器方向是否为横向.
@@ -246,75 +183,39 @@ class CameraHelper private constructor() {
                     (sensorOrientation - (90 * rotation) + 360) % 360
 
         /**
-         * Camera2 闪光灯是否可用.
+         * 闪光灯是否可用.
          */
-        private val flashInfoAvailable2 = cameraCharacteristics2.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)
-                ?: throw CameraException("Camera2 闪光灯是否可用获取失败.")
-
-        /**
-         * Camera2 闪光灯模式.
-         */
-        private val controlAeAvailableModes2 = cameraCharacteristics2.get(
-                CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES) ?: throw CameraException("Camera2 闪光灯模式获取失败.")
-
-        /**
-         * Camera1 闪光灯模式.
-         */
-        private val supportedFlashModes1: List<String>? = parameters1.supportedFlashModes
+        private val flashInfoAvailable = cameraCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE)
+                ?: throw CameraException("闪光灯是否可用获取失败.")
 
         /**
          * 闪光灯模式.
          */
-        private val controlAeAvailableModes: IntArray
-        init {
-            val controlAeAvailableModeList = ArrayList<Int>()
-            if (flashInfoAvailable2 && supportedFlashModes1 != null) {
-                for (key in controlAeAvailableModes2) {
-                    supportedFlashModes1.forEach {
-                        if (CONTROL_AE_AVAILABLE_MODE_MAP.containsKey(key) &&
-                                it == CONTROL_AE_AVAILABLE_MODE_MAP[key]) {
-                            controlAeAvailableModeList.add(key)
-                            return@forEach
-                        }
-                    }
-                }
-            }
-
-            controlAeAvailableModes = controlAeAvailableModeList.toIntArray()
-        }
+        private val controlAeAvailableModes = cameraCharacteristics.get(
+                CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES) ?: throw CameraException("闪光灯模式获取失败.")
 
         /**
-         * 闪光灯是否可用.
+         * [StreamConfigurationMap].
          */
-        private val flashInfoAvailable = controlAeAvailableModes.isNotEmpty()
-
-        /**
-         * Camera2 [StreamConfigurationMap].
-         */
-        private val scalerStreamConfigurationMap2 = cameraCharacteristics2.get(
+        private val scalerStreamConfigurationMap = cameraCharacteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                ?: throw CameraException("Camera2 StreamConfigurationMap 获取失败.")
+                ?: throw CameraException("StreamConfigurationMap 获取失败.")
 
         /**
-         * Camera2 [SurfaceTexture] 输出尺寸列表.
+         * [SurfaceTexture] 输出尺寸列表.
          */
-        private val surfaceTextureSizes2: Array<Size> = scalerStreamConfigurationMap2.getOutputSizes(
-                SurfaceTexture::class.java) ?: throw CameraException("Camera2 SurfaceTexture 输出尺寸列表获取失败.")
-
+        private val surfaceTextureSizes: Array<Size> = scalerStreamConfigurationMap.getOutputSizes(
+                SurfaceTexture::class.java) ?: throw CameraException("SurfaceTexture 输出尺寸列表获取失败.")
         /**
-         * Camera1 预览尺寸列表.
+         * [MediaRecorder] 输出尺寸列表.
          */
-        private val supportedPreviewSizes1: List<Camera.Size> = parameters1.supportedPreviewSizes
-                ?: throw CameraException("Camera1 预览尺寸列表获取失败.")
+        private val mediaRecorderSizes: Array<Size> = scalerStreamConfigurationMap.getOutputSizes(
+                MediaRecorder::class.java) ?: throw CameraException("MediaRecorder 输出尺寸列表获取失败.")
         /**
-         * Camera1 视频尺寸列表.
+         * [ImageFormat.JPEG] 输出尺寸列表.
          */
-        private val supportedVideoSizes1: List<Camera.Size>? = parameters1.supportedVideoSizes
-        /**
-         * Camera1 照片尺寸列表.
-         */
-        private val supportedPictureSizes1: List<Camera.Size> = parameters1.supportedPictureSizes
-                ?: throw CameraException("Camera1 照片尺寸列表获取失败.")
+        private val jpegSizes: Array<Size> = scalerStreamConfigurationMap.getOutputSizes(ImageFormat.JPEG)
+                ?: throw CameraException("JPEG 输出尺寸列表获取失败.")
 
         /**
          * [CamcorderProfile] 列表.
@@ -323,8 +224,8 @@ class CameraHelper private constructor() {
         init {
             val camcorderProfileList = ArrayList<CamcorderProfile>()
             CAMCORDER_PROFILE_QUALITIES
-                    .filter { CamcorderProfile.hasProfile(id1, it) }
-                    .mapTo(camcorderProfileList) { CamcorderProfile.get(id1, it)!! }
+                    .filter { CamcorderProfile.hasProfile(idIndex, it) }
+                    .mapTo(camcorderProfileList) { CamcorderProfile.get(idIndex, it)!! }
 
             if (camcorderProfileList.isEmpty()) throw CameraException("CamcorderProfile 数量为 0.")
 
@@ -336,61 +237,42 @@ class CameraHelper private constructor() {
          */
         private val previewResolutions = createResolutions(
                 { throw CameraException("预览分辨率数量为 0.") },
-                surfaceTextureSizes2,
-                supportedPreviewSizes1)
+                surfaceTextureSizes)
         /**
          * 视频分辨率列表.
          */
         val videoResolutions = createResolutions(
                 { throw CameraException("视频分辨率数量为 0.") },
-                surfaceTextureSizes2,
-                supportedVideoSizes1,
-                supportedPreviewSizes1)
+                mediaRecorderSizes)
         /**
          * 照片分辨率列表.
          */
         val photoResolutions = createResolutions(
                 { throw CameraException("照片分辨率数量为 0.") },
-                surfaceTextureSizes2,
-                supportedPictureSizes1)
+                jpegSizes)
 
         /**
-         * 创建分辨率数组. 取 [sizes2] 与 [sizes1] 分辨率交集, 如果 [sizes1] 为 `null` 则使用 [alternativeSizes1].
+         * 创建分辨率数组.
          * 从大到小排序.
          *
          * @param onEmpty 分辨率数量为 0 的回调.
          *
-         * @param sizes2 Camera2 尺寸列表.
-         *
-         * @param sizes1 Camera1 尺寸列表.
-         *
-         * @param alternativeSizes1 如果 [sizes1] 为 `null`, 使用这个参数.
+         * @param sizes 尺寸列表.
          */
         private fun createResolutions(
                 onEmpty: () -> Unit,
-                sizes2: Array<Size>,
-                sizes1: List<Camera.Size>?,
-                alternativeSizes1: List<Camera.Size>? = null): Array<Resolution> {
+                sizes: Array<Size>): Array<Resolution> {
             fun createResolution(width: Int, height: Int) =
                     Resolution(width, height, isSensorOrientationLandscape, camcorderProfiles)
 
-            val resolutionList2 = ArrayList<Resolution>()
-            sizes2.forEach { resolutionList2.add(createResolution(it.width, it.height)) }
+            val resolutionList = ArrayList<Resolution>()
+            sizes.forEach { resolutionList.add(createResolution(it.width, it.height)) }
 
-            val resolutionList1 = ArrayList<Resolution>()
-            if (sizes1 == null) {
-                alternativeSizes1?.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
-            } else {
-                sizes1.forEach { resolutionList1.add(createResolution(it.width, it.height)) }
-            }
+            if (resolutionList.isEmpty()) onEmpty()
 
-            resolutionList2.retainAll(resolutionList1)
+            resolutionList.sortDescending()
 
-            if (resolutionList2.isEmpty()) onEmpty()
-
-            resolutionList2.sortDescending()
-
-            return resolutionList2.toTypedArray()
+            return resolutionList.toTypedArray()
         }
 
         /**
@@ -666,21 +548,6 @@ class CameraHelper private constructor() {
         }
 
         companion object {
-            /**
-             * Camera2 和 Camera1 闪光灯模式对应 map.
-             */
-            private val CONTROL_AE_AVAILABLE_MODE_MAP = ArrayMap<Int, String>()
-            init {
-                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_OFF] = Camera.Parameters.FLASH_MODE_OFF
-                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON] = Camera.Parameters.FLASH_MODE_ON
-                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH] =
-                        Camera.Parameters.FLASH_MODE_AUTO
-                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON_ALWAYS_FLASH] =
-                        Camera.Parameters.FLASH_MODE_TORCH
-                CONTROL_AE_AVAILABLE_MODE_MAP[CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE] =
-                        Camera.Parameters.FLASH_MODE_RED_EYE
-            }
-
             /**
              * [CamcorderProfile] 质量列表.
              */

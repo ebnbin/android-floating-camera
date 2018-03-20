@@ -557,7 +557,7 @@ abstract class CameraView : TextureView,
 
             // Attempt to open the camera. StateCallback will be called on the background handler's
             // thread when this succeeds or fails.
-            cameraManager.openCamera(device.id2, object : CameraDevice.StateCallback() {
+            cameraManager.openCamera(device.id, object : CameraDevice.StateCallback() {
                 override fun onOpened(camera: CameraDevice?) {
                     // This method is called when the camera is opened.  We start camera preview here if
                     // the TextureView displaying this has been set up.

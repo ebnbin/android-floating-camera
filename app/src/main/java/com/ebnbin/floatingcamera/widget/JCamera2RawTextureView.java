@@ -358,7 +358,7 @@ public class JCamera2RawTextureView extends CameraView {
         try {
             // Configure state.
             CameraCharacteristics characteristics
-                    = AppUtilsKt.getCameraManager().getCameraCharacteristics(getDevice().getId2());
+                    = AppUtilsKt.getCameraManager().getCameraCharacteristics(getDevice().getId());
 
 //            // We only use a camera that supports RAW in this sample.
 //            if (!contains(characteristics.get(
