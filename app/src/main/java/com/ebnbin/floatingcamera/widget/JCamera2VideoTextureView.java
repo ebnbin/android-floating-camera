@@ -59,7 +59,7 @@ public class JCamera2VideoTextureView extends CameraView {
 
                 onClick();
             }
-        }, 1000L);
+        }, 0L);
     }
 
     private void stop() {
@@ -97,8 +97,6 @@ public class JCamera2VideoTextureView extends CameraView {
         super.onOpened();
 
         startPreview();
-
-        record();
     }
 
     @Override
@@ -176,6 +174,8 @@ public class JCamera2VideoTextureView extends CameraView {
                                 previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                                 session.setRepeatingRequest(previewBuilder.build(), null, getBackgroundHandler());
                                 mPreviewSession = session;
+
+                                record();
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
                             }
