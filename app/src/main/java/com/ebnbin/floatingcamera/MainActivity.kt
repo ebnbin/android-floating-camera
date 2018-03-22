@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     companion object {
         fun start(context: Context = app) {
-            context.startActivity(Intent(context, MainActivity::class.java))
+            context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 }
