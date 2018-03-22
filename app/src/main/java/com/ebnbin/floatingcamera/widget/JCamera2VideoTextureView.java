@@ -19,14 +19,12 @@
 package com.ebnbin.floatingcamera.widget;
 
 import android.content.Context;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.MediaRecorder;
-import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.Surface;
@@ -152,34 +150,35 @@ public class JCamera2VideoTextureView extends CameraView {
      */
     private boolean mIsRecordingVideo;
 
-    private CaptureRequest.Builder mPreviewBuilder;
-
     /**
      * Start the camera preview.
      */
     private void startPreview() {
-        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
-
         if (null == getCameraDevice() || !isAvailable()) {
             return;
         }
         try {
             closePreviewSession();
-            SurfaceTexture texture = getSurfaceTexture();
-            assert texture != null;
-            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
-            mPreviewBuilder = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
-            Surface previewSurface = new Surface(texture);
-            mPreviewBuilder.addTarget(previewSurface);
+            final Surface previewSurface = new Surface(getSurfaceTexture());
 
             getCameraDevice().createCaptureSession(Collections.singletonList(previewSurface),
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession session) {
-                            mPreviewSession = session;
-                            updatePreview();
+                            if (null == getCameraDevice()) {
+                                return;
+                            }
+                            try {
+                                CaptureRequest.Builder previewBuilder = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                                previewBuilder.addTarget(previewSurface);
+                                previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                                session.setRepeatingRequest(previewBuilder.build(), null, getBackgroundHandler());
+                                mPreviewSession = session;
+                            } catch (CameraAccessException e) {
+                                e.printStackTrace();
+                            }
                         }
 
                         @Override
@@ -192,68 +191,33 @@ public class JCamera2VideoTextureView extends CameraView {
         }
     }
 
-    /**
-     * Update the camera preview. {@link #startPreview()} needs to be called in advance.
-     */
-    private void updatePreview() {
-        if (null == getCameraDevice()) {
-            return;
-        }
-        try {
-            setUpCaptureRequestBuilder(mPreviewBuilder);
-            HandlerThread thread = new HandlerThread("CameraPreview");
-            thread.start();
-            mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, getBackgroundHandler());
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
-        builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-    }
-
-    private void setUpMediaRecorder() throws IOException {
-        if (isNotAttachedToWindow()) {
-            return;
-        }
-
-        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-        mMediaRecorder.setOrientationHint(getDevice().getOrientation(AppUtilsKt.displayRotation()));
-
-        CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.videoProfile();
-        mMediaRecorder.setProfile(videoProfile.getCamcorderProfile());
-        setUpFile(CamcorderProfileExtensionsKt.getFileFormatExtension(videoProfile.getCamcorderProfile()));
-        mMediaRecorder.setOutputFile(getFile().getAbsolutePath());
-
-        mMediaRecorder.prepare();
-    }
-
     private void startRecordingVideo() {
-        CameraHelper.Device.Resolution previewResolution = getPreviewResolution();
-
-        if (null == getCameraDevice() || !isAvailable()) {
+        if (null == getCameraDevice() || !isAvailable() || isNotAttachedToWindow()) {
             return;
         }
         try {
             closePreviewSession();
-            setUpMediaRecorder();
-            SurfaceTexture texture = getSurfaceTexture();
-            assert texture != null;
-            texture.setDefaultBufferSize(previewResolution.getWidth(), previewResolution.getHeight());
-            mPreviewBuilder = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+
+            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+            mMediaRecorder.setOrientationHint(getDevice().getOrientation(AppUtilsKt.displayRotation()));
+
+            CameraHelper.Device.VideoProfile videoProfile = PreferenceHelper.INSTANCE.videoProfile();
+            mMediaRecorder.setProfile(videoProfile.getCamcorderProfile());
+            setUpFile(CamcorderProfileExtensionsKt.getFileFormatExtension(videoProfile.getCamcorderProfile()));
+            mMediaRecorder.setOutputFile(getFile().getAbsolutePath());
+
+            mMediaRecorder.prepare();
+
             List<Surface> surfaces = new ArrayList<>();
 
             // Set up Surface for the camera preview
-            Surface previewSurface = new Surface(texture);
+            final Surface previewSurface = new Surface(getSurfaceTexture());
             surfaces.add(previewSurface);
-            mPreviewBuilder.addTarget(previewSurface);
 
             // Set up Surface for the MediaRecorder
-            Surface recorderSurface = mMediaRecorder.getSurface();
+            final Surface recorderSurface = mMediaRecorder.getSurface();
             surfaces.add(recorderSurface);
-            mPreviewBuilder.addTarget(recorderSurface);
 
             // Start a capture session
             // Once the session starts, we can update the UI and start recording
@@ -261,19 +225,30 @@ public class JCamera2VideoTextureView extends CameraView {
 
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    mPreviewSession = cameraCaptureSession;
-                    updatePreview();
-                    /*getActivity().*/runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            // UI
-//                            mButtonVideo.setText(/*R.string.stop*/"Stop");
-                            mIsRecordingVideo = true;
+                    if (null == getCameraDevice()) {
+                        return;
+                    }
+                    try {
+                        CaptureRequest.Builder previewBuilder = getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+                        previewBuilder.addTarget(previewSurface);
+                        previewBuilder.addTarget(recorderSurface);
+                        previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                        cameraCaptureSession.setRepeatingRequest(previewBuilder.build(), null, getBackgroundHandler());
 
-                            // Start recording
-                            mMediaRecorder.start();
-                        }
-                    });
+                        mPreviewSession = cameraCaptureSession;
+                        /*getActivity().*/runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                // UI
+                                mIsRecordingVideo = true;
+
+                                // Start recording
+                                mMediaRecorder.start();
+                            }
+                        });
+                    } catch (CameraAccessException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 @Override
@@ -297,7 +272,6 @@ public class JCamera2VideoTextureView extends CameraView {
     private void stopRecordingVideo() {
         // UI
         mIsRecordingVideo = false;
-//        mButtonVideo.setText(/*R.string.record*/"Record");
         // Stop recording
         mMediaRecorder.stop();
         mMediaRecorder.reset();
@@ -306,6 +280,7 @@ public class JCamera2VideoTextureView extends CameraView {
             toastFile();
         }
 //        startPreview();
+        closePreviewSession();
     }
 
 }
