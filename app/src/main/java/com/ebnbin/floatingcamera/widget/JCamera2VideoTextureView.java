@@ -48,27 +48,11 @@ public class JCamera2VideoTextureView extends CameraView {
     public boolean onSingleTapConfirmed(@Nullable MotionEvent e) {
         boolean result = super.onSingleTapConfirmed(e);
         if (mIsRecordingVideo) {
-            stop(true);
+            stopRecordingVideo(true);
         } else {
-            record();
+            startRecordingVideo();
         }
         return result;
-    }
-
-    private void record() {
-        if (mIsRecordingVideo) {
-            return;
-        }
-
-        startRecordingVideo();
-    }
-
-    private void stop(boolean resumePreview) {
-        if (!mIsRecordingVideo) {
-            return;
-        }
-
-        stopRecordingVideo(resumePreview);
     }
 
     private void runOnUiThread(final Runnable action) {
@@ -83,8 +67,6 @@ public class JCamera2VideoTextureView extends CameraView {
             }
         });
     }
-
-    //*****************************************************************************************************************
 
     @Override
     protected void beforeOpenCamera() {
@@ -114,7 +96,9 @@ public class JCamera2VideoTextureView extends CameraView {
     protected void beforeFinish() {
         super.beforeFinish();
 
-        stop(false);
+        if (mIsRecordingVideo) {
+            stopRecordingVideo(false);
+        }
     }
 
     //*****************************************************************************************************************
@@ -235,7 +219,7 @@ public class JCamera2VideoTextureView extends CameraView {
                         cameraCaptureSession.setRepeatingRequest(previewBuilder.build(), null, getBackgroundHandler());
 
                         mPreviewSession = cameraCaptureSession;
-                        /*getActivity().*/runOnUiThread(new Runnable() {
+                        runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 // UI
