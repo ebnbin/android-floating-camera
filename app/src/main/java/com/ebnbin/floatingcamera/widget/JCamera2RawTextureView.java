@@ -28,45 +28,31 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * A fragment that demonstrates use of the Camera2 API to capture JPEG photos.
- * <p/>
- * In this example, the lifecycle of a single request to take a photo is:
- * <ul>
- * <li>
- * The user presses the "Picture" button, resulting in a call to {@link #takePicture()}.
- * </li>
- * <li>
- * {@link #takePicture()} initiates a pre-capture sequence that triggers the camera's built-in
- * auto-focus, auto-exposure, and auto-white-balance algorithms (aka. "3A") to run.
- * </li>
- * </ul>
- */
+// TODO: With bugs.
 public class JCamera2RawTextureView extends CameraView {
 
     private void onClick() {
-        takePicture();
+        captureStillPictureLocked();
     }
 
     private void picture() {
@@ -79,7 +65,14 @@ public class JCamera2RawTextureView extends CameraView {
 
                 onClick();
             }
-        }, 1000L);
+        }, 0L);
+    }
+
+    @Override
+    public boolean onSingleTapConfirmed(@Nullable MotionEvent e) {
+        boolean result = super.onSingleTapConfirmed(e);
+        picture();
+        return result;
     }
 
     //*****************************************************************************************************************
@@ -99,8 +92,6 @@ public class JCamera2RawTextureView extends CameraView {
         if (isAvailable()) {
             createCameraPreviewSessionLocked();
         }
-
-        picture();
     }
 
     @Override
@@ -110,8 +101,6 @@ public class JCamera2RawTextureView extends CameraView {
         // Reset state and clean up resources used by the camera.
         // Note: After calling this, the ImageReaders will be closed after any background
         // tasks saving Images from these readers have been completed.
-        mPendingUserCaptures = 0;
-        mState = STATE_CLOSED;
         if (null != mCaptureSession) {
             mCaptureSession.close();
             mCaptureSession = null;
@@ -135,44 +124,6 @@ public class JCamera2RawTextureView extends CameraView {
     public JCamera2RawTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
-
-    //*****************************************************************************************************************
-
-    /**
-     * Timeout for the pre-capture sequence.
-     */
-    private static final long PRECAPTURE_TIMEOUT_MS = 1000;
-
-    /**
-     * Tag for the {@link Log}.
-     */
-    private static final String TAG = "JCamera2RawTextureView";
-
-    /**
-     * Camera state: Device is closed.
-     */
-    private static final int STATE_CLOSED = 0;
-//
-//    /**
-//     * Camera state: Device is opened, but is not capturing.
-//     */
-//    private static final int STATE_OPENED = 1;
-
-    /**
-     * Camera state: Showing camera preview.
-     */
-    private static final int STATE_PREVIEW = 2;
-
-    /**
-     * Camera state: Waiting for 3A convergence before capturing a photo.
-     */
-    private static final int STATE_WAITING_FOR_3A_CONVERGENCE = 3;
-
-    /**
-     * A counter for tracking corresponding {@link CaptureRequest}s and {@link CaptureResult}s
-     * across the {@link CameraCaptureSession} capture callbacks.
-     */
-    private final AtomicInteger mRequestCounter = new AtomicInteger();
 
     // *********************************************************************************************
     // State protected by getCameraStateLock().
@@ -201,107 +152,11 @@ public class JCamera2RawTextureView extends CameraView {
     private boolean mNoAFRun = false;
 
     /**
-     * Number of pending user requests to capture a photo.
-     */
-    private int mPendingUserCaptures = 0;
-
-    /**
      * {@link CaptureRequest.Builder} for the camera preview
      */
     private CaptureRequest.Builder mPreviewRequestBuilder;
 
-    /**
-     * The state of the camera device.
-     *
-     * @see #mPreCaptureCallback
-     */
-    private int mState = STATE_CLOSED;
-
-    /**
-     * Timer to use with pre-capture sequence to ensure a timely capture if 3A convergence is
-     * taking too long.
-     */
-    private long mCaptureTimer;
-
     //**********************************************************************************************
-
-    /**
-     * A {@link CameraCaptureSession.CaptureCallback} that handles events for the preview and
-     * pre-capture sequence.
-     */
-    private CameraCaptureSession.CaptureCallback mPreCaptureCallback
-            = new CameraCaptureSession.CaptureCallback() {
-
-        private void process(CaptureResult result) {
-            synchronized (getCameraStateLock()) {
-                switch (mState) {
-                    case STATE_PREVIEW: {
-                        // We have nothing to do when the camera preview is running normally.
-                        break;
-                    }
-                    case STATE_WAITING_FOR_3A_CONVERGENCE: {
-                        boolean readyToCapture = true;
-                        if (!mNoAFRun) {
-                            Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
-                            if (afState == null) {
-                                break;
-                            }
-
-                            // If auto-focus has reached locked state, we are ready to capture
-                            readyToCapture =
-                                    (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
-                                            afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED);
-                        }
-
-                        // If we are running on an non-legacy device, we should also wait until
-                        // auto-exposure and auto-white-balance have converged as well before
-                        // taking a picture.
-                        if (!isLegacyLocked()) {
-                            Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                            Integer awbState = result.get(CaptureResult.CONTROL_AWB_STATE);
-                            if (aeState == null || awbState == null) {
-                                break;
-                            }
-
-                            readyToCapture = readyToCapture &&
-                                    aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED &&
-                                    awbState == CaptureResult.CONTROL_AWB_STATE_CONVERGED;
-                        }
-
-                        // If we haven't finished the pre-capture sequence but have hit our maximum
-                        // wait timeout, too bad! Begin capture anyway.
-                        if (!readyToCapture && hitTimeoutLocked()) {
-                            Log.w(TAG, "Timed out waiting for pre-capture sequence to complete.");
-                            readyToCapture = true;
-                        }
-
-                        if (readyToCapture && mPendingUserCaptures > 0) {
-                            // Capture once for each user tap of the "Picture" button.
-                            while (mPendingUserCaptures > 0) {
-                                captureStillPictureLocked();
-                                mPendingUserCaptures--;
-                            }
-                            // After this, the camera will go back to the normal state of preview.
-                            mState = STATE_PREVIEW;
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void onCaptureProgressed(CameraCaptureSession session, CaptureRequest request,
-                                        CaptureResult partialResult) {
-            process(partialResult);
-        }
-
-        @Override
-        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
-                                       TotalCaptureResult result) {
-            process(result);
-        }
-
-    };
 
     /**
      * A {@link CameraCaptureSession.CaptureCallback} that handles the still JPEG capture
@@ -345,13 +200,6 @@ public class JCamera2RawTextureView extends CameraView {
             // Configure state.
             CameraCharacteristics characteristics
                     = AppUtilsKt.getCameraManager().getCameraCharacteristics(getDevice().getId());
-
-//            // We only use a camera that supports RAW in this sample.
-//            if (!contains(characteristics.get(
-//                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES),
-//                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-////                continue;
-//            }
 
             synchronized (getCameraStateLock()) {
                 // Set up ImageReaders for JPEG outputs.
@@ -407,8 +255,7 @@ public class JCamera2RawTextureView extends CameraView {
                                     // Finally, we start displaying the camera preview.
                                     cameraCaptureSession.setRepeatingRequest(
                                             mPreviewRequestBuilder.build(),
-                                            mPreCaptureCallback, getBackgroundHandler());
-                                    mState = STATE_PREVIEW;
+                                            null, getBackgroundHandler());
                                 } catch (CameraAccessException | IllegalStateException e) {
                                     e.printStackTrace();
                                     return;
@@ -472,56 +319,6 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     /**
-     * Initiate a still image capture.
-     * <p/>
-     * This function sends a capture request that initiates a pre-capture sequence in our state
-     * machine that waits for auto-focus to finish, ending in a "locked" state where the lens is no
-     * longer moving, waits for auto-exposure to choose a good exposure value, and waits for
-     * auto-white-balance to converge.
-     */
-    private void takePicture() {
-        synchronized (getCameraStateLock()) {
-            mPendingUserCaptures++;
-
-            // If we already triggered a pre-capture sequence, or are in a state where we cannot
-            // do this, return immediately.
-            if (mState != STATE_PREVIEW) {
-                return;
-            }
-
-            try {
-                // Trigger an auto-focus run if camera is capable. If the camera is already focused,
-                // this should do nothing.
-                if (!mNoAFRun) {
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                            CameraMetadata.CONTROL_AF_TRIGGER_START);
-                }
-
-                // If this is not a legacy device, we can also trigger an auto-exposure metering
-                // run.
-                if (!isLegacyLocked()) {
-                    // Tell the camera to lock focus.
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
-                            CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-                }
-
-                // Update state machine to wait for auto-focus, auto-exposure, and
-                // auto-white-balance (aka. "3A") to converge.
-                mState = STATE_WAITING_FOR_3A_CONVERGENCE;
-
-                // Start a timer for the pre-capture sequence.
-                startTimerLocked();
-
-                // Replace the existing repeating request with one with updated 3A triggers.
-                mCaptureSession.capture(mPreviewRequestBuilder.build(), mPreCaptureCallback,
-                        getBackgroundHandler());
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
      * Send a capture request to the camera device that initiates a capture targeting the JPEG
      * outputs.
      * <p/>
@@ -545,9 +342,6 @@ public class JCamera2RawTextureView extends CameraView {
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
                     getDevice().getOrientation(AppUtilsKt.displayRotation()));
 
-            // Set request tag to easily track results in callbacks.
-            captureBuilder.setTag(mRequestCounter.getAndIncrement());
-
             CaptureRequest request = captureBuilder.build();
 
             mCaptureSession.capture(request, mCaptureCallback, getBackgroundHandler());
@@ -567,10 +361,7 @@ public class JCamera2RawTextureView extends CameraView {
         try {
             // Reset the auto-focus trigger in case AF didn't run quickly enough.
             if (!mNoAFRun) {
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                        CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-
-                mCaptureSession.capture(mPreviewRequestBuilder.build(), mPreCaptureCallback,
+                mCaptureSession.capture(mPreviewRequestBuilder.build(), null,
                         getBackgroundHandler());
 
                 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
@@ -591,7 +382,7 @@ public class JCamera2RawTextureView extends CameraView {
             // are saving its Images in a background thread (otherwise their resources may
             // be freed while we are writing to a file).
             if (mImageReader == null) {
-                Log.e(TAG, "Paused the activity before we could save the image," +
+                Log.e("ebnbin", "Paused the activity before we could save the image," +
                         " ImageReader already closed.");
                 return;
             }
@@ -600,7 +391,7 @@ public class JCamera2RawTextureView extends CameraView {
             try {
                 image = mImageReader.acquireNextImage();
             } catch (IllegalStateException e) {
-                Log.e(TAG, "Too many images queued for saving, dropping image.");
+                Log.e("ebnbin", "Too many images queued for saving, dropping image.");
                 return;
             }
 
@@ -622,10 +413,16 @@ public class JCamera2RawTextureView extends CameraView {
                             e.printStackTrace();
                         } finally {
                             image.close();
-                            closeOutput(output);
+                            if (null != output) {
+                                try {
+                                    output.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     } else {
-                        Log.e(TAG, "Cannot save image, unexpected image format:" + format);
+                        Log.e("ebnbin", "Cannot save image, unexpected image format:" + format);
                     }
 
                     // Decrement reference count to allow ImageReader to be closed to free up resources.
@@ -642,8 +439,8 @@ public class JCamera2RawTextureView extends CameraView {
 
                                     @Override
                                     public void onScanCompleted(String path, Uri uri) {
-                                        Log.i(TAG, "Scanned " + path + ":");
-                                        Log.i(TAG, "-> uri=" + uri);
+                                        Log.i("ebnbin", "Scanned " + path + ":");
+                                        Log.i("ebnbin", "-> uri=" + uri);
                                     }
                                 });
                     }
@@ -654,21 +451,6 @@ public class JCamera2RawTextureView extends CameraView {
 
     // Utility classes and methods:
     // *********************************************************************************************
-
-    /**
-     * Cleanup the given {@link OutputStream}.
-     *
-     * @param outputStream the stream to close.
-     */
-    private static void closeOutput(OutputStream outputStream) {
-        if (null != outputStream) {
-            try {
-                outputStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 
     /**
      * Return true if the given array contains the given integer.
@@ -687,38 +469,6 @@ public class JCamera2RawTextureView extends CameraView {
             }
         }
         return false;
-    }
-
-    /**
-     * Check if we are using a device that only supports the LEGACY hardware level.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
-     *
-     * @return true if this is a legacy device.
-     */
-    private boolean isLegacyLocked() {
-        return mCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL) ==
-                CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY;
-    }
-
-    /**
-     * Start the timer for the pre-capture sequence.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
-     */
-    private void startTimerLocked() {
-        mCaptureTimer = SystemClock.elapsedRealtime();
-    }
-
-    /**
-     * Check if the timer for the pre-capture sequence has been hit.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
-     *
-     * @return true if the timeout occurred.
-     */
-    private boolean hitTimeoutLocked() {
-        return (SystemClock.elapsedRealtime() - mCaptureTimer) > PRECAPTURE_TIMEOUT_MS;
     }
 
 }
