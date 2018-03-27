@@ -12,34 +12,20 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.os.Handler
 import android.os.HandlerThread
-import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
 import android.util.Log
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
 import android.view.TextureView
-import android.view.WindowManager
 import android.widget.Toast
-import com.ebnbin.floatingcamera.CameraService
-import com.ebnbin.floatingcamera.MainActivity
-import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
-import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
-import com.ebnbin.floatingcamera.util.WindowSize
 import com.ebnbin.floatingcamera.util.cameraManager
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
-import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
-import com.ebnbin.floatingcamera.util.windowManager
 import java.io.File
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * 相机控件.
@@ -47,9 +33,6 @@ import kotlin.math.min
 abstract class CameraView : TextureView,
         TextureView.SurfaceTextureListener,
         SharedPreferences.OnSharedPreferenceChangeListener,
-        GestureDetector.OnGestureListener,
-        GestureDetector.OnDoubleTapListener,
-        ScaleGestureDetector.OnScaleGestureListener,
         RotationHelper.Listener {
     constructor(context: Context?) : super(context)
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
@@ -82,314 +65,31 @@ abstract class CameraView : TextureView,
     }
 
     //*****************************************************************************************************************
-    // 偏好.
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        when (key) {
-            WindowRootPreferenceGroup.KEY_WINDOW_SIZE -> invalidateWindowSizeAndPosition()
-            WindowRootPreferenceGroup.KEY_WINDOW_X -> invalidateWindowSizeAndPosition(true)
-            WindowRootPreferenceGroup.KEY_WINDOW_Y -> invalidateWindowSizeAndPosition(true)
-            WindowRootPreferenceGroup.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
-            RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
-        }
+    abstract fun onTap()
+
+    //*****************************************************************************************************************
+
+    fun finish() {
+        if (isNotAttachedToWindow()) return
+
+        beforeCloseCamera()
+
+        closeCamera()
     }
 
-    private fun invalidateWindowSizeAndPosition(invalidateWindowPositionOnly: Boolean = false) {
-        val params = layoutParams as WindowManager.LayoutParams
-        val rotation = displayRotation()
-        val windowSize: WindowSize
-        if (invalidateWindowPositionOnly) {
-            windowSize = WindowSize(params.width, params.height, rotation)
-        } else {
-            windowSize = PreferenceHelper.windowSize()
-            params.width = windowSize.width(rotation)
-            params.height = windowSize.height(rotation)
-        }
-        val windowPosition = PreferenceHelper.windowPosition()
-        params.x = windowPosition.x(windowSize, rotation)
-        params.y = windowPosition.y(windowSize, rotation)
-        windowManager.updateViewLayout(this, params)
+    protected open fun beforeCloseCamera() = Unit
+
+    //*****************************************************************************************************************
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
     }
 
     //*****************************************************************************************************************
-    // 手势.
 
-    @Suppress("LeakingThis")
-    private val gestureDetector = GestureDetectorCompat(context, this)
-
-    @Suppress("LeakingThis")
-    private val scaleGestureDetector = ScaleGestureDetector(context, this)
-
-    private var downX = 0
-    private var downY = 0
-
-    private var downRawX = 0f
-    private var downRawY = 0f
-
-    private var downRotation = 0
-
-    private var scaleBeginWidth = 0
-    private var scaleBeginHeight = 0
-
-    /**
-     * 按下一小会儿. 比 tap 长, 比 long press 短, 用于显示提示信息.
-     */
-    override fun onShowPress(e: MotionEvent?) {
-        e ?: return
-
-        DebugHelper.log("onShowPress")
-    }
-
-    /**
-     * 单击 up. 还不能确定是单击还是双击.
-     */
-    override fun onSingleTapUp(e: MotionEvent?): Boolean {
-        e ?: return false
-
-        DebugHelper.log("onSingleTapUp")
-
-        return false
-    }
-
-    /**
-     * 第一个手指按下. 第二个手指按下不会调用.
-     */
-    override fun onDown(e: MotionEvent?): Boolean {
-        e ?: return false
-
-        DebugHelper.log("onDown")
-
-        val layoutParams = layoutParams as WindowManager.LayoutParams
-        downX = layoutParams.x
-        downY = layoutParams.y
-
-        downRawX = e.rawX
-        downRawY = e.rawY
-
-        downRotation = displayRotation()
-
-        return false
-    }
-
-    /**
-     * 自由滚动. 滚动时不能保证调用.
-     */
-    override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
-        if (e1 == null || e2 == null) return false
-
-        DebugHelper.log("onFling")
-
-        return false
-    }
-
-    /**
-     * 滚动.
-     */
-    override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
-        if (e1 == null || e2 == null) return false
-
-        DebugHelper.log("onScroll")
-
-        val layoutParams = layoutParams as WindowManager.LayoutParams
-        layoutParams.x = (downX + e2.rawX - downRawX).toInt()
-        layoutParams.y = (downY + e2.rawY - downRawY).toInt()
-        windowManager.updateViewLayout(this, layoutParams)
-
-        return false
-    }
-
-    /**
-     * 第一个手指长按.
-     */
-    override fun onLongPress(e: MotionEvent?) {
-        e ?: return
-
-        DebugHelper.log("onLongPress")
-
-        finish()
-    }
-
-    /**
-     * 双击. 已确定双击, 也就是第二击 down 时调用.
-     */
-    override fun onDoubleTap(e: MotionEvent?): Boolean {
-        e ?: return false
-
-        DebugHelper.log("onDoubleTap")
-
-        MainActivity.start()
-
-        return false
-    }
-
-    /**
-     * 双击事件. 已确定双击后, 第二击的所有事件, 包括 down, move 和 up.
-     */
-    override fun onDoubleTapEvent(e: MotionEvent?): Boolean {
-        e ?: return false
-
-        DebugHelper.log("onDoubleTapEvent")
-
-        return false
-    }
-
-    /**
-     * 单击. 已确定是单击, 之后没有双击时调用.
-     */
-    override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-        e ?: return false
-
-        DebugHelper.log("onSingleTapConfirmed")
-
-        return false
-    }
-
-    /**
-     * 缩放开始. 双指按下且开始移动时调用.
-     */
-    override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
-        detector ?: return true
-
-        DebugHelper.log("onScaleBegin")
-
-        scaleBeginWidth = layoutParams.width
-        scaleBeginHeight = layoutParams.height
-
-        return true
-    }
-
-    /**
-     * 缩放完成.
-     */
-    override fun onScaleEnd(detector: ScaleGestureDetector?) {
-        detector ?: return
-
-        DebugHelper.log("onScaleEnd")
-
-        putWindowSize(detector.scaleFactor)
-    }
-
-    /**
-     * 更新窗口大小.
-     */
-    private fun putWindowSize(scaleFactor: Float) {
-        var windowSize = (WindowRootPreferenceGroup.windowSize * scaleFactor).toInt()
-        windowSize = min(100, windowSize)
-        windowSize = max(0, windowSize)
-        val sharedPreferencesWindowSize = WindowRootPreferenceGroup.windowSize
-        if (sharedPreferencesWindowSize != windowSize) {
-            WindowRootPreferenceGroup.putWindowSize(windowSize)
-        } else {
-            invalidateWindowSizeAndPosition()
-        }
-    }
-
-    /**
-     * 缩放.
-     */
-    override fun onScale(detector: ScaleGestureDetector?): Boolean {
-        detector ?: return false
-
-        DebugHelper.log("onScale")
-
-        val scaleFactor = detector.scaleFactor
-        layoutParams.width = (scaleBeginWidth * scaleFactor).toInt()
-        layoutParams.height = (scaleBeginHeight * scaleFactor).toInt()
-        windowManager.updateViewLayout(this, layoutParams)
-
-        return false
-    }
-
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        event ?: return super.onTouchEvent(event)
-
-        if (gestureDetector.onTouchEvent(event)) return true
-
-        /**
-         * 第一个 down 事件 up 时调用, 第二个 down 事件 up 时不会调用.
-         */
-        if (event.action == MotionEvent.ACTION_UP) {
-            DebugHelper.log("ACTION_UP")
-
-            val offsetX = event.rawX - downRawX
-            val offsetY = event.rawY - downRawY
-            val x = downX + offsetX
-            val y = downY + offsetY
-            val windowSize = WindowSize(layoutParams.width, layoutParams.height, downRotation)
-            putWindowPosition(x, y, downRotation, windowSize)
-        }
-
-        if (scaleGestureDetector.onTouchEvent(event)) return true
-
-        return super.onTouchEvent(event)
-    }
-
-    /**
-     * 更新窗口位置.
-     */
-    private fun putWindowPosition(x: Float, y: Float, rotation: Int, windowSize: WindowSize) {
-        fun calc(position: Float, offset: Int, range: Int, percentOffset: Int) =
-                ((position + offset) / range * 100).toInt() + percentOffset
-
-        val displayRealWidth = displayRealSize.width(rotation)
-        val windowWidth = windowSize.width(rotation)
-
-        val xMin = 0
-        val xMax = displayRealWidth - windowWidth
-
-        val xRange = displayRealWidth - windowWidth
-        val xOffset = 0
-        val xPercentOffset = 0
-
-        val leftRange = windowWidth
-        val leftOffset = windowWidth
-        val leftPercentOffset = -100
-
-        val rightRange = windowWidth
-        val rightOffset = -(displayRealWidth - windowWidth)
-        val rightPercentOffset = 100
-
-        var windowX = when {
-            x in xMin..xMax -> calc(x, xOffset, xRange, xPercentOffset)
-            x < xMin -> calc(x, leftOffset, leftRange, leftPercentOffset)
-            else -> calc(x, rightOffset, rightRange, rightPercentOffset)
-        }
-        windowX = min(200, windowX)
-        windowX = max(-100, windowX)
-
-        val displayRealHeight = displayRealSize.height(rotation)
-        val windowHeight = windowSize.height(rotation)
-
-        val yMin = 0
-        val yMax = displayRealHeight - windowHeight
-
-        val yRange = displayRealHeight - windowHeight
-        val yOffset = 0
-        val yPercentOffset = 0
-
-        val topRange = windowHeight
-        val topOffset = windowHeight
-        val topPercentOffset = -100
-
-        val bottomRange = windowHeight
-        val bottomOffset = -(displayRealHeight - windowHeight)
-        val bottomPercentOffset = 100
-
-        var windowY = when {
-            y in yMin..yMax -> calc(y, yOffset, yRange, yPercentOffset)
-            y < yMin -> calc(y, topOffset, topRange, topPercentOffset)
-            else -> calc(y, bottomOffset, bottomRange, bottomPercentOffset)
-        }
-        windowY = min(200, windowY)
-        windowY = max(-100, windowY)
-
-        val sharedPreferencesWindowX = WindowRootPreferenceGroup.windowX
-        val sharedPreferencesWindowY = WindowRootPreferenceGroup.windowY
-
-        if (sharedPreferencesWindowX != windowX || sharedPreferencesWindowY != windowY) {
-            WindowRootPreferenceGroup.putWindowPosition(windowX, windowY)
-        } else {
-            invalidateWindowSizeAndPosition(true)
+    override fun onRotationChanged(oldRotation: Int, newRotation: Int) {
+        if (isAvailable) {
+            configureTransform()
         }
     }
 
@@ -464,14 +164,6 @@ abstract class CameraView : TextureView,
         matrix.postRotate(degrees, viewCenterX, viewCenterY)
 
         setTransform(matrix)
-    }
-
-    //*****************************************************************************************************************
-
-    override fun onRotationChanged(oldRotation: Int, newRotation: Int) {
-        if (isAvailable) {
-            configureTransform()
-        }
     }
 
     //*****************************************************************************************************************
@@ -609,20 +301,6 @@ abstract class CameraView : TextureView,
     }
 
     protected open fun onCloseCamera() = Unit
-
-    //*****************************************************************************************************************
-
-    fun finish() {
-        if (isNotAttachedToWindow()) return
-
-        beforeFinish()
-
-        closeCamera()
-
-        CameraService.stop()
-    }
-
-    protected open fun beforeFinish() = Unit
 
     //*****************************************************************************************************************
 

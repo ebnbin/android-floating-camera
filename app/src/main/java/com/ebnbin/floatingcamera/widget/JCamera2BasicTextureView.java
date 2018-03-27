@@ -29,12 +29,9 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -44,19 +41,13 @@ import java.util.Arrays;
 public class JCamera2BasicTextureView extends CameraView {
 
     @Override
-    public boolean onSingleTapConfirmed(@Nullable MotionEvent e) {
-        boolean result = super.onSingleTapConfirmed(e);
+    public void onTap() {
         post(new Runnable() {
             @Override
             public void run() {
-                if (isNotAttachedToWindow()) {
-                    return;
-                }
-
                 captureStillPicture();
             }
         });
-        return result;
     }
 
     @Override

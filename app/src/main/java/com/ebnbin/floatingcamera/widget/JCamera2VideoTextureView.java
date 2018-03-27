@@ -27,15 +27,12 @@ import android.hardware.camera2.CaptureRequest;
 import android.media.MediaRecorder;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
 import com.ebnbin.floatingcamera.util.CameraHelper;
 import com.ebnbin.floatingcamera.util.PreferenceHelper;
 import com.ebnbin.floatingcamera.util.extension.CamcorderProfileExtensionsKt;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,14 +42,12 @@ import java.util.List;
 public class JCamera2VideoTextureView extends CameraView {
 
     @Override
-    public boolean onSingleTapConfirmed(@Nullable MotionEvent e) {
-        boolean result = super.onSingleTapConfirmed(e);
+    public void onTap() {
         if (mIsRecordingVideo) {
             stopRecordingVideo(true);
         } else {
             startRecordingVideo();
         }
-        return result;
     }
 
     private void runOnUiThread(final Runnable action) {
@@ -83,21 +78,21 @@ public class JCamera2VideoTextureView extends CameraView {
     }
 
     @Override
+    protected void beforeCloseCamera() {
+        super.beforeCloseCamera();
+
+        if (mIsRecordingVideo) {
+            stopRecordingVideo(false);
+        }
+    }
+
+    @Override
     protected void onCloseCamera() {
         super.onCloseCamera();
 
         if (null != mMediaRecorder) {
             mMediaRecorder.release();
             mMediaRecorder = null;
-        }
-    }
-
-    @Override
-    protected void beforeFinish() {
-        super.beforeFinish();
-
-        if (mIsRecordingVideo) {
-            stopRecordingVideo(false);
         }
     }
 

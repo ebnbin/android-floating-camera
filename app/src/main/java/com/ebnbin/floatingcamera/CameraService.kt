@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Gravity
 import android.view.WindowManager
@@ -14,19 +15,17 @@ import com.ebnbin.floatingcamera.util.app
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.windowManager
-import com.ebnbin.floatingcamera.widget.Camera2BasicTextureView
-import com.ebnbin.floatingcamera.widget.CameraView
-import com.ebnbin.floatingcamera.widget.JCamera2VideoTextureView
+import com.ebnbin.floatingcamera.widget.CameraLayout
 
 /**
  * 相机服务.
  */
 class CameraService : Service() {
-    private lateinit var cameraView: CameraView
+    private lateinit var cameraLayout: CameraLayout
 
     private val postStopReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            cameraView.finish()
+            cameraLayout.finish()
         }
     }
 
@@ -41,9 +40,7 @@ class CameraService : Service() {
 
         RotationHelper.registerAndEnable(this)
 
-        cameraView = if (PreferenceHelper.isPhoto())
-            Camera2BasicTextureView(this) else
-            JCamera2VideoTextureView(this)
+        cameraLayout = CameraLayout(this)
 
         val params = WindowManager.LayoutParams()
         val rotation = displayRotation()
@@ -57,6 +54,7 @@ class CameraService : Service() {
         params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        params.format = PixelFormat.TRANSLUCENT
         params.gravity = Gravity.START or Gravity.TOP
         val windowPosition = PreferenceHelper.windowPosition()
         val x = windowPosition.x(windowSize, rotation)
@@ -64,11 +62,11 @@ class CameraService : Service() {
         params.x = x
         params.y = y
 
-        windowManager.addView(cameraView, params)
+        windowManager.addView(cameraLayout, params)
     }
 
     override fun onDestroy() {
-        windowManager.removeView(cameraView)
+        windowManager.removeView(cameraLayout)
 
         RotationHelper.unregister(this)
 

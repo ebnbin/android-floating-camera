@@ -36,12 +36,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.Surface;
 
 import com.ebnbin.floatingcamera.util.AppUtilsKt;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -51,31 +48,15 @@ import java.util.Arrays;
 // TODO: With bugs.
 public class JCamera2RawTextureView extends CameraView {
 
-    private void onClick() {
-        captureStillPictureLocked();
-    }
-
-    private void picture() {
-        postDelayed(new Runnable() {
+    @Override
+    public void onTap() {
+        post(new Runnable() {
             @Override
             public void run() {
-                if (isNotAttachedToWindow()) {
-                    return;
-                }
-
-                onClick();
+                captureStillPictureLocked();
             }
-        }, 0L);
+        });
     }
-
-    @Override
-    public boolean onSingleTapConfirmed(@Nullable MotionEvent e) {
-        boolean result = super.onSingleTapConfirmed(e);
-        picture();
-        return result;
-    }
-
-    //*****************************************************************************************************************
 
     @Override
     protected void beforeOpenCamera() {

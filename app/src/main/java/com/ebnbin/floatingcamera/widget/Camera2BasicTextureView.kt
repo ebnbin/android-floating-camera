@@ -28,7 +28,6 @@ import android.hardware.camera2.TotalCaptureResult
 import android.media.ImageReader
 import android.util.AttributeSet
 import android.util.Log
-import android.view.MotionEvent
 import android.view.Surface
 import java.io.FileOutputStream
 import java.io.IOException
@@ -40,14 +39,8 @@ class Camera2BasicTextureView constructor(
         defStyle: Int = 0
 ) : CameraView(context, attrs, defStyle) {
 
-    override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-        return super.onSingleTapConfirmed(e).apply {
-            post {
-                if (isNotAttachedToWindow()) return@post
-
-                captureStillPicture()
-            }
-        }
+    override fun onTap() {
+        post { captureStillPicture() }
     }
 
     override fun beforeOpenCamera() {
