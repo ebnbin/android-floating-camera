@@ -2,6 +2,7 @@ package com.ebnbin.floatingcamera.fragment.preference.window
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.support.v14.preference.SwitchPreference
 import android.support.v7.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.FooterPreference
@@ -34,7 +35,9 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
                         windowSizePreference,
                         windowXPreference,
                         windowYPreference,
-                        previewPreference))
+                        previewPreference,
+                        enableGestureMove,
+                        enableGestureScale))
     }
 
     /**
@@ -94,6 +97,32 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     }
 
     /**
+     * 手势移动.
+     */
+    private val enableGestureMove by lazy {
+        SwitchPreference(context).apply {
+            key = KEY_ENABLE_GESTURE_MOVE
+            setDefaultValue(DEF_ENABLE_GESTURE_MOVE)
+            setTitle(R.string.enable_gesture_move_title)
+            setSummaryOff(R.string.enable_gesture_move_summary_off)
+            setSummaryOn(R.string.enable_gesture_move_summary_on)
+        }
+    }
+
+    /**
+     * 手势缩放.
+     */
+    private val enableGestureScale by lazy {
+        SwitchPreference(context).apply {
+            key = KEY_ENABLE_GESTURE_SCALE
+            setDefaultValue(DEF_ENABLE_GESTURE_SCALE)
+            setTitle(R.string.enable_gesture_scale_title)
+            setSummaryOff(R.string.enable_gesture_scale_summary_off)
+            setSummaryOn(R.string.enable_gesture_scale_summary_on)
+        }
+    }
+
+    /**
      * 底部偏好.
      */
     private val footerPreference by lazy {
@@ -129,16 +158,22 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         const val KEY_WINDOW_X = "window_x"
         const val KEY_WINDOW_Y = "window_y"
         const val KEY_PREVIEW = "preview"
+        const val KEY_ENABLE_GESTURE_MOVE = "enable_gesture_move"
+        const val KEY_ENABLE_GESTURE_SCALE = "enable_gesture_scale"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
         private const val DEF_VALUE_WINDOW_Y = 50
         private val DEF_VALUE_PREVIEW = Preview.CAPTURE.indexString
+        private const val DEF_ENABLE_GESTURE_MOVE = false
+        private const val DEF_ENABLE_GESTURE_SCALE = false
 
         val preview get() = defaultSharedPreferences.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
         val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
         val windowX get() = defaultSharedPreferences.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
         val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
+        val enableGestureMove get() = defaultSharedPreferences.get(KEY_ENABLE_GESTURE_MOVE, DEF_ENABLE_GESTURE_MOVE)
+        val enableGestureScale get() = defaultSharedPreferences.get(KEY_ENABLE_GESTURE_SCALE, DEF_ENABLE_GESTURE_SCALE)
 
         fun putWindowSize(windowSize: Int) {
             defaultSharedPreferences.put(KEY_WINDOW_SIZE, windowSize)

@@ -45,6 +45,14 @@
     <string name="window_y_title">悬浮窗垂直方向位置</string>
     <string name="window_y_summary">悬浮窗垂直方向位置</string>
 
+    <string name="enable_gesture_move_title">手势移动</string>
+    <string name="enable_gesture_move_summary_off">已禁用通过手势移动悬浮窗</string>
+    <string name="enable_gesture_move_summary_on">已启用通过手势移动悬浮窗</string>
+
+    <string name="enable_gesture_scale_title">手势缩放</string>
+    <string name="enable_gesture_scale_summary_off">已禁用通过手势缩放悬浮窗</string>
+    <string name="enable_gesture_scale_summary_on">已启用通过手势缩放悬浮窗</string>
+
     <string name="path_title">存储路径</string>
     <string name="path_summary">%s</string>
 

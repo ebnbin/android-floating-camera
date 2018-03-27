@@ -81,6 +81,10 @@ class CameraLayout : FrameLayout,
             WindowRootPreferenceGroup.KEY_WINDOW_X -> invalidateWindowSizeAndPosition(true)
             WindowRootPreferenceGroup.KEY_WINDOW_Y -> invalidateWindowSizeAndPosition(true)
             WindowRootPreferenceGroup.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
+            WindowRootPreferenceGroup.KEY_ENABLE_GESTURE_MOVE ->
+                enableGestureMove = WindowRootPreferenceGroup.enableGestureMove
+            WindowRootPreferenceGroup.KEY_ENABLE_GESTURE_SCALE ->
+                enableGestureScale = WindowRootPreferenceGroup.enableGestureScale
             RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
         }
     }
@@ -110,6 +114,9 @@ class CameraLayout : FrameLayout,
 
     @Suppress("LeakingThis")
     private val scaleGestureDetector = ScaleGestureDetector(context, this)
+
+    private var enableGestureMove = WindowRootPreferenceGroup.enableGestureMove
+    private var enableGestureScale = WindowRootPreferenceGroup.enableGestureScale
 
     private var downX = 0
     private var downY = 0
@@ -152,14 +159,16 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onDown")
 
-        val layoutParams = layoutParams as WindowManager.LayoutParams
-        downX = layoutParams.x
-        downY = layoutParams.y
+        if (enableGestureMove) {
+            val layoutParams = layoutParams as WindowManager.LayoutParams
+            downX = layoutParams.x
+            downY = layoutParams.y
 
-        downRawX = e.rawX
-        downRawY = e.rawY
+            downRawX = e.rawX
+            downRawY = e.rawY
 
-        downRotation = displayRotation()
+            downRotation = displayRotation()
+        }
 
         return false
     }
@@ -183,10 +192,12 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onScroll")
 
-        val layoutParams = layoutParams as WindowManager.LayoutParams
-        layoutParams.x = (downX + e2.rawX - downRawX).toInt()
-        layoutParams.y = (downY + e2.rawY - downRawY).toInt()
-        windowManager.updateViewLayout(this, layoutParams)
+        if (enableGestureMove) {
+            val layoutParams = layoutParams as WindowManager.LayoutParams
+            layoutParams.x = (downX + e2.rawX - downRawX).toInt()
+            layoutParams.y = (downY + e2.rawY - downRawY).toInt()
+            windowManager.updateViewLayout(this, layoutParams)
+        }
 
         return false
     }
@@ -245,8 +256,10 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onScaleBegin")
 
-        scaleBeginWidth = layoutParams.width
-        scaleBeginHeight = layoutParams.height
+        if (enableGestureScale) {
+            scaleBeginWidth = layoutParams.width
+            scaleBeginHeight = layoutParams.height
+        }
 
         return true
     }
@@ -259,7 +272,9 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onScaleEnd")
 
-        putWindowSize(detector.scaleFactor)
+        if (enableGestureScale) {
+            putWindowSize(detector.scaleFactor)
+        }
     }
 
     /**
@@ -285,10 +300,12 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onScale")
 
-        val scaleFactor = detector.scaleFactor
-        layoutParams.width = (scaleBeginWidth * scaleFactor).toInt()
-        layoutParams.height = (scaleBeginHeight * scaleFactor).toInt()
-        windowManager.updateViewLayout(this, layoutParams)
+        if (enableGestureScale) {
+            val scaleFactor = detector.scaleFactor
+            layoutParams.width = (scaleBeginWidth * scaleFactor).toInt()
+            layoutParams.height = (scaleBeginHeight * scaleFactor).toInt()
+            windowManager.updateViewLayout(this, layoutParams)
+        }
 
         return false
     }
@@ -304,12 +321,14 @@ class CameraLayout : FrameLayout,
         if (event.action == MotionEvent.ACTION_UP) {
             DebugHelper.log("ACTION_UP")
 
-            val offsetX = event.rawX - downRawX
-            val offsetY = event.rawY - downRawY
-            val x = downX + offsetX
-            val y = downY + offsetY
-            val windowSize = WindowSize(layoutParams.width, layoutParams.height, downRotation)
-            putWindowPosition(x, y, downRotation, windowSize)
+            if (enableGestureMove) {
+                val offsetX = event.rawX - downRawX
+                val offsetY = event.rawY - downRawY
+                val x = downX + offsetX
+                val y = downY + offsetY
+                val windowSize = WindowSize(layoutParams.width, layoutParams.height, downRotation)
+                putWindowPosition(x, y, downRotation, windowSize)
+            }
         }
 
         if (scaleGestureDetector.onTouchEvent(event)) return true
