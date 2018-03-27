@@ -37,7 +37,8 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
                         windowYPreference,
                         previewPreference,
                         enableGestureMove,
-                        enableGestureScale))
+                        enableGestureScale,
+                        windowAlpha))
     }
 
     /**
@@ -123,6 +124,20 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     }
 
     /**
+     * 悬浮窗透明度.
+     */
+    private val windowAlpha by lazy {
+        SeekBarPreference(context).apply {
+            key = KEY_WINDOW_ALPHA
+            setDefaultValue(DEF_WINDOW_ALPHA)
+            setTitle(R.string.window_alpha_title)
+            setSummary(R.string.window_alpha_summary)
+            min = 0
+            max = 100
+        }
+    }
+
+    /**
      * 底部偏好.
      */
     private val footerPreference by lazy {
@@ -160,6 +175,7 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         const val KEY_PREVIEW = "preview"
         const val KEY_ENABLE_GESTURE_MOVE = "enable_gesture_move"
         const val KEY_ENABLE_GESTURE_SCALE = "enable_gesture_scale"
+        const val KEY_WINDOW_ALPHA = "window_alpha"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
@@ -167,6 +183,7 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         private val DEF_VALUE_PREVIEW = Preview.CAPTURE.indexString
         private const val DEF_ENABLE_GESTURE_MOVE = false
         private const val DEF_ENABLE_GESTURE_SCALE = false
+        private const val DEF_WINDOW_ALPHA = 100
 
         val preview get() = defaultSharedPreferences.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
         val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
@@ -174,6 +191,7 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
         val enableGestureMove get() = defaultSharedPreferences.get(KEY_ENABLE_GESTURE_MOVE, DEF_ENABLE_GESTURE_MOVE)
         val enableGestureScale get() = defaultSharedPreferences.get(KEY_ENABLE_GESTURE_SCALE, DEF_ENABLE_GESTURE_SCALE)
+        val windowAlpha get() = defaultSharedPreferences.get(KEY_WINDOW_ALPHA, DEF_WINDOW_ALPHA)
 
         fun putWindowSize(windowSize: Int) {
             defaultSharedPreferences.put(KEY_WINDOW_SIZE, windowSize)

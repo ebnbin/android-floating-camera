@@ -56,6 +56,8 @@ class CameraLayout : FrameLayout,
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
         addView(cameraView, params)
+
+        invalidateWindowAlpha()
     }
 
     //*****************************************************************************************************************
@@ -85,6 +87,7 @@ class CameraLayout : FrameLayout,
                 enableGestureMove = WindowRootPreferenceGroup.enableGestureMove
             WindowRootPreferenceGroup.KEY_ENABLE_GESTURE_SCALE ->
                 enableGestureScale = WindowRootPreferenceGroup.enableGestureScale
+            WindowRootPreferenceGroup.KEY_WINDOW_ALPHA -> invalidateWindowAlpha()
             RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
         }
     }
@@ -104,6 +107,10 @@ class CameraLayout : FrameLayout,
         params.x = windowPosition.x(windowSize, rotation)
         params.y = windowPosition.y(windowSize, rotation)
         windowManager.updateViewLayout(this, params)
+    }
+
+    private fun invalidateWindowAlpha() {
+        alpha = WindowRootPreferenceGroup.windowAlpha / 100f
     }
 
     //*****************************************************************************************************************
