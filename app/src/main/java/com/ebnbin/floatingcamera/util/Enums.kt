@@ -8,7 +8,8 @@ import com.ebnbin.floatingcamera.R
 enum class Preview(val entry: String) {
     CAPTURE(getString(R.string.preview_entry_capture)),
     FULL(getString(R.string.preview_entry_full)),
-    SCREEN(getString(R.string.preview_entry_screen));
+    SCREEN(getString(R.string.preview_entry_screen)),
+    SQUARE(getString(R.string.preview_entry_square));
 
     val indexString = ordinal.toString()
 

@@ -123,6 +123,9 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
             Preview.SCREEN -> {
                 // Do nothing.
             }
+            Preview.SQUARE -> {
+                landscapeWidth = landscapeHeight
+            }
         }
 
         return WindowSize(landscapeWidth.toInt(), landscapeHeight.toInt(), true)

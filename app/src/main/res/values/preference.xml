@@ -35,6 +35,7 @@
     <string name="preview_entry_capture">与拍摄比例相同</string>
     <string name="preview_entry_full">最大预览比例</string>
     <string name="preview_entry_screen">与屏幕比例相同</string>
+    <string name="preview_entry_square">正方形</string>
 
     <string name="window_size_title">悬浮窗大小</string>
     <string name="window_size_summary">悬浮窗大小</string>
