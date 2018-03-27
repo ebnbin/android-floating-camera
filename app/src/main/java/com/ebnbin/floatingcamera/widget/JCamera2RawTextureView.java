@@ -140,40 +140,6 @@ public class JCamera2RawTextureView extends CameraView {
     //**********************************************************************************************
 
     /**
-     * A {@link CameraCaptureSession.CaptureCallback} that handles the still JPEG capture
-     * request.
-     */
-    private final CameraCaptureSession.CaptureCallback mCaptureCallback
-            = new CameraCaptureSession.CaptureCallback() {
-        @Override
-        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
-                                     long timestamp, long frameNumber) {
-            setUpFile(".jpg");
-        }
-
-        @Override
-        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
-                                       TotalCaptureResult result) {
-            // Look up the ImageSaverBuilder for this request and update it with the CaptureResult
-            synchronized (getCameraStateLock()) {
-                finishedCaptureLocked();
-            }
-
-            toastFile();
-        }
-
-        @Override
-        public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
-                                    CaptureFailure failure) {
-            synchronized (getCameraStateLock()) {
-                finishedCaptureLocked();
-            }
-            toast("Capture failed!");
-        }
-
-    };
-
-    /**
      * Sets up state related to camera that is needed before opening a {@link CameraDevice}.
      */
     private void setUpCameraOutputs() {
@@ -182,20 +148,18 @@ public class JCamera2RawTextureView extends CameraView {
             CameraCharacteristics characteristics
                     = AppUtilsKt.getCameraManager().getCameraCharacteristics(getDevice().getId());
 
-            synchronized (getCameraStateLock()) {
-                // Set up ImageReaders for JPEG outputs.
-                mImageReader = ImageReader.newInstance(getResolution().getWidth(),
-                        getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5);
-                mImageReader.setOnImageAvailableListener(
-                        new ImageReader.OnImageAvailableListener() {
-                            @Override
-                            public void onImageAvailable(ImageReader reader) {
-                                dequeueAndSaveImage();
-                            }
-                        }, getBackgroundHandler());
+            // Set up ImageReaders for JPEG outputs.
+            mImageReader = ImageReader.newInstance(getResolution().getWidth(),
+                    getResolution().getHeight(), ImageFormat.JPEG, /*maxImages*/5);
+            mImageReader.setOnImageAvailableListener(
+                    new ImageReader.OnImageAvailableListener() {
+                        @Override
+                        public void onImageAvailable(ImageReader reader) {
+                            dequeueAndSaveImage();
+                        }
+                    }, getBackgroundHandler());
 
-                mCharacteristics = characteristics;
-            }
+            mCharacteristics = characteristics;
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -203,8 +167,6 @@ public class JCamera2RawTextureView extends CameraView {
 
     /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void createCameraPreviewSessionLocked() {
         try {
@@ -225,25 +187,23 @@ public class JCamera2RawTextureView extends CameraView {
                             mImageReader.getSurface()), new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-                            synchronized (getCameraStateLock()) {
-                                // The camera is already closed
-                                if (null == getCameraDevice()) {
-                                    return;
-                                }
-
-                                try {
-                                    setup3AControlsLocked(mPreviewRequestBuilder);
-                                    // Finally, we start displaying the camera preview.
-                                    cameraCaptureSession.setRepeatingRequest(
-                                            mPreviewRequestBuilder.build(),
-                                            null, getBackgroundHandler());
-                                } catch (CameraAccessException | IllegalStateException e) {
-                                    e.printStackTrace();
-                                    return;
-                                }
-                                // When the session is ready, we start displaying the preview.
-                                mCaptureSession = cameraCaptureSession;
+                            // The camera is already closed
+                            if (null == getCameraDevice()) {
+                                return;
                             }
+
+                            try {
+                                setup3AControlsLocked(mPreviewRequestBuilder);
+                                // Finally, we start displaying the camera preview.
+                                cameraCaptureSession.setRepeatingRequest(
+                                        mPreviewRequestBuilder.build(),
+                                        null, getBackgroundHandler());
+                            } catch (CameraAccessException | IllegalStateException e) {
+                                e.printStackTrace();
+                                return;
+                            }
+                            // When the session is ready, we start displaying the preview.
+                            mCaptureSession = cameraCaptureSession;
                         }
 
                         @Override
@@ -260,8 +220,6 @@ public class JCamera2RawTextureView extends CameraView {
     /**
      * Configure the given {@link CaptureRequest.Builder} to use auto-focus, auto-exposure, and
      * auto-white-balance controls if available.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
      *
      * @param builder the builder to configure.
      */
@@ -302,8 +260,6 @@ public class JCamera2RawTextureView extends CameraView {
     /**
      * Send a capture request to the camera device that initiates a capture targeting the JPEG
      * outputs.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void captureStillPictureLocked() {
         try {
@@ -325,7 +281,30 @@ public class JCamera2RawTextureView extends CameraView {
 
             CaptureRequest request = captureBuilder.build();
 
-            mCaptureSession.capture(request, mCaptureCallback, getBackgroundHandler());
+            mCaptureSession.capture(request, new CameraCaptureSession.CaptureCallback() {
+                @Override
+                public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
+                        long timestamp, long frameNumber) {
+                    setUpFile(".jpg");
+                }
+
+                @Override
+                public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
+                        TotalCaptureResult result) {
+                    // Look up the ImageSaverBuilder for this request and update it with the CaptureResult
+                    finishedCaptureLocked();
+
+                    toastFile();
+                }
+
+                @Override
+                public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
+                        CaptureFailure failure) {
+                    finishedCaptureLocked();
+                    toast("Capture failed!");
+                }
+
+            }, getBackgroundHandler());
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -335,8 +314,6 @@ public class JCamera2RawTextureView extends CameraView {
     /**
      * Called after a JPEG capture has completed; resets the AF trigger state for the
      * pre-capture sequence.
-     * <p/>
-     * Call this only with {@link #getCameraStateLock()} held.
      */
     private void finishedCaptureLocked() {
         try {
@@ -358,76 +335,74 @@ public class JCamera2RawTextureView extends CameraView {
      * thread.
      */
     private void dequeueAndSaveImage() {
-        synchronized (getCameraStateLock()) {
-            // Increment reference count to prevent ImageReader from being closed while we
-            // are saving its Images in a background thread (otherwise their resources may
-            // be freed while we are writing to a file).
-            if (mImageReader == null) {
-                Log.e("ebnbin", "Paused the activity before we could save the image," +
-                        " ImageReader already closed.");
-                return;
-            }
+        // Increment reference count to prevent ImageReader from being closed while we
+        // are saving its Images in a background thread (otherwise their resources may
+        // be freed while we are writing to a file).
+        if (mImageReader == null) {
+            Log.e("ebnbin", "Paused the activity before we could save the image," +
+                    " ImageReader already closed.");
+            return;
+        }
 
-            final Image image;
-            try {
-                image = mImageReader.acquireNextImage();
-            } catch (IllegalStateException e) {
-                Log.e("ebnbin", "Too many images queued for saving, dropping image.");
-                return;
-            }
+        final Image image;
+        try {
+            image = mImageReader.acquireNextImage();
+        } catch (IllegalStateException e) {
+            Log.e("ebnbin", "Too many images queued for saving, dropping image.");
+            return;
+        }
 
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
-                @Override
-                public void run() {
-                    boolean success = false;
-                    int format = image.getFormat();
-                    if (format == ImageFormat.JPEG) {
-                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                        byte[] bytes = new byte[buffer.remaining()];
-                        buffer.get(bytes);
-                        FileOutputStream output = null;
-                        try {
-                            output = new FileOutputStream(getFile());
-                            output.write(bytes);
-                            success = true;
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } finally {
-                            image.close();
-                            if (null != output) {
-                                try {
-                                    output.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+        AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
+            @Override
+            public void run() {
+                boolean success = false;
+                int format = image.getFormat();
+                if (format == ImageFormat.JPEG) {
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    FileOutputStream output = null;
+                    try {
+                        output = new FileOutputStream(getFile());
+                        output.write(bytes);
+                        success = true;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        image.close();
+                        if (null != output) {
+                            try {
+                                output.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
                         }
-                    } else {
-                        Log.e("ebnbin", "Cannot save image, unexpected image format:" + format);
                     }
-
-                    // Decrement reference count to allow ImageReader to be closed to free up resources.
-                    mImageReader.close();
-
-                    // If saving the file succeeded, update MediaStore.
-                    if (success) {
-                        MediaScannerConnection.scanFile(getContext(), new String[]{getFile().getPath()},
-                        /*mimeTypes*/null, new MediaScannerConnection.MediaScannerConnectionClient() {
-                                    @Override
-                                    public void onMediaScannerConnected() {
-                                        // Do nothing
-                                    }
-
-                                    @Override
-                                    public void onScanCompleted(String path, Uri uri) {
-                                        Log.i("ebnbin", "Scanned " + path + ":");
-                                        Log.i("ebnbin", "-> uri=" + uri);
-                                    }
-                                });
-                    }
+                } else {
+                    Log.e("ebnbin", "Cannot save image, unexpected image format:" + format);
                 }
-            });
-        }
+
+                // Decrement reference count to allow ImageReader to be closed to free up resources.
+                mImageReader.close();
+
+                // If saving the file succeeded, update MediaStore.
+                if (success) {
+                    MediaScannerConnection.scanFile(getContext(), new String[]{getFile().getPath()},
+                    /*mimeTypes*/null, new MediaScannerConnection.MediaScannerConnectionClient() {
+                                @Override
+                                public void onMediaScannerConnected() {
+                                    // Do nothing
+                                }
+
+                                @Override
+                                public void onScanCompleted(String path, Uri uri) {
+                                    Log.i("ebnbin", "Scanned " + path + ":");
+                                    Log.i("ebnbin", "-> uri=" + uri);
+                                }
+                            });
+                }
+            }
+        });
     }
 
     // Utility classes and methods:

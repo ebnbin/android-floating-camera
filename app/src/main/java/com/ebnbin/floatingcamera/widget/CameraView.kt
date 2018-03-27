@@ -185,9 +185,7 @@ abstract class CameraView : TextureView,
     private fun startBackgroundThread() {
         backgroundThread = HandlerThread("CameraBackground")
         backgroundThread.start()
-        synchronized(cameraStateLock) {
-            backgroundHandler = Handler(backgroundThread.looper)
-        }
+        backgroundHandler = Handler(backgroundThread.looper)
     }
 
     /**
@@ -208,11 +206,6 @@ abstract class CameraView : TextureView,
      * A [Semaphore] to prevent the app from exiting before closing the camera.
      */
     protected val cameraOpenCloseLock = Semaphore(1)
-
-    /**
-     * A lock protecting camera state.
-     */
-    protected val cameraStateLock = Any()
 
     /**
      * A reference to the opened [CameraDevice].
@@ -288,11 +281,9 @@ abstract class CameraView : TextureView,
     private fun closeCamera() {
         try {
             cameraOpenCloseLock.acquire()
-            synchronized(cameraStateLock) {
-                cameraDevice?.close()
-                cameraDevice = null
-                onCloseCamera()
-            }
+            cameraDevice?.close()
+            cameraDevice = null
+            onCloseCamera()
         } catch (e: InterruptedException) {
             throw RuntimeException("Interrupted while trying to lock camera closing.", e)
         } finally {
