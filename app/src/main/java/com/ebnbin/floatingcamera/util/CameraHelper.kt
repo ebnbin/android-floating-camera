@@ -100,6 +100,9 @@ class CameraHelper private constructor() {
             }
         }
 
+        // TODO: 暂时不允许只有单个摄像头的设备.
+        if (!hasBackDevice || !hasFrontDevice) throw CameraException("只有一个摄像头.")
+
         this.hasBackDevice = hasBackDevice
         this.hasFrontDevice = hasFrontDevice
         if (!hasBackDevice && !hasFrontDevice) throw BaseRuntimeException()

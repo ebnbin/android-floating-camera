@@ -10,4 +10,6 @@
     <string name="permission_request">请求</string>
     <string name="permission_finish">退出应用</string>
     <string name="permission_deny">暂不开启</string>
+
+    <string name="camera_exception">相机异常</string>
 </resources>

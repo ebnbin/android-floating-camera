@@ -293,7 +293,9 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         private const val KEY_FRONT_VIDEO_PROFILE = "front_video_profile"
         private const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
 
-        private val DEF_VALUE_IS_FRONT get() = !cameraHelper.hasBothDevices && cameraHelper.hasFrontDevice
+        // TODO: 暂时不允许只有单个摄像头的设备.
+//        private val DEF_VALUE_IS_FRONT get() = !cameraHelper.hasBothDevices && cameraHelper.hasFrontDevice
+        private const val DEF_VALUE_IS_FRONT = false
         private const val DEF_VALUE_BACK_IS_PHOTO = false
         private const val DEF_VALUE_BACK_VIDEO_PROFILE = "0"
         private const val DEF_VALUE_BACK_PHOTO_RESOLUTION = "0"
