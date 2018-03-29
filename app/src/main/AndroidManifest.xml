@@ -2,23 +2,17 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ebnbin.floatingcamera">
-    <uses-feature
-        android:name="android.hardware.camera"/>
-    <uses-feature
-        android:name="android.hardware.camera.autofocus"/>
-    <uses-feature
-        android:name="android.hardware.camera.raw"/>
-
+    <uses-permission
+        android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission
         android:name="android.permission.CAMERA"/>
     <uses-permission
         android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission
-        android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
+    <uses-feature
+        android:name="android.hardware.camera"/>
 
     <application
         android:name=".AppApplication"
@@ -28,7 +22,7 @@
         android:theme="@style/ApplicationTheme">
         <activity
             android:name=".MainActivity"
-            android:launchMode="singleInstance">
+            android:launchMode="singleTask">
             <intent-filter>
                 <action
                     android:name="android.intent.action.MAIN"/>
