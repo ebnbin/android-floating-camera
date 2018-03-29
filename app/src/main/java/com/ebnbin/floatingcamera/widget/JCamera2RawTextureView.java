@@ -66,8 +66,8 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     @Override
-    protected void onOpened() {
-        super.onOpened();
+    protected void afterOpenCamera() {
+        super.afterOpenCamera();
 
         // Start the preview session if the TextureView has been set up already.
         if (isAvailable()) {
@@ -76,8 +76,8 @@ public class JCamera2RawTextureView extends CameraView {
     }
 
     @Override
-    protected void onCloseCamera() {
-        super.onCloseCamera();
+    protected void afterCloseCamera() {
+        super.afterCloseCamera();
 
         // Reset state and clean up resources used by the camera.
         // Note: After calling this, the ImageReaders will be closed after any background

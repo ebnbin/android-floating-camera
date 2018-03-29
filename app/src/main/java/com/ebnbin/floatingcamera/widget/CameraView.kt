@@ -10,10 +10,13 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CaptureRequest
+import android.media.MediaRecorder
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.AttributeSet
 import android.util.Log
+import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
 import com.ebnbin.floatingcamera.util.FileUtil
@@ -23,6 +26,7 @@ import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.cameraManager
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRotation
+import com.ebnbin.floatingcamera.util.extension.fileFormatExtension
 import java.io.File
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -73,12 +77,8 @@ abstract class CameraView : TextureView,
     fun finish() {
         if (isNotAttachedToWindow()) return
 
-        beforeCloseCamera()
-
         closeCamera()
     }
-
-    protected open fun beforeCloseCamera() = Unit
 
     //*****************************************************************************************************************
 
@@ -212,8 +212,6 @@ abstract class CameraView : TextureView,
      */
     protected var cameraDevice: CameraDevice? = null
 
-    protected open fun beforeOpenCamera() = Unit
-
     /**
      * Tries to open a [CameraDevice].
      */
@@ -248,7 +246,7 @@ abstract class CameraView : TextureView,
                     // the TextureView displaying this has been set up.
                     cameraOpenCloseLock.release()
                     cameraDevice = camera
-                    onOpened()
+                    afterOpenCamera()
                 }
 
                 override fun onDisconnected(camera: CameraDevice?) {
@@ -273,17 +271,21 @@ abstract class CameraView : TextureView,
         }
     }
 
-    protected open fun onOpened() = Unit
+    protected open fun beforeOpenCamera() = Unit
+
+    protected open fun afterOpenCamera() = Unit
 
     /**
      * Closes the current [CameraDevice].
      */
     private fun closeCamera() {
+        beforeCloseCamera()
+
         try {
             cameraOpenCloseLock.acquire()
             cameraDevice?.close()
             cameraDevice = null
-            onCloseCamera()
+            afterCloseCamera()
         } catch (e: InterruptedException) {
             throw RuntimeException("Interrupted while trying to lock camera closing.", e)
         } finally {
@@ -291,7 +293,9 @@ abstract class CameraView : TextureView,
         }
     }
 
-    protected open fun onCloseCamera() = Unit
+    protected open fun beforeCloseCamera() = Unit
+
+    protected open fun afterCloseCamera() = Unit
 
     //*****************************************************************************************************************
 
@@ -305,7 +309,130 @@ abstract class CameraView : TextureView,
     }
 
     protected fun toastFile() {
+        if (isNotAttachedToWindow()) return
+
         toast("$file")
         Log.d("ebnbin", "$file")
+    }
+
+    //*****************************************************************************************************************
+    // Video.
+
+    private var videoPreviewCameraCaptureSession: CameraCaptureSession? = null
+    private var videoRecordCameraCaptureSession: CameraCaptureSession? = null
+
+    private var mediaRecorder: MediaRecorder? = null
+
+    private var isRecording = false
+
+    private fun createVideoPreviewCaptureRequest(cameraDevice: CameraDevice) =
+            cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+                addTarget(Surface(surfaceTexture))
+                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+            }.build()!!
+
+    private fun createVideoRecordCaptureRequest(cameraDevice: CameraDevice, mediaRecorder: MediaRecorder) =
+            cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
+                addTarget(Surface(surfaceTexture))
+                addTarget(mediaRecorder.surface)
+                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+            }.build()!!
+
+    protected fun startVideoPreview() {
+        if (cameraDevice == null || !isAvailable || videoPreviewCameraCaptureSession != null) return
+
+        val outputs = listOf(Surface(surfaceTexture))
+        cameraDevice!!.createCaptureSession(outputs, object : CameraCaptureSession.StateCallback() {
+            override fun onConfigured(session: CameraCaptureSession?) {
+                if (cameraDevice == null || !isAvailable || session == null) return
+
+                val request = createVideoPreviewCaptureRequest(cameraDevice!!)
+                session.setRepeatingRequest(request, null, backgroundHandler)
+
+                videoPreviewCameraCaptureSession = session
+            }
+
+            override fun onConfigureFailed(session: CameraCaptureSession?) {
+            }
+        }, backgroundHandler)
+    }
+
+    protected fun initMediaRecorder() {
+        mediaRecorder = MediaRecorder()
+    }
+
+    protected fun disposeMediaRecorder() {
+        mediaRecorder?.release()
+        mediaRecorder = null
+    }
+
+    private fun setUpMediaRecorder(mediaRecorder: MediaRecorder) {
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
+        mediaRecorder.setOrientationHint(device.getOrientation(displayRotation()))
+        val videoProfile = PreferenceHelper.videoProfile()
+        mediaRecorder.setProfile(videoProfile.camcorderProfile)
+        setUpFile(videoProfile.camcorderProfile.fileFormatExtension)
+        mediaRecorder.setOutputFile(file.absolutePath)
+        mediaRecorder.prepare()
+    }
+
+    private fun startRecord() {
+        if (cameraDevice == null ||
+                videoRecordCameraCaptureSession != null ||
+                !isAvailable ||
+                mediaRecorder == null ||
+                isRecording) return
+
+        videoPreviewCameraCaptureSession?.close()
+        videoPreviewCameraCaptureSession = null
+
+        setUpMediaRecorder(mediaRecorder!!)
+
+        val outputs = listOf(Surface(surfaceTexture), mediaRecorder!!.surface)
+        cameraDevice!!.createCaptureSession(outputs, object : CameraCaptureSession.StateCallback() {
+            override fun onConfigured(session: CameraCaptureSession?) {
+                if (cameraDevice == null || !isAvailable || session == null || mediaRecorder == null) return
+
+                val request = createVideoRecordCaptureRequest(cameraDevice!!, mediaRecorder!!)
+                session.setRepeatingRequest(request, null, backgroundHandler)
+
+                post {
+                    isRecording = true
+                    mediaRecorder!!.start()
+                }
+
+                videoRecordCameraCaptureSession = session
+            }
+
+            override fun onConfigureFailed(session: CameraCaptureSession?) {
+            }
+        }, backgroundHandler)
+    }
+
+    protected fun stopRecord(resumePreview: Boolean) {
+        if (!isRecording) return
+
+        isRecording = false
+
+        mediaRecorder?.stop()
+        mediaRecorder?.reset()
+
+        toastFile()
+
+        videoRecordCameraCaptureSession?.close()
+        videoRecordCameraCaptureSession = null
+
+        if (resumePreview) {
+            startVideoPreview()
+        }
+    }
+
+    protected fun toggleRecord() {
+        if (isRecording) {
+            stopRecord(true)
+        } else {
+            startRecord()
+        }
     }
 }

@@ -77,14 +77,14 @@ class Camera2BasicTextureView constructor(
         }
     }
 
-    override fun onOpened() {
-        super.onOpened()
+    override fun afterOpenCamera() {
+        super.afterOpenCamera()
 
         createCameraPreviewSession()
     }
 
-    override fun onCloseCamera() {
-        super.onCloseCamera()
+    override fun afterCloseCamera() {
+        super.afterCloseCamera()
 
         captureSession?.close()
         captureSession = null

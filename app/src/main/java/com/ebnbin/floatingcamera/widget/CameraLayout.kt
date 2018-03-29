@@ -51,7 +51,7 @@ class CameraLayout : FrameLayout,
     private fun init() {
         cameraView = if (PreferenceHelper.isPhoto())
             Camera2BasicTextureView(context) else
-            JCamera2VideoTextureView(context)
+            VideoCameraView(context)
 
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 

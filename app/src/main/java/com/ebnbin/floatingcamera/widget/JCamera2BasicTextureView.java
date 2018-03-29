@@ -91,15 +91,15 @@ public class JCamera2BasicTextureView extends CameraView {
     }
 
     @Override
-    protected void onOpened() {
-        super.onOpened();
+    protected void afterOpenCamera() {
+        super.afterOpenCamera();
 
         createCameraPreviewSession();
     }
 
     @Override
-    protected void onCloseCamera() {
-        super.onCloseCamera();
+    protected void afterCloseCamera() {
+        super.afterCloseCamera();
 
         if (null != mCaptureSession) {
             mCaptureSession.close();
