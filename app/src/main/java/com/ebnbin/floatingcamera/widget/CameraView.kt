@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
@@ -11,6 +12,8 @@ import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.TotalCaptureResult
+import android.media.ImageReader
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.HandlerThread
@@ -28,6 +31,8 @@ import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.extension.fileFormatExtension
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
@@ -325,13 +330,13 @@ abstract class CameraView : TextureView,
 
     private var isRecording = false
 
-    private fun createVideoPreviewCaptureRequest(cameraDevice: CameraDevice) =
+    private fun buildVideoPreviewCaptureRequest(cameraDevice: CameraDevice) =
             cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
                 addTarget(Surface(surfaceTexture))
                 set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
             }.build()!!
 
-    private fun createVideoRecordCaptureRequest(cameraDevice: CameraDevice, mediaRecorder: MediaRecorder) =
+    private fun buildVideoRecordCaptureRequest(cameraDevice: CameraDevice, mediaRecorder: MediaRecorder) =
             cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
                 addTarget(Surface(surfaceTexture))
                 addTarget(mediaRecorder.surface)
@@ -346,7 +351,7 @@ abstract class CameraView : TextureView,
             override fun onConfigured(session: CameraCaptureSession?) {
                 if (cameraDevice == null || !isAvailable || session == null) return
 
-                val request = createVideoPreviewCaptureRequest(cameraDevice!!)
+                val request = buildVideoPreviewCaptureRequest(cameraDevice!!)
                 session.setRepeatingRequest(request, null, backgroundHandler)
 
                 videoPreviewCameraCaptureSession = session
@@ -369,7 +374,7 @@ abstract class CameraView : TextureView,
     private fun setUpMediaRecorder(mediaRecorder: MediaRecorder) {
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
-        mediaRecorder.setOrientationHint(device.getOrientation(displayRotation()))
+        mediaRecorder.setOrientationHint(device.getOrientation())
         val videoProfile = PreferenceHelper.videoProfile()
         mediaRecorder.setProfile(videoProfile.camcorderProfile)
         setUpFile(videoProfile.camcorderProfile.fileFormatExtension)
@@ -394,7 +399,7 @@ abstract class CameraView : TextureView,
             override fun onConfigured(session: CameraCaptureSession?) {
                 if (cameraDevice == null || !isAvailable || session == null || mediaRecorder == null) return
 
-                val request = createVideoRecordCaptureRequest(cameraDevice!!, mediaRecorder!!)
+                val request = buildVideoRecordCaptureRequest(cameraDevice!!, mediaRecorder!!)
                 session.setRepeatingRequest(request, null, backgroundHandler)
 
                 post {
@@ -434,5 +439,121 @@ abstract class CameraView : TextureView,
         } else {
             startRecord()
         }
+    }
+
+    //*****************************************************************************************************************
+    // Photo.
+
+    private var imageReader: ImageReader? = null
+
+    private var photoPreviewCameraCaptureSession: CameraCaptureSession? = null
+
+    protected fun initImageReader() {
+        imageReader = ImageReader.newInstance(resolution.width, resolution.height,
+                ImageFormat.JPEG, /*maxImages*/ 2).apply {
+            setOnImageAvailableListener({
+                backgroundHandler.post {
+                    val image = it.acquireNextImage()
+
+                    val buffer = image.planes[0].buffer
+                    val bytes = ByteArray(buffer.remaining())
+                    buffer.get(bytes)
+                    var output: FileOutputStream? = null
+                    try {
+                        output = FileOutputStream(file).apply {
+                            write(bytes)
+                        }
+                    } catch (e: IOException) {
+                        Log.e("ebnbin", e.toString())
+                    } finally {
+                        image.close()
+                        output?.let {
+                            try {
+                                it.close()
+                            } catch (e: IOException) {
+                                Log.e("ebnbin", e.toString())
+                            }
+                        }
+                    }
+                }
+            }, backgroundHandler)
+        }
+    }
+
+    protected fun disposeImageReader() {
+        imageReader?.close()
+        imageReader = null
+    }
+
+    private fun buildPhotoPreviewCaptureRequest(cameraDevice: CameraDevice) =
+            cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+                addTarget(Surface(surfaceTexture))
+                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+            }.build()!!
+
+    private fun buildPhotoCaptureCaptureRequest(cameraDevice: CameraDevice, imageReader: ImageReader) =
+            cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
+                addTarget(imageReader.surface)
+                set(CaptureRequest.JPEG_ORIENTATION, device.getOrientation())
+                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+            }.build()!!
+
+    protected fun startPhotoPreview() {
+        if (cameraDevice == null ||
+                !isAvailable ||
+                isNotAttachedToWindow() ||
+                imageReader == null ||
+                photoPreviewCameraCaptureSession != null) return
+
+        val outputs = listOf(Surface(surfaceTexture), imageReader!!.surface)
+        cameraDevice!!.createCaptureSession(outputs, object : CameraCaptureSession.StateCallback() {
+            override fun onConfigured(session: CameraCaptureSession?) {
+                if (cameraDevice == null || session == null) return
+
+                val request = buildPhotoPreviewCaptureRequest(cameraDevice!!)
+                session.setRepeatingRequest(request, null, backgroundHandler)
+
+                photoPreviewCameraCaptureSession = session
+            }
+
+            override fun onConfigureFailed(session: CameraCaptureSession?) {
+            }
+        }, backgroundHandler)
+    }
+
+    protected fun stopPhotoPreview() {
+        photoPreviewCameraCaptureSession?.close()
+        photoPreviewCameraCaptureSession = null
+    }
+
+    protected fun capture() {
+        if (!isAvailable ||
+                photoPreviewCameraCaptureSession == null ||
+                cameraDevice == null ||
+                imageReader == null) return
+
+//        photoPreviewCameraCaptureSession!!.stopRepeating()
+//        photoPreviewCameraCaptureSession!!.abortCaptures()
+        val request = buildPhotoCaptureCaptureRequest(cameraDevice!!, imageReader!!)
+        photoPreviewCameraCaptureSession!!.capture(request, object : CameraCaptureSession.CaptureCallback() {
+            override fun onCaptureStarted(session: CameraCaptureSession?, request: CaptureRequest?, timestamp: Long,
+                    frameNumber: Long) {
+                super.onCaptureStarted(session, request, timestamp, frameNumber)
+
+                setUpFile(".jpg")
+            }
+
+            override fun onCaptureCompleted(session: CameraCaptureSession?, request: CaptureRequest?,
+                    result: TotalCaptureResult?) {
+                super.onCaptureCompleted(session, request, result)
+
+                if (photoPreviewCameraCaptureSession == null || cameraDevice == null) return
+
+                toastFile()
+//
+//                val captureRequest = buildPhotoPreviewCaptureRequest(cameraDevice!!)
+//                photoPreviewCameraCaptureSession!!.setRepeatingRequest(captureRequest, null, backgroundHandler)
+            }
+        }, backgroundHandler)
     }
 }

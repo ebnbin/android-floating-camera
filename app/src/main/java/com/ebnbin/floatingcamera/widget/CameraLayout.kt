@@ -50,7 +50,7 @@ class CameraLayout : FrameLayout,
 
     private fun init() {
         cameraView = if (PreferenceHelper.isPhoto())
-            Camera2BasicTextureView(context) else
+            PhotoCameraView(context) else
             VideoCameraView(context)
 
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -153,8 +153,6 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onSingleTapUp")
 
-        if (cameraView.isAttachedToWindow) cameraView.onTap()
-
         return false
     }
 
@@ -251,6 +249,8 @@ class CameraLayout : FrameLayout,
         e ?: return false
 
         DebugHelper.log("onSingleTapConfirmed")
+
+        if (cameraView.isAttachedToWindow) cameraView.onTap()
 
         return false
     }
