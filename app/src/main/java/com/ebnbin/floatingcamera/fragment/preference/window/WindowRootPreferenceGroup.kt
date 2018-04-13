@@ -30,15 +30,16 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 窗口偏好组.
      */
     private val windowPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        windowSizePreference,
-                        windowXPreference,
-                        windowYPreference,
-                        previewPreference,
-                        enableGestureMove,
-                        enableGestureScale,
-                        windowAlpha))
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    windowSizePreference,
+                    windowXPreference,
+                    windowYPreference,
+                    previewPreference,
+                    enableGestureMove,
+                    enableGestureScale,
+                    windowAlpha)
+        }
     }
 
     /**
@@ -144,9 +145,11 @@ class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         FooterPreference(context)
     }
 
-    override fun preferences() = arrayOf(
-            windowPreferenceGroup,
-            footerPreference)
+    init {
+        initPreferences(
+                windowPreferenceGroup,
+                footerPreference)
+    }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {

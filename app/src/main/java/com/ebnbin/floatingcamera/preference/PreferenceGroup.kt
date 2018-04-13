@@ -16,16 +16,23 @@ import com.ebnbin.floatingcamera.util.extension.writeBoolean
  *
  * [PreferenceCategory] 作为普通 [Preference] 使用, 不用于添加子 [Preference].
  */
-open class PreferenceGroup(context: Context,
-        /**
-         * 保存所有子 [Preference], 用于恢复可见性.
-         */
-        private val preferences: Array<out Preference?>? = null,
-        private val onFirstAttachedToHierarchy: ((PreferenceGroup) -> Unit)? = null) :
-        android.support.v7.preference.PreferenceGroup(context, null) {
+open class PreferenceGroup(context: Context) : android.support.v7.preference.PreferenceGroup(context, null) {
     init {
         isVisible = false
     }
+
+    private var initPreferences: Array<out Preference?>? = null
+    private var initIsGroupVisible = DEF_IS_GROUP_VISIBLE
+
+    fun initPreferences(vararg initPreferences: Preference?, initIsGroupVisible: Boolean = DEF_IS_GROUP_VISIBLE) {
+        this.initPreferences = initPreferences
+        this.initIsGroupVisible = initIsGroupVisible
+    }
+
+    /**
+     * 保存所有子 [Preference], 用于恢复可见性.
+     */
+    private val preferences = arrayListOf<Preference>()
 
     /**
      * 通过添加和移除的方式设置子 [Preference] 的可见性.
@@ -36,9 +43,13 @@ open class PreferenceGroup(context: Context,
             field = value
 
             if (field) {
-                addAll()
+                preferences.forEach { super.addPreference(it) }
+                preferences.clear()
             } else {
-                removeAll()
+                for (index in 0 until preferenceCount) {
+                    preferences.add(getPreference(index))
+                }
+                super.removeAll()
             }
         }
 
@@ -51,20 +62,46 @@ open class PreferenceGroup(context: Context,
 
         isFirstAttachedToHierarchy = false
 
-        addAll()
-
-        onFirstAttachedToHierarchy?.invoke(this)
+        initPreferences?.forEach {
+            if (it != null) addPreferenceToGroup(it)
+        }
+        isGroupVisible = initIsGroupVisible
     }
 
-    protected open fun preferences(): Array<out Preference?>? = preferences
+    //*****************************************************************************************************************
 
-    private fun addAll() {
-        preferences()?.forEach {
-            if (it != null) {
-                super.addPreference(it)
-            }
+    fun addPreferenceToGroup(preference: Preference): Boolean {
+        return if (isGroupVisible) {
+            super.addPreference(preference)
+        } else {
+            preferences.add(preference)
         }
     }
+
+    fun removePreferenceFromGroup(preference: Preference): Boolean {
+        return if (isGroupVisible) {
+            super.removePreference(preference)
+        } else {
+            preferences.remove(preference)
+        }
+    }
+
+    fun removeAllFromGroup() {
+        if (isGroupVisible) {
+            super.removeAll()
+        } else {
+            preferences.clear()
+        }
+    }
+
+    @Deprecated("使用 addPreferenceToGroup 代替.", ReplaceWith("addPreferenceToGroup"))
+    override fun addPreference(preference: Preference?) = super.addPreference(preference)
+
+    @Deprecated("使用 removePreferenceFromGroup 代替.", ReplaceWith("removePreferenceFromGroup"))
+    override fun removePreference(preference: Preference?) = super.removePreference(preference)
+
+    @Deprecated("使用 removeAllFromGroup 代替.", ReplaceWith("removeAllFromGroup"))
+    override fun removeAll() = super.removeAll()
 
     //*****************************************************************************************************************
     // Instance state.
@@ -105,11 +142,6 @@ open class PreferenceGroup(context: Context,
             override fun newArray(size: Int) = arrayOfNulls<SavedState>(size)
         }
     }
-
-    //*****************************************************************************************************************
-
-    @Deprecated("使用 addPreferenceToGroup 代替.", ReplaceWith("addPreferenceToGroup"))
-    override fun addPreference(preference: Preference?) = super.addPreference(preference)
 
     //*****************************************************************************************************************
 

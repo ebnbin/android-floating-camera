@@ -24,10 +24,11 @@ class OtherRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) 
      * 其他偏好组.
      */
     private val otherPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        pathPreference,
-                        isDarkThemePreference))
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    pathPreference,
+                    isDarkThemePreference)
+        }
     }
 
     /**
@@ -60,9 +61,11 @@ class OtherRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) 
         FooterPreference(context)
     }
 
-    override fun preferences() = arrayOf(
-            otherPreferenceGroup,
-            footerPreference)
+    init {
+        initPreferences(
+                otherPreferenceGroup,
+                footerPreference)
+    }
 
     companion object {
         const val KEY_IS_DARK_THEME = "is_dark_theme"

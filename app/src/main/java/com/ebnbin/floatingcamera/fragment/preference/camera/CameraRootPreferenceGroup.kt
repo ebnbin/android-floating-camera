@@ -40,20 +40,22 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 相机偏好组.
      */
     private val cameraPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        devicePreferenceGroup))
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    devicePreferenceGroup)
+        }
     }
 
     /**
      * 摄像头组.
      */
     private val devicePreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        isFrontPreference,
-                        backPreferenceGroup,
-                        frontPreferenceGroup))
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    isFrontPreference,
+                    backPreferenceGroup,
+                    frontPreferenceGroup)
+        }
     }
 
     /**
@@ -76,14 +78,13 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     private val backPreferenceGroup by lazy {
         if (!cameraHelper.hasBackDevice) return@lazy null
 
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        backIsPhotoPreference,
-                        backVideoPreferenceGroup,
-                        backPhotoPreferenceGroup),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = !isFrontPreference.isChecked
-                })
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    backIsPhotoPreference,
+                    backVideoPreferenceGroup,
+                    backPhotoPreferenceGroup,
+                    initIsGroupVisible = !isFrontPreference.isChecked)
+        }
     }
 
     /**
@@ -103,21 +104,21 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置摄像头视频组.
      */
     private val backVideoPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        backVideoProfilePreferenceGroup),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = !backIsPhotoPreference.isChecked
-                })
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    backVideoProfilePreferenceGroup,
+                    initIsGroupVisible = !backIsPhotoPreference.isChecked)
+        }
     }
 
     /**
      * 后置摄像头视频配置组.
      */
     private val backVideoProfilePreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        backVideoProfilePreference))
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    backVideoProfilePreference)
+        }
     }
 
     /**
@@ -138,12 +139,11 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 后置摄像头照片组.
      */
     private val backPhotoPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        backPhotoResolutionPreference),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = backIsPhotoPreference.isChecked
-                })
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    backPhotoResolutionPreference,
+                    initIsGroupVisible = backIsPhotoPreference.isChecked)
+        }
     }
 
     /**
@@ -166,14 +166,13 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
     private val frontPreferenceGroup by lazy {
         if (!cameraHelper.hasFrontDevice) return@lazy null
 
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        frontIsPhotoPreference,
-                        frontVideoPreferenceGroup,
-                        frontPhotoPreferenceGroup),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = isFrontPreference.isChecked
-                })
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    frontIsPhotoPreference,
+                    frontVideoPreferenceGroup,
+                    frontPhotoPreferenceGroup,
+                    initIsGroupVisible = isFrontPreference.isChecked)
+        }
     }
 
     /**
@@ -193,21 +192,21 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 前置摄像头视频组.
      */
     private val frontVideoPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        frontVideoProfilePreferenceGroup),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = !frontIsPhotoPreference.isChecked
-                })
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    frontVideoProfilePreferenceGroup,
+                    initIsGroupVisible = !frontIsPhotoPreference.isChecked)
+        }
     }
 
     /**
      * 前置摄像头视频配置组.
      */
     private val frontVideoProfilePreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        frontVideoProfilePreference))
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    frontVideoProfilePreference)
+        }
     }
 
     /**
@@ -228,12 +227,11 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
      * 前置摄像头照片组.
      */
     private val frontPhotoPreferenceGroup by lazy {
-        PreferenceGroup(context,
-                preferences = arrayOf(
-                        frontPhotoResolutionPreference),
-                onFirstAttachedToHierarchy = {
-                    it.isGroupVisible = frontIsPhotoPreference.isChecked
-                })
+        PreferenceGroup(context).apply {
+            initPreferences(
+                    frontPhotoResolutionPreference,
+                    initIsGroupVisible = frontIsPhotoPreference.isChecked)
+        }
     }
 
     /**
@@ -257,9 +255,11 @@ class CameraRootPreferenceGroup(context: Context) : RootPreferenceGroup(context)
         FooterPreference(context)
     }
 
-    override fun preferences() = arrayOf(
-            cameraPreferenceGroup,
-            footerPreference)
+    init {
+        initPreferences(
+                cameraPreferenceGroup,
+                footerPreference)
+    }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
