@@ -5,9 +5,9 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.fragment.preference.camera.CameraPreferenceFragment
-import com.ebnbin.floatingcamera.fragment.preference.other.OtherPreferenceFragment
-import com.ebnbin.floatingcamera.fragment.preference.window.WindowPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.getString
 
 class HomePagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {

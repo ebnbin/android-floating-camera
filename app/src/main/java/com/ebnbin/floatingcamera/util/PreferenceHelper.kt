@@ -1,9 +1,9 @@
 package com.ebnbin.floatingcamera.util
 
 import android.content.SharedPreferences
-import com.ebnbin.floatingcamera.fragment.preference.camera.CameraRootPreferenceGroup
-import com.ebnbin.floatingcamera.fragment.preference.other.OtherRootPreferenceGroup
-import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
+import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 
 /**
  * 偏好帮助类.
@@ -20,16 +20,16 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     /**
      * 摄像头.
      */
-    fun device() = if (CameraRootPreferenceGroup.isFront)
+    fun device() = if (CameraPreferenceFragment.isFront)
         cameraHelper.frontDevice else
         cameraHelper.backDevice
 
     /**
      * 是否为照片 (or 视频).
      */
-    fun isPhoto() = if (CameraRootPreferenceGroup.isFront)
-        CameraRootPreferenceGroup.frontIsPhoto else
-        CameraRootPreferenceGroup.backIsPhoto
+    fun isPhoto() = if (CameraPreferenceFragment.isFront)
+        CameraPreferenceFragment.frontIsPhoto else
+        CameraPreferenceFragment.backIsPhoto
 
     /**
      * 预览分辨率.
@@ -40,15 +40,15 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
      * 分辨率.
      */
     fun resolution() =
-        if (CameraRootPreferenceGroup.isFront) {
+        if (CameraPreferenceFragment.isFront) {
             // 前置摄像头.
             val device = cameraHelper.frontDevice
-            if (CameraRootPreferenceGroup.frontIsPhoto) {
+            if (CameraPreferenceFragment.frontIsPhoto) {
                 // 前置摄像头照片.
-                device.photoResolutions[CameraRootPreferenceGroup.frontPhotoResolution.toInt()]
+                device.photoResolutions[CameraPreferenceFragment.frontPhotoResolution.toInt()]
             } else {
                 // 前置摄像头视频.
-                val frontVideoProfileInt = CameraRootPreferenceGroup.frontVideoProfile.toInt()
+                val frontVideoProfileInt = CameraPreferenceFragment.frontVideoProfile.toInt()
                 val videoProfiles = device.videoProfiles
                 if (frontVideoProfileInt in 0 until videoProfiles.size) {
                     // 前置摄像头视频配置.
@@ -58,12 +58,12 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
         } else {
             // 后置摄像头.
             val device = cameraHelper.backDevice
-            if (CameraRootPreferenceGroup.backIsPhoto) {
+            if (CameraPreferenceFragment.backIsPhoto) {
                 // 后置摄像头照片.
-                device.photoResolutions[CameraRootPreferenceGroup.backPhotoResolution.toInt()]
+                device.photoResolutions[CameraPreferenceFragment.backPhotoResolution.toInt()]
             } else {
                 // 后置摄像头视频.
-                val backVideoProfileInt = CameraRootPreferenceGroup.backVideoProfile.toInt()
+                val backVideoProfileInt = CameraPreferenceFragment.backVideoProfile.toInt()
                 val videoProfiles = device.videoProfiles
                 if (backVideoProfileInt in 0 until videoProfiles.size) {
                     // 后置摄像头视频配置.
@@ -76,14 +76,14 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
      * 视频配置.
      */
     fun videoProfile(): CameraHelper.Device.VideoProfile {
-        return if (CameraRootPreferenceGroup.isFront && !CameraRootPreferenceGroup.frontIsPhoto) {
-            val frontVideoProfileInt = CameraRootPreferenceGroup.frontVideoProfile.toInt()
+        return if (CameraPreferenceFragment.isFront && !CameraPreferenceFragment.frontIsPhoto) {
+            val frontVideoProfileInt = CameraPreferenceFragment.frontVideoProfile.toInt()
             val videoProfiles = cameraHelper.frontDevice.videoProfiles
             if (frontVideoProfileInt in 0 until videoProfiles.size) {
                 videoProfiles[frontVideoProfileInt]
             } else throw BaseRuntimeException()
-        } else if (!CameraRootPreferenceGroup.backIsPhoto) {
-            val backVideoProfileInt = CameraRootPreferenceGroup.backVideoProfile.toInt()
+        } else if (!CameraPreferenceFragment.backIsPhoto) {
+            val backVideoProfileInt = CameraPreferenceFragment.backVideoProfile.toInt()
             val videoProfiles = cameraHelper.backDevice.videoProfiles
             if (backVideoProfileInt in 0 until videoProfiles.size) {
                 videoProfiles[backVideoProfileInt]
@@ -95,12 +95,12 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
      * 窗口大小.
      */
     fun windowSize(): WindowSize {
-        val windowSizeValue = WindowRootPreferenceGroup.windowSize
+        val windowSizeValue = WindowPreferenceFragment.windowSize
 
         var landscapeWidth = displayRealSize.landscapeWidth * windowSizeValue / 100f
         var landscapeHeight = displayRealSize.landscapeHeight * windowSizeValue / 100f
 
-        when (Preview.values()[WindowRootPreferenceGroup.preview.toInt()]) {
+        when (Preview.values()[WindowPreferenceFragment.preview.toInt()]) {
             Preview.CAPTURE -> {
                 val resolution = resolution()
                 if (landscapeWidth < landscapeHeight * resolution.landscapeWidth / resolution.landscapeHeight) {
@@ -135,8 +135,8 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
      * 窗口位置.
      */
     fun windowPosition(): WindowPosition {
-        val windowX = WindowRootPreferenceGroup.windowX
-        val windowY = WindowRootPreferenceGroup.windowY
+        val windowX = WindowPreferenceFragment.windowX
+        val windowY = WindowPreferenceFragment.windowY
         val rotation = RotationHelper.getRotation()
         return WindowPosition(windowX, windowY, rotation)
     }
@@ -144,5 +144,5 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     /**
      * 是否为暗色主题 (or 亮色主题).
      */
-    fun isDarkTheme() = OtherRootPreferenceGroup.isDarkTheme
+    fun isDarkTheme() = OtherPreferenceFragment.isDarkTheme
 }

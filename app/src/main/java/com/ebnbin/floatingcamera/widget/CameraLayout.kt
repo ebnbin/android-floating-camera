@@ -12,7 +12,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
-import com.ebnbin.floatingcamera.fragment.preference.window.WindowRootPreferenceGroup
+import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
@@ -79,15 +79,15 @@ class CameraLayout : FrameLayout,
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
-            WindowRootPreferenceGroup.KEY_WINDOW_SIZE -> invalidateWindowSizeAndPosition()
-            WindowRootPreferenceGroup.KEY_WINDOW_X -> invalidateWindowSizeAndPosition(true)
-            WindowRootPreferenceGroup.KEY_WINDOW_Y -> invalidateWindowSizeAndPosition(true)
-            WindowRootPreferenceGroup.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
-            WindowRootPreferenceGroup.KEY_ENABLE_GESTURE_MOVE ->
-                enableGestureMove = WindowRootPreferenceGroup.enableGestureMove
-            WindowRootPreferenceGroup.KEY_ENABLE_GESTURE_SCALE ->
-                enableGestureScale = WindowRootPreferenceGroup.enableGestureScale
-            WindowRootPreferenceGroup.KEY_WINDOW_ALPHA -> invalidateWindowAlpha()
+            WindowPreferenceFragment.KEY_WINDOW_SIZE -> invalidateWindowSizeAndPosition()
+            WindowPreferenceFragment.KEY_WINDOW_X -> invalidateWindowSizeAndPosition(true)
+            WindowPreferenceFragment.KEY_WINDOW_Y -> invalidateWindowSizeAndPosition(true)
+            WindowPreferenceFragment.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
+            WindowPreferenceFragment.KEY_ENABLE_GESTURE_MOVE ->
+                enableGestureMove = WindowPreferenceFragment.enableGestureMove
+            WindowPreferenceFragment.KEY_ENABLE_GESTURE_SCALE ->
+                enableGestureScale = WindowPreferenceFragment.enableGestureScale
+            WindowPreferenceFragment.KEY_WINDOW_ALPHA -> invalidateWindowAlpha()
             RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
         }
     }
@@ -110,7 +110,7 @@ class CameraLayout : FrameLayout,
     }
 
     private fun invalidateWindowAlpha() {
-        alpha = WindowRootPreferenceGroup.windowAlpha / 100f
+        alpha = WindowPreferenceFragment.windowAlpha / 100f
     }
 
     //*****************************************************************************************************************
@@ -122,8 +122,8 @@ class CameraLayout : FrameLayout,
     @Suppress("LeakingThis")
     private val scaleGestureDetector = ScaleGestureDetector(context, this)
 
-    private var enableGestureMove = WindowRootPreferenceGroup.enableGestureMove
-    private var enableGestureScale = WindowRootPreferenceGroup.enableGestureScale
+    private var enableGestureMove = WindowPreferenceFragment.enableGestureMove
+    private var enableGestureScale = WindowPreferenceFragment.enableGestureScale
 
     private var downX = 0
     private var downY = 0
@@ -288,12 +288,12 @@ class CameraLayout : FrameLayout,
      * 更新窗口大小.
      */
     private fun putWindowSize(scaleFactor: Float) {
-        var windowSize = (WindowRootPreferenceGroup.windowSize * scaleFactor).toInt()
+        var windowSize = (WindowPreferenceFragment.windowSize * scaleFactor).toInt()
         windowSize = min(100, windowSize)
         windowSize = max(0, windowSize)
-        val sharedPreferencesWindowSize = WindowRootPreferenceGroup.windowSize
+        val sharedPreferencesWindowSize = WindowPreferenceFragment.windowSize
         if (sharedPreferencesWindowSize != windowSize) {
-            WindowRootPreferenceGroup.putWindowSize(windowSize)
+            WindowPreferenceFragment.putWindowSize(windowSize)
         } else {
             invalidateWindowSizeAndPosition()
         }
@@ -402,11 +402,11 @@ class CameraLayout : FrameLayout,
         windowY = min(200, windowY)
         windowY = max(-100, windowY)
 
-        val sharedPreferencesWindowX = WindowRootPreferenceGroup.windowX
-        val sharedPreferencesWindowY = WindowRootPreferenceGroup.windowY
+        val sharedPreferencesWindowX = WindowPreferenceFragment.windowX
+        val sharedPreferencesWindowY = WindowPreferenceFragment.windowY
 
         if (sharedPreferencesWindowX != windowX || sharedPreferencesWindowY != windowY) {
-            WindowRootPreferenceGroup.putWindowPosition(windowX, windowY)
+            WindowPreferenceFragment.putWindowPosition(windowX, windowY)
         } else {
             invalidateWindowSizeAndPosition(true)
         }
