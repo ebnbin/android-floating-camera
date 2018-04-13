@@ -22,10 +22,13 @@ open class PreferenceGroup(context: Context) : android.support.v7.preference.Pre
     }
 
     private var initPreferences: Array<out Preference?>? = null
-    private var initIsGroupVisible = DEF_IS_GROUP_VISIBLE
+    private var initIsGroupVisible: (() -> Boolean)? = null
 
-    fun initPreferences(vararg initPreferences: Preference?, initIsGroupVisible: Boolean = DEF_IS_GROUP_VISIBLE) {
+    fun initPreferences(vararg initPreferences: Preference?) {
         this.initPreferences = initPreferences
+    }
+
+    fun initIsGroupVisible(initIsGroupVisible: () -> Boolean) {
         this.initIsGroupVisible = initIsGroupVisible
     }
 
@@ -65,7 +68,7 @@ open class PreferenceGroup(context: Context) : android.support.v7.preference.Pre
         initPreferences?.forEach {
             if (it != null) addPreferenceToGroup(it)
         }
-        isGroupVisible = initIsGroupVisible
+        if (initIsGroupVisible != null) isGroupVisible = initIsGroupVisible!!()
     }
 
     //*****************************************************************************************************************

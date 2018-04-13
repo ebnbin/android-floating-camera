@@ -75,8 +75,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 initPreferences(
                         backIsPhotoPreference,
                         backVideoPreferenceGroup,
-                        backPhotoPreferenceGroup,
-                        initIsGroupVisible = !isFrontPreference.isChecked)
+                        backPhotoPreferenceGroup)
+                initIsGroupVisible { !isFrontPreference.isChecked }
             }
         }
 
@@ -99,8 +99,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         private val backVideoPreferenceGroup by lazy {
             PreferenceGroup(context).apply {
                 initPreferences(
-                        backVideoProfilePreferenceGroup,
-                        initIsGroupVisible = !backIsPhotoPreference.isChecked)
+                        backVideoProfilePreferenceGroup)
+                initIsGroupVisible { !backIsPhotoPreference.isChecked }
             }
         }
 
@@ -134,8 +134,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         private val backPhotoPreferenceGroup by lazy {
             PreferenceGroup(context).apply {
                 initPreferences(
-                        backPhotoResolutionPreference,
-                        initIsGroupVisible = backIsPhotoPreference.isChecked)
+                        backPhotoResolutionPreference)
+                initIsGroupVisible { backIsPhotoPreference.isChecked }
             }
         }
 
@@ -163,8 +163,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 initPreferences(
                         frontIsPhotoPreference,
                         frontVideoPreferenceGroup,
-                        frontPhotoPreferenceGroup,
-                        initIsGroupVisible = isFrontPreference.isChecked)
+                        frontPhotoPreferenceGroup)
+                initIsGroupVisible { isFrontPreference.isChecked }
             }
         }
 
@@ -187,8 +187,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         private val frontVideoPreferenceGroup by lazy {
             PreferenceGroup(context).apply {
                 initPreferences(
-                        frontVideoProfilePreferenceGroup,
-                        initIsGroupVisible = !frontIsPhotoPreference.isChecked)
+                        frontVideoProfilePreferenceGroup)
+                initIsGroupVisible { !frontIsPhotoPreference.isChecked }
             }
         }
 
@@ -222,8 +222,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         private val frontPhotoPreferenceGroup by lazy {
             PreferenceGroup(context).apply {
                 initPreferences(
-                        frontPhotoResolutionPreference,
-                        initIsGroupVisible = frontIsPhotoPreference.isChecked)
+                        frontPhotoResolutionPreference)
+                initIsGroupVisible { frontIsPhotoPreference.isChecked }
             }
         }
 
