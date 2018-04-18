@@ -1,6 +1,9 @@
 package com.ebnbin.floatingcamera.widget
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
@@ -20,6 +23,7 @@ import com.ebnbin.floatingcamera.util.WindowSize
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
+import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.windowManager
 import kotlin.math.max
 import kotlin.math.min
@@ -49,9 +53,7 @@ class CameraLayout : FrameLayout,
     private lateinit var cameraView: CameraView
 
     private fun init() {
-        cameraView = if (PreferenceHelper.isPhoto())
-            PhotoCameraView(context) else
-            VideoCameraView(context)
+        cameraView = CameraView(context)
 
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
@@ -65,11 +67,21 @@ class CameraLayout : FrameLayout,
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
+        localBroadcastManager.registerReceiver(invalidateReceiver, IntentFilter(CameraView.ACTION_INVALIDATE))
+
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    private val invalidateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            invalidateWindowSizeAndPosition()
+        }
     }
 
     override fun onDetachedFromWindow() {
         defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+
+        localBroadcastManager.unregisterReceiver(invalidateReceiver)
 
         super.onDetachedFromWindow()
     }

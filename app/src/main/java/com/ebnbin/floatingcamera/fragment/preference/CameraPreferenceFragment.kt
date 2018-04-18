@@ -269,13 +269,13 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
     }
 
     companion object {
-        private const val KEY_IS_FRONT = "is_front"
-        private const val KEY_BACK_IS_PHOTO = "back_is_photo"
-        private const val KEY_BACK_VIDEO_PROFILE = "back_video_profile"
-        private const val KEY_BACK_PHOTO_RESOLUTION = "back_photo_resolution"
-        private const val KEY_FRONT_IS_PHOTO = "front_is_photo"
-        private const val KEY_FRONT_VIDEO_PROFILE = "front_video_profile"
-        private const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
+        const val KEY_IS_FRONT = "is_front"
+        const val KEY_BACK_IS_PHOTO = "back_is_photo"
+        const val KEY_BACK_VIDEO_PROFILE = "back_video_profile"
+        const val KEY_BACK_PHOTO_RESOLUTION = "back_photo_resolution"
+        const val KEY_FRONT_IS_PHOTO = "front_is_photo"
+        const val KEY_FRONT_VIDEO_PROFILE = "front_video_profile"
+        const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
 
         // TODO: 暂时不允许只有单个摄像头的设备.
 //        private val DEF_VALUE_IS_FRONT get() = !cameraHelper.hasBothDevices && cameraHelper.hasFrontDevice

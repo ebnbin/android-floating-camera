@@ -3,6 +3,7 @@ package com.ebnbin.floatingcamera.widget
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.ImageFormat
 import android.graphics.Matrix
@@ -22,6 +23,7 @@ import android.util.Log
 import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
+import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -30,6 +32,7 @@ import com.ebnbin.floatingcamera.util.cameraManager
 import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.extension.fileFormatExtension
+import com.ebnbin.floatingcamera.util.localBroadcastManager
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -39,7 +42,7 @@ import java.util.concurrent.TimeUnit
 /**
  * 相机控件.
  */
-abstract class CameraView : TextureView,
+class CameraView : TextureView,
         TextureView.SurfaceTextureListener,
         SharedPreferences.OnSharedPreferenceChangeListener,
         RotationHelper.Listener {
@@ -75,7 +78,13 @@ abstract class CameraView : TextureView,
 
     //*****************************************************************************************************************
 
-    abstract fun onTap()
+    fun onTap() {
+        if (PreferenceHelper.isPhoto()) {
+            post { capture() }
+        } else {
+            toggleRecord()
+        }
+    }
 
     //*****************************************************************************************************************
 
@@ -83,11 +92,6 @@ abstract class CameraView : TextureView,
         if (isNotAttachedToWindow()) return
 
         closeCamera()
-    }
-
-    //*****************************************************************************************************************
-
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
     }
 
     //*****************************************************************************************************************
@@ -101,12 +105,6 @@ abstract class CameraView : TextureView,
     //*****************************************************************************************************************
 
     protected fun isNotAttachedToWindow() = !isAttachedToWindow
-
-    protected val device = PreferenceHelper.device()
-
-    protected val previewResolution = PreferenceHelper.previewResolution()
-
-    protected val resolution = PreferenceHelper.resolution()
 
     protected fun toast(text: CharSequence) {
         post {
@@ -210,7 +208,7 @@ abstract class CameraView : TextureView,
     /**
      * A [Semaphore] to prevent the app from exiting before closing the camera.
      */
-    protected val cameraOpenCloseLock = Semaphore(1)
+    protected var cameraOpenCloseLock = Semaphore(1)
 
     /**
      * A reference to the opened [CameraDevice].
@@ -276,9 +274,21 @@ abstract class CameraView : TextureView,
         }
     }
 
-    protected open fun beforeOpenCamera() = Unit
+    private fun beforeOpenCamera() {
+        if (PreferenceHelper.isPhoto()) {
+            initImageReader()
+        } else {
+            initMediaRecorder()
+        }
+    }
 
-    protected open fun afterOpenCamera() = Unit
+    private fun afterOpenCamera() {
+        if (PreferenceHelper.isPhoto()) {
+            startPhotoPreview()
+        } else {
+            startVideoPreview()
+        }
+    }
 
     /**
      * Closes the current [CameraDevice].
@@ -298,9 +308,22 @@ abstract class CameraView : TextureView,
         }
     }
 
-    protected open fun beforeCloseCamera() = Unit
+    private fun beforeCloseCamera() {
+        if (PreferenceHelper.isPhoto()) {
+            stopPhotoPreview()
+        } else {
+            stopRecord(false)
+            stopVideoPreview()
+        }
+    }
 
-    protected open fun afterCloseCamera() = Unit
+    private fun afterCloseCamera() {
+        if (PreferenceHelper.isPhoto()) {
+            disposeImageReader()
+        } else {
+            disposeMediaRecorder()
+        }
+    }
 
     //*****************************************************************************************************************
 
@@ -360,6 +383,11 @@ abstract class CameraView : TextureView,
             override fun onConfigureFailed(session: CameraCaptureSession?) {
             }
         }, backgroundHandler)
+    }
+
+    private fun stopVideoPreview() {
+        videoPreviewCameraCaptureSession?.close()
+        videoPreviewCameraCaptureSession = null
     }
 
     protected fun initMediaRecorder() {
@@ -555,5 +583,44 @@ abstract class CameraView : TextureView,
 //                photoPreviewCameraCaptureSession!!.setRepeatingRequest(captureRequest, null, backgroundHandler)
             }
         }, backgroundHandler)
+    }
+
+    //*****************************************************************************************************************
+
+    protected var device = PreferenceHelper.device()
+
+    protected var previewResolution = PreferenceHelper.previewResolution()
+
+    protected var resolution = PreferenceHelper.resolution()
+
+    //*****************************************************************************************************************
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        when (key) {
+            CameraPreferenceFragment.KEY_IS_FRONT,
+            CameraPreferenceFragment.KEY_BACK_IS_PHOTO,
+            CameraPreferenceFragment.KEY_BACK_VIDEO_PROFILE,
+            CameraPreferenceFragment.KEY_BACK_PHOTO_RESOLUTION,
+            CameraPreferenceFragment.KEY_FRONT_IS_PHOTO,
+            CameraPreferenceFragment.KEY_FRONT_VIDEO_PROFILE,
+            CameraPreferenceFragment.KEY_FRONT_PHOTO_RESOLUTION -> {
+                closeCamera()
+                cameraOpenCloseLock = Semaphore(1)
+                device = PreferenceHelper.device()
+                previewResolution = PreferenceHelper.previewResolution()
+                resolution = PreferenceHelper.resolution()
+                openCamera()
+                sendInvalidateBroadcast()
+            }
+        }
+    }
+
+    private fun sendInvalidateBroadcast() {
+        val intent = Intent(ACTION_INVALIDATE)
+        localBroadcastManager.sendBroadcast(intent)
+    }
+
+    companion object {
+        const val ACTION_INVALIDATE = "invalidate"
     }
 }
