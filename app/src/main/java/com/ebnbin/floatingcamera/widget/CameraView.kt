@@ -24,6 +24,7 @@ import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -37,33 +38,61 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit
 
 /**
  * 相机控件.
  */
-class CameraView : TextureView,
+@SuppressLint("ViewConstructor")
+open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0, defStyleRes: Int = 0) :
+        TextureView(context, attrs, defStyleAttr, defStyleRes),
         TextureView.SurfaceTextureListener,
         SharedPreferences.OnSharedPreferenceChangeListener,
         RotationHelper.Listener {
-    constructor(context: Context?) : super(context)
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
-            super(context, attrs, defStyleAttr, defStyleRes)
+    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
+        openCamera()
+    }
 
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
+        invalidateTransform()
+    }
+
+    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
+        closeCamera()
+        return true
+    }
+
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) = Unit
+
+    //*****************************************************************************************************************
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        when (key) {
+            CameraPreferenceFragment.KEY_IS_FRONT,
+            CameraPreferenceFragment.KEY_BACK_IS_PHOTO,
+            CameraPreferenceFragment.KEY_BACK_VIDEO_PROFILE,
+            CameraPreferenceFragment.KEY_BACK_PHOTO_RESOLUTION,
+            CameraPreferenceFragment.KEY_FRONT_IS_PHOTO,
+            CameraPreferenceFragment.KEY_FRONT_VIDEO_PROFILE,
+            CameraPreferenceFragment.KEY_FRONT_PHOTO_RESOLUTION -> {
+                closeCamera()
+                openCamera()
+            }
+        }
+    }
+
+    //*****************************************************************************************************************
     //*****************************************************************************************************************
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+
+        surfaceTextureListener = this
 
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
 
         RotationHelper.listeners.add(this)
 
         startBackgroundThread()
-
-        surfaceTextureListener = this
     }
 
     override fun onDetachedFromWindow() {
@@ -79,7 +108,7 @@ class CameraView : TextureView,
     //*****************************************************************************************************************
 
     fun onTap() {
-        if (PreferenceHelper.isPhoto()) {
+        if (isPhoto) {
             post { capture() }
         } else {
             toggleRecord()
@@ -89,52 +118,31 @@ class CameraView : TextureView,
     //*****************************************************************************************************************
 
     fun finish() {
-        if (isNotAttachedToWindow()) return
-
-        closeCamera()
     }
 
     //*****************************************************************************************************************
 
     override fun onRotationChanged(oldRotation: Int, newRotation: Int) {
         if (isAvailable) {
-            configureTransform()
+            invalidateTransform()
         }
     }
 
     //*****************************************************************************************************************
 
-    protected fun isNotAttachedToWindow() = !isAttachedToWindow
-
-    protected fun toast(text: CharSequence) {
+    private fun toast(text: CharSequence) {
         post {
-            if (isNotAttachedToWindow()) return@post
-
             Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
         }
     }
 
     //*****************************************************************************************************************
 
-    override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
-        openCamera()
-    }
-
-    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
-        configureTransform()
-    }
-
-    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = true
-
-    override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) = Unit
-
-    //*****************************************************************************************************************
-
     /**
      * 配置 [setTransform].
      */
-    protected fun configureTransform() {
-        if (isNotAttachedToWindow()) return
+    private fun invalidateTransform() {
+        if (!isAttachedToWindow) return
 
         val viewWidth = width.toFloat()
         val viewHeight = height.toFloat()
@@ -142,8 +150,8 @@ class CameraView : TextureView,
         val viewCenterY = 0.5f * viewHeight
 
         // 因为之后需要 rotate, 且以 0 度为标准, 因此这里使用 portraitWidth 和 portraitHeight.
-        val bufferWidth = previewResolution.portraitWidth.toFloat()
-        val bufferHeight = previewResolution.portraitHeight.toFloat()
+        val bufferWidth = device.previewResolution.portraitWidth.toFloat()
+        val bufferHeight = device.previewResolution.portraitHeight.toFloat()
         val bufferCenterX = 0.5f * bufferWidth
         val bufferCenterY = 0.5f * bufferHeight
 
@@ -159,8 +167,8 @@ class CameraView : TextureView,
 
         matrix.setRectToRect(viewRectF, bufferRectF, Matrix.ScaleToFit.FILL)
 
-        val scale = Math.max(viewWidth / previewResolution.width(rotation),
-                viewHeight / previewResolution.height(rotation))
+        val scale = Math.max(viewWidth / device.previewResolution.width(rotation),
+                viewHeight / device.previewResolution.height(rotation))
         matrix.postScale(scale, scale, viewCenterX, viewCenterY)
 
         val degrees = 360f - rotation * 90f
@@ -215,21 +223,33 @@ class CameraView : TextureView,
      */
     protected var cameraDevice: CameraDevice? = null
 
+    private lateinit var device: CameraHelper.Device
+
+    private lateinit var resolution: CameraHelper.Device.Resolution
+
+    private var isPhoto = false
+
+    //*****************************************************************************************************************
+
     /**
      * Tries to open a [CameraDevice].
      */
     @SuppressLint("MissingPermission")
     private fun openCamera() {
-        if (isNotAttachedToWindow()) return
+        setUpCamera()
+
+        if (!isAttachedToWindow) return
 
         if (PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
             finish()
             return
         }
 
-        beforeOpenCamera()
-
-        configureTransform()
+        if (isPhoto) {
+            initImageReader()
+        } else {
+            initMediaRecorder()
+        }
 
         try {
             Log.d("ebnbin", "tryAcquire")
@@ -237,7 +257,7 @@ class CameraView : TextureView,
             // Wait for camera to open - 2.5 seconds is sufficient
 
             // Wait for any previously running session to finish.
-            if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+            if (!cameraOpenCloseLock.tryAcquire()) {
                 throw RuntimeException("Time out waiting to lock camera opening.")
             }
 
@@ -249,7 +269,12 @@ class CameraView : TextureView,
                     // the TextureView displaying this has been set up.
                     cameraOpenCloseLock.release()
                     cameraDevice = camera
-                    afterOpenCamera()
+
+                    if (isPhoto) {
+                        startPhotoPreview()
+                    } else {
+                        startVideoPreview()
+                    }
                 }
 
                 override fun onDisconnected(camera: CameraDevice?) {
@@ -274,54 +299,40 @@ class CameraView : TextureView,
         }
     }
 
-    private fun beforeOpenCamera() {
-        if (PreferenceHelper.isPhoto()) {
-            initImageReader()
-        } else {
-            initMediaRecorder()
-        }
-    }
-
-    private fun afterOpenCamera() {
-        if (PreferenceHelper.isPhoto()) {
-            startPhotoPreview()
-        } else {
-            startVideoPreview()
-        }
+    private fun setUpCamera() {
+        cameraOpenCloseLock = Semaphore(1)
+        device = PreferenceHelper.device()
+        resolution = PreferenceHelper.resolution()
+        isPhoto = PreferenceHelper.isPhoto()
+        sendInvalidateBroadcast()
+        invalidateTransform()
     }
 
     /**
      * Closes the current [CameraDevice].
      */
     private fun closeCamera() {
-        beforeCloseCamera()
-
-        try {
-            cameraOpenCloseLock.acquire()
-            cameraDevice?.close()
-            cameraDevice = null
-            afterCloseCamera()
-        } catch (e: InterruptedException) {
-            throw RuntimeException("Interrupted while trying to lock camera closing.", e)
-        } finally {
-            cameraOpenCloseLock.release()
-        }
-    }
-
-    private fun beforeCloseCamera() {
-        if (PreferenceHelper.isPhoto()) {
+        if (isPhoto) {
             stopPhotoPreview()
         } else {
             stopRecord(false)
             stopVideoPreview()
         }
-    }
 
-    private fun afterCloseCamera() {
-        if (PreferenceHelper.isPhoto()) {
-            disposeImageReader()
-        } else {
-            disposeMediaRecorder()
+        try {
+            cameraOpenCloseLock.acquire()
+            cameraDevice?.close()
+            cameraDevice = null
+
+            if (isPhoto) {
+                disposeImageReader()
+            } else {
+                disposeMediaRecorder()
+            }
+        } catch (e: InterruptedException) {
+            throw RuntimeException("Interrupted while trying to lock camera closing.", e)
+        } finally {
+            cameraOpenCloseLock.release()
         }
     }
 
@@ -337,7 +348,7 @@ class CameraView : TextureView,
     }
 
     protected fun toastFile() {
-        if (isNotAttachedToWindow()) return
+        if (!isAttachedToWindow) return
 
         toast("$file")
         Log.d("ebnbin", "$file")
@@ -529,7 +540,7 @@ class CameraView : TextureView,
     protected fun startPhotoPreview() {
         if (cameraDevice == null ||
                 !isAvailable ||
-                isNotAttachedToWindow() ||
+                !isAttachedToWindow ||
                 imageReader == null ||
                 photoPreviewCameraCaptureSession != null) return
 
@@ -587,37 +598,9 @@ class CameraView : TextureView,
 
     //*****************************************************************************************************************
 
-    protected var device = PreferenceHelper.device()
-
-    protected var previewResolution = PreferenceHelper.previewResolution()
-
-    protected var resolution = PreferenceHelper.resolution()
-
-    //*****************************************************************************************************************
-
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        when (key) {
-            CameraPreferenceFragment.KEY_IS_FRONT,
-            CameraPreferenceFragment.KEY_BACK_IS_PHOTO,
-            CameraPreferenceFragment.KEY_BACK_VIDEO_PROFILE,
-            CameraPreferenceFragment.KEY_BACK_PHOTO_RESOLUTION,
-            CameraPreferenceFragment.KEY_FRONT_IS_PHOTO,
-            CameraPreferenceFragment.KEY_FRONT_VIDEO_PROFILE,
-            CameraPreferenceFragment.KEY_FRONT_PHOTO_RESOLUTION -> {
-                closeCamera()
-                cameraOpenCloseLock = Semaphore(1)
-                device = PreferenceHelper.device()
-                previewResolution = PreferenceHelper.previewResolution()
-                resolution = PreferenceHelper.resolution()
-                openCamera()
-                sendInvalidateBroadcast()
-            }
-        }
-    }
-
     private fun sendInvalidateBroadcast() {
         val intent = Intent(ACTION_INVALIDATE)
-        localBroadcastManager.sendBroadcast(intent)
+        localBroadcastManager.sendBroadcastSync(intent)
     }
 
     companion object {

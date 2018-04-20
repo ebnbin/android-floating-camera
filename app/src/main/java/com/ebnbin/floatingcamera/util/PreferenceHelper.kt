@@ -32,11 +32,6 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
         CameraPreferenceFragment.backIsPhoto
 
     /**
-     * 预览分辨率.
-     */
-    fun previewResolution() = device().previewResolution
-
-    /**
      * 分辨率.
      */
     fun resolution() =
