@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.support.v14.preference.SwitchPreference
 import android.support.v7.preference.Preference
+import com.ebnbin.floatingcamera.BuildConfig
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
@@ -49,7 +50,7 @@ class OtherPreferenceFragment : PreferenceFragment<OtherPreferenceFragment.Other
         private val aboutPreference by lazy {
             Preference(context).apply {
                 setTitle(R.string.about_title)
-                setSummary(R.string.about_summary)
+                summary = resources.getString(R.string.about_summary, BuildConfig.VERSION_NAME)
             }
         }
 

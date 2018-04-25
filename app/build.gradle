@@ -8,6 +8,9 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 27
+        def split = rootProject.version.toString().split('\\.')
+        versionCode = (split[0].toInteger() << 16) + (split[1].toInteger() << 8) + (split[2].toInteger())
+        versionName rootProject.version
     }
 
     signingConfigs {
