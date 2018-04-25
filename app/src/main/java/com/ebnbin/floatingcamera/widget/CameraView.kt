@@ -444,6 +444,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
                 post {
                     isRecording = true
                     mediaRecorder!!.start()
+                    sendVideoBroadcast(true)
                 }
 
                 videoRecordCameraCaptureSession = session
@@ -456,6 +457,8 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
     protected fun stopRecord(resumePreview: Boolean) {
         if (!isRecording) return
+
+        sendVideoBroadcast(false)
 
         isRecording = false
 
@@ -603,7 +606,14 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         localBroadcastManager.sendBroadcastSync(intent)
     }
 
+    private fun sendVideoBroadcast(isRecording: Boolean) {
+        val intent = Intent(ACTION_VIDEO).putExtra(EXTRA_IS_RECORDING, isRecording)
+        localBroadcastManager.sendBroadcastSync(intent)
+    }
+
     companion object {
         const val ACTION_INVALIDATE = "invalidate"
+        const val ACTION_VIDEO = "video"
+        const val EXTRA_IS_RECORDING = "is_recording"
     }
 }

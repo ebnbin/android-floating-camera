@@ -51,13 +51,16 @@ class CameraLayout : FrameLayout,
     }
 
     private lateinit var cameraView: CameraView
+    private lateinit var infoView: InfoView
 
     private fun init() {
         cameraView = CameraView(context)
+        infoView = InfoView(context)
 
         val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
         addView(cameraView, params)
+        addView(infoView, params)
 
         invalidateWindowAlpha()
     }
