@@ -72,4 +72,7 @@
     <string name="is_dark_theme_title">主题</string>
     <string name="is_dark_theme_summary_off">亮色主题</string>
     <string name="is_dark_theme_summary_on">暗色主题</string>
+
+    <string name="about_title">关于</string>
+    <string name="about_summary">0.1.0\n不稳定版本</string>
 </resources>

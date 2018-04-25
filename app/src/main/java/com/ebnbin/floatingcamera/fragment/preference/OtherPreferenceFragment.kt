@@ -46,9 +46,17 @@ class OtherPreferenceFragment : PreferenceFragment<OtherPreferenceFragment.Other
             }
         }
 
+        private val aboutPreference by lazy {
+            Preference(context).apply {
+                setTitle(R.string.about_title)
+                setSummary(R.string.about_summary)
+            }
+        }
+
         override fun onCreatePreferences(savedInstanceState: Bundle?) = arrayOf(
                 pathPreference,
-                isDarkThemePreference)
+                isDarkThemePreference,
+                aboutPreference)
     }
 
     companion object {
