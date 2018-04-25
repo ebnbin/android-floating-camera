@@ -304,6 +304,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         device = PreferenceHelper.device()
         resolution = PreferenceHelper.resolution()
         isPhoto = PreferenceHelper.isPhoto()
+        surfaceTexture.setDefaultBufferSize(device.previewResolution.width, device.previewResolution.height)
         sendInvalidateBroadcast()
         invalidateTransform()
     }
