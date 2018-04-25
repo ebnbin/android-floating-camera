@@ -367,14 +367,14 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
     private fun buildVideoPreviewCaptureRequest(cameraDevice: CameraDevice) =
             cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
                 addTarget(Surface(surfaceTexture))
-                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+//                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
             }.build()!!
 
     private fun buildVideoRecordCaptureRequest(cameraDevice: CameraDevice, mediaRecorder: MediaRecorder) =
             cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
                 addTarget(Surface(surfaceTexture))
                 addTarget(mediaRecorder.surface)
-                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+//                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
             }.build()!!
 
     protected fun startVideoPreview() {
@@ -527,14 +527,14 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
     private fun buildPhotoPreviewCaptureRequest(cameraDevice: CameraDevice) =
             cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
                 addTarget(Surface(surfaceTexture))
-                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+//                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
             }.build()!!
 
     private fun buildPhotoCaptureCaptureRequest(cameraDevice: CameraDevice, imageReader: ImageReader) =
             cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
                 addTarget(imageReader.surface)
                 set(CaptureRequest.JPEG_ORIENTATION, device.getOrientation())
-                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+//                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
             }.build()!!
 
     protected fun startPhotoPreview() {
