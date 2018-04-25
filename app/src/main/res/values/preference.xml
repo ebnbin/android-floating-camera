@@ -38,13 +38,13 @@
     <string name="preview_entry_square">正方形</string>
 
     <string name="window_size_title">悬浮窗大小</string>
-    <string name="window_size_summary">悬浮窗大小</string>
+    <string name="window_size_summary">悬浮窗宽高占屏幕宽高的百分比</string>
 
     <string name="window_x_title">悬浮窗水平方向位置</string>
-    <string name="window_x_summary">悬浮窗水平方向位置</string>
+    <string name="window_x_summary">悬浮窗在屏幕水平方向位置的百分比</string>
 
     <string name="window_y_title">悬浮窗垂直方向位置</string>
-    <string name="window_y_summary">悬浮窗垂直方向位置</string>
+    <string name="window_y_summary">悬浮窗在屏幕垂直方向位置的百分比</string>
 
     <string name="enable_gesture_move_title">手势移动</string>
     <string name="enable_gesture_move_summary_off">已禁用通过手势移动悬浮窗</string>
@@ -56,6 +56,15 @@
 
     <string name="window_alpha_title">悬浮窗透明度</string>
     <string name="window_alpha_summary">悬浮窗透明度</string>
+
+    <string name="gesture_tap_title">单击拍摄</string>
+    <string name="gesture_tap_summary">视频模式下单击开始/结束拍摄视频，照片模式下单击拍摄照片</string>
+
+    <string name="gesture_double_tap_title">双击回到应用</string>
+    <string name="gesture_double_tap_summary">在任意窗口下双击回到应用</string>
+
+    <string name="gesture_long_press_title">长按关闭窗口</string>
+    <string name="gesture_long_press_summary">长按强制关闭窗口</string>
 
     <string name="path_title">存储路径</string>
     <string name="path_summary">%s</string>

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v14.preference.SwitchPreference
+import android.support.v7.preference.Preference
 import android.support.v7.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.ListPreference
@@ -51,8 +52,8 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 setDefaultValue(DEF_VALUE_WINDOW_X)
                 setTitle(R.string.window_x_title)
                 setSummary(R.string.window_x_summary)
-                min = -100
-                max = 200
+                min = -99
+                max = 199
             }
         }
 
@@ -65,8 +66,8 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 setDefaultValue(DEF_VALUE_WINDOW_Y)
                 setTitle(R.string.window_y_title)
                 setSummary(R.string.window_y_summary)
-                min = -100
-                max = 200
+                min = -99
+                max = 199
             }
         }
 
@@ -119,8 +120,29 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 setDefaultValue(DEF_WINDOW_ALPHA)
                 setTitle(R.string.window_alpha_title)
                 setSummary(R.string.window_alpha_summary)
-                min = 0
+                min = 1
                 max = 100
+            }
+        }
+
+        private val gestureTap by lazy {
+            Preference(context).apply {
+                setTitle(R.string.gesture_tap_title)
+                setSummary(R.string.gesture_tap_summary)
+            }
+        }
+
+        private val gestureDoubleTap by lazy {
+            Preference(context).apply {
+                setTitle(R.string.gesture_double_tap_title)
+                setSummary(R.string.gesture_double_tap_summary)
+            }
+        }
+
+        private val gestureLongPress by lazy {
+            Preference(context).apply {
+                setTitle(R.string.gesture_long_press_title)
+                setSummary(R.string.gesture_long_press_summary)
             }
         }
 
@@ -128,10 +150,13 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 windowSizePreference,
                 windowXPreference,
                 windowYPreference,
-                previewPreference,
+                windowAlpha,
+                gestureTap,
+                gestureDoubleTap,
+                gestureLongPress,
                 enableGestureMove,
                 enableGestureScale,
-                windowAlpha)
+                previewPreference)
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             when (key) {
@@ -158,16 +183,16 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         const val KEY_WINDOW_SIZE = "window_size"
         const val KEY_WINDOW_X = "window_x"
         const val KEY_WINDOW_Y = "window_y"
+        const val KEY_WINDOW_ALPHA = "window_alpha"
         const val KEY_PREVIEW = "preview"
         const val KEY_ENABLE_GESTURE_MOVE = "enable_gesture_move"
         const val KEY_ENABLE_GESTURE_SCALE = "enable_gesture_scale"
-        const val KEY_WINDOW_ALPHA = "window_alpha"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
         private const val DEF_VALUE_WINDOW_Y = 50
         private val DEF_VALUE_PREVIEW = Preview.CAPTURE.indexString
-        private const val DEF_ENABLE_GESTURE_MOVE = false
+        private const val DEF_ENABLE_GESTURE_MOVE = true
         private const val DEF_ENABLE_GESTURE_SCALE = false
         private const val DEF_WINDOW_ALPHA = 100
 
