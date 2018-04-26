@@ -12,4 +12,10 @@
     <string name="permission_deny">暂不开启</string>
 
     <string name="camera_exception">相机异常</string>
+
+    <string name="feedback_title">反馈</string>
+    <string name="feedback_summary">写下您的反馈和建议</string>
+    <string name="feedback_positive">发送</string>
+    <string name="feedback_negative">取消</string>
+    <string name="feedback_toast">谢谢支持！</string>
 </resources>
