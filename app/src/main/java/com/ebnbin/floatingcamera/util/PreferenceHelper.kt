@@ -10,7 +10,7 @@ import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
  */
 object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     init {
-        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sp.registerOnSharedPreferenceChangeListener(this)
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

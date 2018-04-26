@@ -20,10 +20,10 @@ import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.WindowSize
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.localBroadcastManager
+import com.ebnbin.floatingcamera.util.sp
 import com.ebnbin.floatingcamera.util.windowManager
 import kotlin.math.max
 import kotlin.math.min
@@ -72,7 +72,7 @@ class CameraLayout : FrameLayout,
 
         localBroadcastManager.registerReceiver(invalidateReceiver, IntentFilter(CameraView.ACTION_INVALIDATE))
 
-        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sp.registerOnSharedPreferenceChangeListener(this)
     }
 
     private val invalidateReceiver = object : BroadcastReceiver() {
@@ -82,7 +82,7 @@ class CameraLayout : FrameLayout,
     }
 
     override fun onDetachedFromWindow() {
-        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+        sp.unregisterOnSharedPreferenceChangeListener(this)
 
         localBroadcastManager.unregisterReceiver(invalidateReceiver)
 

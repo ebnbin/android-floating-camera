@@ -11,10 +11,10 @@ import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.Preview
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
+import com.ebnbin.floatingcamera.util.sp
 
 /**
  * 窗口偏好界面.
@@ -196,21 +196,21 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         private const val DEF_ENABLE_GESTURE_SCALE = false
         private const val DEF_WINDOW_ALPHA = 100
 
-        val preview get() = defaultSharedPreferences.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
-        val windowSize get() = defaultSharedPreferences.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
-        val windowX get() = defaultSharedPreferences.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
-        val windowY get() = defaultSharedPreferences.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
-        val enableGestureMove get() = defaultSharedPreferences.get(KEY_ENABLE_GESTURE_MOVE, DEF_ENABLE_GESTURE_MOVE)
-        val enableGestureScale get() = defaultSharedPreferences.get(KEY_ENABLE_GESTURE_SCALE, DEF_ENABLE_GESTURE_SCALE)
-        val windowAlpha get() = defaultSharedPreferences.get(KEY_WINDOW_ALPHA, DEF_WINDOW_ALPHA)
+        val preview get() = sp.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
+        val windowSize get() = sp.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
+        val windowX get() = sp.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
+        val windowY get() = sp.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
+        val enableGestureMove get() = sp.get(KEY_ENABLE_GESTURE_MOVE, DEF_ENABLE_GESTURE_MOVE)
+        val enableGestureScale get() = sp.get(KEY_ENABLE_GESTURE_SCALE, DEF_ENABLE_GESTURE_SCALE)
+        val windowAlpha get() = sp.get(KEY_WINDOW_ALPHA, DEF_WINDOW_ALPHA)
 
         fun putWindowSize(windowSize: Int) {
-            defaultSharedPreferences.put(KEY_WINDOW_SIZE, windowSize)
+            sp.put(KEY_WINDOW_SIZE, windowSize)
         }
 
         fun putWindowPosition(windowX: Int, windowY: Int) {
-            defaultSharedPreferences.put(KEY_WINDOW_X, windowX)
-            defaultSharedPreferences.put(KEY_WINDOW_Y, windowY)
+            sp.put(KEY_WINDOW_X, windowX)
+            sp.put(KEY_WINDOW_Y, windowY)
         }
     }
 }

@@ -15,10 +15,10 @@ import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.util.PreferenceHelper
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.localBroadcastManager
+import com.ebnbin.floatingcamera.util.sp
 import kotlinx.android.synthetic.main.home_fragment.cameraFab
 import kotlinx.android.synthetic.main.home_fragment.tabLayout
 import kotlinx.android.synthetic.main.home_fragment.viewPager
@@ -67,7 +67,7 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
 
         if (savedInstanceState != null) return
 
-        viewPager.currentItem = defaultSharedPreferences.get(KEY_PAGE, DEF_VALUE_PAGE)
+        viewPager.currentItem = sp.get(KEY_PAGE, DEF_VALUE_PAGE)
     }
 
     override fun onPermissionsResult(requestCode: Int, granted: Boolean) {
@@ -112,7 +112,7 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) = Unit
 
     override fun onPageSelected(position: Int) {
-        defaultSharedPreferences.put(KEY_PAGE, position)
+        sp.put(KEY_PAGE, position)
     }
 
     companion object {

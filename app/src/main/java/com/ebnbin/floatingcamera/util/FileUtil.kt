@@ -8,7 +8,7 @@ import java.io.File
  */
 object FileUtil {
     fun getPath(): File {
-        val path = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), packageName)
+        val path = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), app.packageName)
         if (!path.exists()) path.mkdirs()
         return path
     }

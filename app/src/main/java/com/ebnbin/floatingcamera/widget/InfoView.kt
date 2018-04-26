@@ -12,9 +12,9 @@ import android.util.AttributeSet
 import android.view.View
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.util.PreferenceHelper
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.dp
 import com.ebnbin.floatingcamera.util.localBroadcastManager
+import com.ebnbin.floatingcamera.util.sp
 
 class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0, defStyleRes: Int = 0) :
         View(context, attrs, defStyleAttr, defStyleRes), SharedPreferences.OnSharedPreferenceChangeListener {
@@ -30,11 +30,11 @@ class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int 
 
         localBroadcastManager.registerReceiver(broadcastReceiver, IntentFilter(CameraView.ACTION_VIDEO))
 
-        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sp.registerOnSharedPreferenceChangeListener(this)
     }
 
     override fun onDetachedFromWindow() {
-        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+        sp.unregisterOnSharedPreferenceChangeListener(this)
 
         localBroadcastManager.unregisterReceiver(broadcastReceiver)
 

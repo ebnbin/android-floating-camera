@@ -1,8 +1,11 @@
 package com.ebnbin.floatingcamera
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
@@ -12,8 +15,9 @@ import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
-import com.ebnbin.floatingcamera.util.taskDescription
+import com.ebnbin.floatingcamera.util.extension.dpInt
+import com.ebnbin.floatingcamera.util.res
+import com.ebnbin.floatingcamera.util.sp
 
 class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,7 +27,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         super.onCreate(savedInstanceState)
 
-        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sp.registerOnSharedPreferenceChangeListener(this)
 
         RotationHelper.register(this)
 
@@ -36,6 +40,24 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
 
         supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+    }
+
+    @Suppress("DEPRECATION")
+    private val taskDescription by lazy {
+        val label = res.getString(R.string.app_name)
+
+        val size = 48.dpInt
+        val icon = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(icon)
+        val drawable = res.getDrawable(R.drawable.logo)
+        val tintColor = res.getColor(R.color.dark_icon)
+        drawable.setTint(tintColor)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+
+        val colorPrimary = res.getColor(R.color.light_color_primary)
+
+        ActivityManager.TaskDescription(label, icon, colorPrimary)
     }
 
     private fun initTheme() {
@@ -65,7 +87,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     override fun onDestroy() {
         RotationHelper.unregister(this)
 
-        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+        sp.unregisterOnSharedPreferenceChangeListener(this)
 
         super.onDestroy()
     }

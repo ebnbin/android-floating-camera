@@ -30,10 +30,10 @@ import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.cameraManager
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.extension.fileFormatExtension
 import com.ebnbin.floatingcamera.util.localBroadcastManager
+import com.ebnbin.floatingcamera.util.sp
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -88,7 +88,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
         surfaceTextureListener = this
 
-        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        sp.registerOnSharedPreferenceChangeListener(this)
 
         RotationHelper.listeners.add(this)
 
@@ -100,7 +100,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
         RotationHelper.listeners.remove(this)
 
-        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+        sp.unregisterOnSharedPreferenceChangeListener(this)
 
         super.onDetachedFromWindow()
     }

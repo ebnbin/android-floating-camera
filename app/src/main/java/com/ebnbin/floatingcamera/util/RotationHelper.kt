@@ -27,7 +27,7 @@ object RotationHelper {
      */
     fun register(context: Context): OrientationEventListener {
         if (orientationEventListeners.isEmpty) {
-            val oldRotation = defaultSharedPreferences.get(KEY_ROTATION, DEF_VALUE_ROTATION)
+            val oldRotation = sp.get(KEY_ROTATION, DEF_VALUE_ROTATION)
             rotation = displayRotation()
             if (oldRotation != rotation) {
                 onRotationChanged(oldRotation, rotation)
@@ -91,7 +91,7 @@ object RotationHelper {
     private fun onRotationChanged(oldRotation: Int, newRotation: Int) {
         DebugHelper.log("rotation: $oldRotation -> $newRotation")
 
-        defaultSharedPreferences.put(KEY_ROTATION, newRotation)
+        sp.put(KEY_ROTATION, newRotation)
 
         listeners.forEach { it.onRotationChanged(oldRotation, newRotation) }
     }
@@ -105,7 +105,7 @@ object RotationHelper {
     const val KEY_ROTATION = "rotation"
     private const val DEF_VALUE_ROTATION = 0
 
-    fun getRotation() = defaultSharedPreferences.get(KEY_ROTATION, DEF_VALUE_ROTATION)
+    fun getRotation() = sp.get(KEY_ROTATION, DEF_VALUE_ROTATION)
 
     init {
         listeners.add(WindowPositionRotationListener)

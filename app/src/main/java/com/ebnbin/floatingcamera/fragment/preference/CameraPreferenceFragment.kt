@@ -10,9 +10,9 @@ import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.cameraHelper
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
+import com.ebnbin.floatingcamera.util.sp
 
 /**
  * 相机偏好界面.
@@ -287,15 +287,15 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         private const val DEF_VALUE_FRONT_VIDEO_PROFILE = "0"
         private const val DEF_VALUE_FRONT_PHOTO_RESOLUTION = "0"
 
-        val isFront get() = defaultSharedPreferences.get(KEY_IS_FRONT, DEF_VALUE_IS_FRONT)
-        val backIsPhoto get() = defaultSharedPreferences.get(KEY_BACK_IS_PHOTO, DEF_VALUE_BACK_IS_PHOTO)
-        val backVideoProfile get() = defaultSharedPreferences.get(KEY_BACK_VIDEO_PROFILE, DEF_VALUE_BACK_VIDEO_PROFILE)
-        val backPhotoResolution get() = defaultSharedPreferences.get(KEY_BACK_PHOTO_RESOLUTION,
+        val isFront get() = sp.get(KEY_IS_FRONT, DEF_VALUE_IS_FRONT)
+        val backIsPhoto get() = sp.get(KEY_BACK_IS_PHOTO, DEF_VALUE_BACK_IS_PHOTO)
+        val backVideoProfile get() = sp.get(KEY_BACK_VIDEO_PROFILE, DEF_VALUE_BACK_VIDEO_PROFILE)
+        val backPhotoResolution get() = sp.get(KEY_BACK_PHOTO_RESOLUTION,
                 DEF_VALUE_BACK_PHOTO_RESOLUTION)
-        val frontIsPhoto get() = defaultSharedPreferences.get(KEY_FRONT_IS_PHOTO, DEF_VALUE_FRONT_IS_PHOTO)
-        val frontVideoProfile get() = defaultSharedPreferences.get(KEY_FRONT_VIDEO_PROFILE,
+        val frontIsPhoto get() = sp.get(KEY_FRONT_IS_PHOTO, DEF_VALUE_FRONT_IS_PHOTO)
+        val frontVideoProfile get() = sp.get(KEY_FRONT_VIDEO_PROFILE,
                 DEF_VALUE_FRONT_VIDEO_PROFILE)
-        val frontPhotoResolution get() = defaultSharedPreferences.get(KEY_FRONT_PHOTO_RESOLUTION,
+        val frontPhotoResolution get() = sp.get(KEY_FRONT_PHOTO_RESOLUTION,
                 DEF_VALUE_FRONT_PHOTO_RESOLUTION)
     }
 }

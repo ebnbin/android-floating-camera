@@ -9,9 +9,9 @@ import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.FileUtil
-import com.ebnbin.floatingcamera.util.defaultSharedPreferences
 import com.ebnbin.floatingcamera.util.extension.get
-import com.ebnbin.floatingcamera.util.resources
+import com.ebnbin.floatingcamera.util.res
+import com.ebnbin.floatingcamera.util.sp
 
 /**
  * 其他偏好界面.
@@ -30,7 +30,7 @@ class OtherPreferenceFragment : PreferenceFragment<OtherPreferenceFragment.Other
         private val pathPreference by lazy {
             Preference(context).apply {
                 setTitle(R.string.path_title)
-                summary = resources.getString(R.string.path_summary, FileUtil.getPath())
+                summary = res.getString(R.string.path_summary, FileUtil.getPath())
             }
         }
 
@@ -50,7 +50,7 @@ class OtherPreferenceFragment : PreferenceFragment<OtherPreferenceFragment.Other
         private val aboutPreference by lazy {
             Preference(context).apply {
                 setTitle(R.string.about_title)
-                summary = resources.getString(R.string.about_summary, BuildConfig.VERSION_NAME)
+                summary = res.getString(R.string.about_summary, BuildConfig.VERSION_NAME)
             }
         }
 
@@ -65,6 +65,6 @@ class OtherPreferenceFragment : PreferenceFragment<OtherPreferenceFragment.Other
 
         private const val DEF_VALUE_IS_DARK_THEME = false
 
-        val isDarkTheme get() = defaultSharedPreferences.get(KEY_IS_DARK_THEME, DEF_VALUE_IS_DARK_THEME)
+        val isDarkTheme get() = sp.get(KEY_IS_DARK_THEME, DEF_VALUE_IS_DARK_THEME)
     }
 }

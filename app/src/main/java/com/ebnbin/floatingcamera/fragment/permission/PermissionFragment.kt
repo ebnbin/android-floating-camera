@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -21,7 +22,7 @@ import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment.Callback
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment.Companion.request
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
-import com.ebnbin.floatingcamera.util.packageUri
+import com.ebnbin.floatingcamera.util.app
 
 /**
  * 权限界面.
@@ -141,14 +142,16 @@ class PermissionFragment : Fragment() {
     private fun onRequestPermissions(permission: Permission) {
         when (permission) {
             Permission.SYSTEM_ALERT_WINDOW -> {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).setData(packageUri)
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                        .setData(Uri.parse("package:${app.packageName}"))
                 startActivityForResult(intent, REQUEST_CODE_SYSTEM_ALERT_WINDOW)
             }
             PermissionFragment.Permission.RUNTIME_PERMISSIONS -> {
                 requestPermissions(runtimePermissions, REQUEST_CODE_RUNTIME_PERMISSIONS)
             }
             PermissionFragment.Permission.RUNTIME_PERMISSIONS_DENIED_FOREVER -> {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(packageUri)
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.parse("package:${app.packageName}"))
                 startActivityForResult(intent, REQUEST_CODE_RUNTIME_PERMISSIONS_DENIED_FOREVER)
             }
         }

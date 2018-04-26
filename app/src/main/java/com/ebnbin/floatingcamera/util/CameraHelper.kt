@@ -380,16 +380,16 @@ class CameraHelper private constructor() {
                         ?: ""
                 val qualitySummary = if (qualityString.isEmpty())
                     "" else
-                    resources.getString(R.string.video_resolution_summary_quality, qualityString)
+                    res.getString(R.string.video_resolution_summary_quality, qualityString)
 
-                videoSummary = resources.getString(R.string.video_resolution_summary, this.width, this.height,
+                videoSummary = res.getString(R.string.video_resolution_summary, this.width, this.height,
                         ratioWidth, ratioHeight, megapixels, qualitySummary)!!
             }
 
             /**
              * 照片摘要.
              */
-            val photoSummary = resources.getString(R.string.photo_resolution_summary, this.width, this.height,
+            val photoSummary = res.getString(R.string.photo_resolution_summary, this.width, this.height,
                     ratioWidth, ratioHeight, megapixels)!!
 
             /**
