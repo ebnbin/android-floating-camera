@@ -413,6 +413,13 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
     }
 
     private fun setUpMediaRecorder(mediaRecorder: MediaRecorder) {
+        // TODO: #14
+        try {
+            mediaRecorder.stop()
+        } catch (e: Exception) {}
+        try {
+            mediaRecorder.reset()
+        } catch (e: Exception) {}
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
         mediaRecorder.setOrientationHint(device.getOrientation())
