@@ -23,6 +23,7 @@ import android.util.Log
 import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
+import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.FileUtil
@@ -463,8 +464,16 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
         isRecording = false
 
-        mediaRecorder?.stop()
-        mediaRecorder?.reset()
+        try {
+            mediaRecorder?.stop()
+        } catch (e: Exception) {
+            Crashlytics.logException(e)
+        }
+        try {
+            mediaRecorder?.reset()
+        } catch (e: Exception) {
+            Crashlytics.logException(e)
+        }
 
         toastFile()
 
