@@ -21,8 +21,8 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
      * 摄像头.
      */
     fun device() = if (CameraPreferenceFragment.isFront)
-        cameraHelper.frontDevice else
-        cameraHelper.backDevice
+        CameraHelper.frontDevice else
+        CameraHelper.backDevice
 
     /**
      * 是否为照片 (or 视频).
@@ -37,7 +37,7 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     fun resolution() =
         if (CameraPreferenceFragment.isFront) {
             // 前置摄像头.
-            val device = cameraHelper.frontDevice
+            val device = CameraHelper.frontDevice
             if (CameraPreferenceFragment.frontIsPhoto) {
                 // 前置摄像头照片.
                 device.photoResolutions[CameraPreferenceFragment.frontPhotoResolution.toInt()]
@@ -52,7 +52,7 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
             }
         } else {
             // 后置摄像头.
-            val device = cameraHelper.backDevice
+            val device = CameraHelper.backDevice
             if (CameraPreferenceFragment.backIsPhoto) {
                 // 后置摄像头照片.
                 device.photoResolutions[CameraPreferenceFragment.backPhotoResolution.toInt()]
@@ -73,13 +73,13 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     fun videoProfile(): CameraHelper.Device.VideoProfile {
         return if (CameraPreferenceFragment.isFront && !CameraPreferenceFragment.frontIsPhoto) {
             val frontVideoProfileInt = CameraPreferenceFragment.frontVideoProfile.toInt()
-            val videoProfiles = cameraHelper.frontDevice.videoProfiles
+            val videoProfiles = CameraHelper.frontDevice.videoProfiles
             if (frontVideoProfileInt in 0 until videoProfiles.size) {
                 videoProfiles[frontVideoProfileInt]
             } else throw BaseRuntimeException()
         } else if (!CameraPreferenceFragment.backIsPhoto) {
             val backVideoProfileInt = CameraPreferenceFragment.backVideoProfile.toInt()
-            val videoProfiles = cameraHelper.backDevice.videoProfiles
+            val videoProfiles = CameraHelper.backDevice.videoProfiles
             if (backVideoProfileInt in 0 until videoProfiles.size) {
                 videoProfiles[backVideoProfileInt]
             } else throw BaseRuntimeException()

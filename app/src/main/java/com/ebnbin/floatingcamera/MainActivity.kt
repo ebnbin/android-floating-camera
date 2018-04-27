@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
+import com.ebnbin.floatingcamera.util.CameraException
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
@@ -33,7 +34,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         if (savedInstanceState != null) return
 
-        if (!CameraHelper.detect()) {
+        try {
+            CameraHelper
+        } catch (e: CameraException) {
             Toast.makeText(this, R.string.camera_exception, Toast.LENGTH_SHORT).show()
             finish()
             return

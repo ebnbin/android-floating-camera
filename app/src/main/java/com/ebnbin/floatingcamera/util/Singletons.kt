@@ -25,5 +25,3 @@ val sp: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreference
 
 val cameraManager by lazy { app.getSystemService(Context.CAMERA_SERVICE) as CameraManager }
 val windowManager by lazy { app.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
-
-val cameraHelper get() = CameraHelper.instance

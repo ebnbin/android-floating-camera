@@ -9,7 +9,7 @@ import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
-import com.ebnbin.floatingcamera.util.cameraHelper
+import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 import com.ebnbin.floatingcamera.util.sp
@@ -58,7 +58,7 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
             SwitchPreference(context).apply {
                 key = KEY_IS_FRONT
                 setDefaultValue(DEF_VALUE_IS_FRONT)
-                isEnabled = cameraHelper.hasBothDevices
+                isEnabled = CameraHelper.hasBothDevices
                 setTitle(R.string.is_front_title)
                 setSummaryOff(R.string.is_front_summary_off)
                 setSummaryOn(R.string.is_front_summary_on)
@@ -69,7 +69,7 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
          * 后置摄像头组.
          */
         private val backPreferenceGroup by lazy {
-            if (!cameraHelper.hasBackDevice) return@lazy null
+            if (!CameraHelper.hasBackDevice) return@lazy null
 
             PreferenceGroup(context).apply {
                 initPreferences(
@@ -122,8 +122,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 key = KEY_BACK_VIDEO_PROFILE
                 setDefaultValue(DEF_VALUE_BACK_VIDEO_PROFILE)
                 setTitle(R.string.back_video_profile_title)
-                setEntriesAndEntryValues(cameraHelper.backDevice.videoProfileSummaries)
-                summaries = cameraHelper.backDevice.videoProfileSummaries
+                setEntriesAndEntryValues(CameraHelper.backDevice.videoProfileSummaries)
+                summaries = CameraHelper.backDevice.videoProfileSummaries
                 setDialogTitle(R.string.back_video_profile_title)
             }
         }
@@ -147,8 +147,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 key = KEY_BACK_PHOTO_RESOLUTION
                 setDefaultValue(DEF_VALUE_BACK_PHOTO_RESOLUTION)
                 setTitle(R.string.back_photo_resolution_title)
-                setEntriesAndEntryValues(cameraHelper.backDevice.photoResolutionSummaries)
-                summaries = cameraHelper.backDevice.photoResolutionSummaries
+                setEntriesAndEntryValues(CameraHelper.backDevice.photoResolutionSummaries)
+                summaries = CameraHelper.backDevice.photoResolutionSummaries
                 setDialogTitle(R.string.back_photo_resolution_title)
             }
         }
@@ -157,7 +157,7 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
          * 前置摄像头组.
          */
         private val frontPreferenceGroup by lazy {
-            if (!cameraHelper.hasFrontDevice) return@lazy null
+            if (!CameraHelper.hasFrontDevice) return@lazy null
 
             PreferenceGroup(context).apply {
                 initPreferences(
@@ -210,8 +210,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 key = KEY_FRONT_VIDEO_PROFILE
                 setDefaultValue(DEF_VALUE_FRONT_VIDEO_PROFILE)
                 setTitle(R.string.front_video_profile_title)
-                setEntriesAndEntryValues(cameraHelper.frontDevice.videoProfileSummaries)
-                summaries = cameraHelper.frontDevice.videoProfileSummaries
+                setEntriesAndEntryValues(CameraHelper.frontDevice.videoProfileSummaries)
+                summaries = CameraHelper.frontDevice.videoProfileSummaries
                 setDialogTitle(R.string.front_video_profile_title)
             }
         }
@@ -235,8 +235,8 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 key = KEY_FRONT_PHOTO_RESOLUTION
                 setDefaultValue(DEF_VALUE_FRONT_PHOTO_RESOLUTION)
                 setTitle(R.string.front_photo_resolution_title)
-                setEntriesAndEntryValues(cameraHelper.frontDevice.photoResolutionSummaries)
-                summaries = cameraHelper.frontDevice.photoResolutionSummaries
+                setEntriesAndEntryValues(CameraHelper.frontDevice.photoResolutionSummaries)
+                summaries = CameraHelper.frontDevice.photoResolutionSummaries
                 setDialogTitle(R.string.front_photo_resolution_title)
             }
         }
@@ -278,7 +278,7 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
 
         // TODO: 暂时不允许只有单个摄像头的设备.
-//        private val DEF_VALUE_IS_FRONT get() = !cameraHelper.hasBothDevices && cameraHelper.hasFrontDevice
+//        private val DEF_VALUE_IS_FRONT get() = !CameraHelper.hasBothDevices && CameraHelper.hasFrontDevice
         private const val DEF_VALUE_IS_FRONT = false
         private const val DEF_VALUE_BACK_IS_PHOTO = false
         private const val DEF_VALUE_BACK_VIDEO_PROFILE = "0"
