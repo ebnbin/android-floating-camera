@@ -24,7 +24,10 @@ import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
 import com.crashlytics.android.Crashlytics
+import com.ebnbin.floatingcamera.CameraService
+import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.PermissionHelper
@@ -119,6 +122,11 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
     //*****************************************************************************************************************
 
     fun finish() {
+    }
+
+    private fun error(message: String) {
+        CameraService.stop()
+        Crashlytics.logException(BaseRuntimeException("CameraView finish $message"))
     }
 
     //*****************************************************************************************************************
@@ -242,7 +250,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         if (!isAttachedToWindow) return
 
         if (PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
-            finish()
+            error("permission denied")
             return
         }
 
@@ -282,7 +290,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
                     cameraOpenCloseLock.release()
                     camera?.close()
                     cameraDevice = null
-                    finish()
+                    error("open camera on disconnected")
                 }
 
                 override fun onError(camera: CameraDevice?, error: Int) {
@@ -294,7 +302,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         } catch (e: CameraAccessException) {
             Log.e("ebnbin", "Cannot access the camera.", e)
 
-            finish()
+            error("open camera access exception")
         } catch (e: InterruptedException) {
             throw RuntimeException("Interrupted while trying to lock camera opening.", e)
         }
@@ -447,8 +455,15 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
             override fun onConfigured(session: CameraCaptureSession?) {
                 if (cameraDevice == null || !isAvailable || session == null || mediaRecorder == null) return
 
-                val request = buildVideoRecordCaptureRequest(cameraDevice!!, mediaRecorder!!)
-                session.setRepeatingRequest(request, null, backgroundHandler)
+                try {
+                    val request = buildVideoRecordCaptureRequest(cameraDevice!!, mediaRecorder!!)
+                    session.setRepeatingRequest(request, null, backgroundHandler)
+                } catch (e: CameraAccessException) {
+                    Crashlytics.logException(e)
+                    Toast.makeText(context, R.string.camera_exception, Toast.LENGTH_SHORT).show()
+                    error("start record set repeating request")
+                    return
+                }
 
                 post {
                     isRecording = true
