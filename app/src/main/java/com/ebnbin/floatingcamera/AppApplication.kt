@@ -2,6 +2,7 @@ package com.ebnbin.floatingcamera
 
 import android.app.Application
 import com.crashlytics.android.Crashlytics
+import com.crashlytics.android.core.CrashlyticsCore
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.extension.put
@@ -17,7 +18,9 @@ class AppApplication : Application() {
 
         singleton = this
 
-        Fabric.with(this, Crashlytics())
+        Fabric.with(this, Crashlytics.Builder()
+                .core(CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
+                .build())
 
         sp.put(KEY_VERSION_CODE, BuildConfig.VERSION_CODE)
 
