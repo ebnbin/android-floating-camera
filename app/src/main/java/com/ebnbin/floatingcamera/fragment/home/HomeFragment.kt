@@ -1,10 +1,8 @@
 package com.ebnbin.floatingcamera.fragment.home
 
 import android.Manifest
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.view.ViewPager
@@ -14,10 +12,10 @@ import android.view.ViewGroup
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
+import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
-import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.sp
 import kotlinx.android.synthetic.main.home_fragment.cameraFab
 import kotlinx.android.synthetic.main.home_fragment.tabLayout
@@ -26,18 +24,21 @@ import kotlinx.android.synthetic.main.home_fragment.viewPager
 /**
  * 首页.
  */
-class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragment.Callback {
-    private val cameraServiceIsRunningReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            invalidateCameraServiceIsRunning()
+class HomeFragment :
+        Fragment(),
+        ViewPager.OnPageChangeListener,
+        PermissionFragment.Callback,
+        LocalBroadcastHelper.Receiver {
+    override fun onReceive(context: Context, intent: Intent, action: String) {
+        when (action) {
+            CameraService.ACTION_CAMERA_SERVICE_IS_RUNNING -> invalidateCameraServiceIsRunning()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        localBroadcastManager.registerReceiver(cameraServiceIsRunningReceiver,
-                IntentFilter(CameraService.ACTION_CAMERA_SERVICE_IS_RUNNING))
+        LocalBroadcastHelper.register(this, CameraService.ACTION_CAMERA_SERVICE_IS_RUNNING)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -102,7 +103,7 @@ class HomeFragment : Fragment(), ViewPager.OnPageChangeListener, PermissionFragm
     }
 
     override fun onDestroy() {
-        localBroadcastManager.unregisterReceiver(cameraServiceIsRunningReceiver)
+        LocalBroadcastHelper.unregister(this)
 
         super.onDestroy()
     }

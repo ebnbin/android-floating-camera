@@ -1,9 +1,7 @@
 package com.ebnbin.floatingcamera.widget
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
@@ -11,13 +9,15 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.extension.dp
-import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.sp
 
 class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0, defStyleRes: Int = 0) :
-        View(context, attrs, defStyleAttr, defStyleRes), SharedPreferences.OnSharedPreferenceChangeListener {
+        View(context, attrs, defStyleAttr, defStyleRes),
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        LocalBroadcastHelper.Receiver {
     private val paint = Paint().apply {
         style = Paint.Style.STROKE
         strokeWidth = 1.dp
@@ -28,27 +28,27 @@ class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        localBroadcastManager.registerReceiver(broadcastReceiver, IntentFilter(CameraView.ACTION_VIDEO))
+        LocalBroadcastHelper.register(this, CameraView.ACTION_VIDEO)
 
         sp.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    override fun onReceive(context: Context, intent: Intent, action: String) {
+        when (action) {
+            CameraView.ACTION_VIDEO -> {
+                val isRecording = intent.getBooleanExtra(CameraView.EXTRA_IS_RECORDING, false)
+                paint.color = if (isRecording) Color.RED else Color.GREEN
+                invalidate()
+            }
+        }
     }
 
     override fun onDetachedFromWindow() {
         sp.unregisterOnSharedPreferenceChangeListener(this)
 
-        localBroadcastManager.unregisterReceiver(broadcastReceiver)
+        LocalBroadcastHelper.unregister(this)
 
         super.onDetachedFromWindow()
-    }
-
-    private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            intent ?: return
-
-            val isRecording = intent.getBooleanExtra(CameraView.EXTRA_IS_RECORDING, false)
-            paint.color = if (isRecording) Color.RED else Color.GREEN
-            invalidate()
-        }
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

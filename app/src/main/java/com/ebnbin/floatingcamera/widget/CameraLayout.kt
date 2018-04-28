@@ -1,9 +1,7 @@
 package com.ebnbin.floatingcamera.widget
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.support.v4.view.GestureDetectorCompat
 import android.util.AttributeSet
@@ -17,12 +15,12 @@ import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.DebugHelper
+import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.WindowSize
 import com.ebnbin.floatingcamera.util.displayRealSize
 import com.ebnbin.floatingcamera.util.displayRotation
-import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.sp
 import com.ebnbin.floatingcamera.util.windowManager
 import kotlin.math.max
@@ -32,7 +30,8 @@ class CameraLayout : FrameLayout,
         SharedPreferences.OnSharedPreferenceChangeListener,
         GestureDetector.OnGestureListener,
         GestureDetector.OnDoubleTapListener,
-        ScaleGestureDetector.OnScaleGestureListener {
+        ScaleGestureDetector.OnScaleGestureListener,
+        LocalBroadcastHelper.Receiver {
     constructor(context: Context?) : super(context) {
         init()
     }
@@ -70,21 +69,21 @@ class CameraLayout : FrameLayout,
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        localBroadcastManager.registerReceiver(invalidateReceiver, IntentFilter(CameraView.ACTION_INVALIDATE))
+        LocalBroadcastHelper.register(this, CameraView.ACTION_INVALIDATE)
 
         sp.registerOnSharedPreferenceChangeListener(this)
     }
 
-    private val invalidateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            invalidateWindowSizeAndPosition()
+    override fun onReceive(context: Context, intent: Intent, action: String) {
+        when (action) {
+            CameraView.ACTION_INVALIDATE -> invalidateWindowSizeAndPosition()
         }
     }
 
     override fun onDetachedFromWindow() {
         sp.unregisterOnSharedPreferenceChangeListener(this)
 
-        localBroadcastManager.unregisterReceiver(invalidateReceiver)
+        LocalBroadcastHelper.unregister(this)
 
         super.onDetachedFromWindow()
     }

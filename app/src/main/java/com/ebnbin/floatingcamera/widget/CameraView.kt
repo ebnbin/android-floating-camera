@@ -30,13 +30,13 @@ import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.FileUtil
+import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.cameraManager
 import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.extension.fileFormatExtension
-import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.sp
 import java.io.File
 import java.io.FileOutputStream
@@ -634,13 +634,11 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
     //*****************************************************************************************************************
 
     private fun sendInvalidateBroadcast() {
-        val intent = Intent(ACTION_INVALIDATE)
-        localBroadcastManager.sendBroadcastSync(intent)
+        LocalBroadcastHelper.send(ACTION_INVALIDATE)
     }
 
     private fun sendVideoBroadcast(isRecording: Boolean) {
-        val intent = Intent(ACTION_VIDEO).putExtra(EXTRA_IS_RECORDING, isRecording)
-        localBroadcastManager.sendBroadcastSync(intent)
+        LocalBroadcastHelper.send(ACTION_VIDEO, Intent().putExtra(EXTRA_IS_RECORDING, isRecording))
     }
 
     companion object {

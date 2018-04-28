@@ -2,7 +2,6 @@ package com.ebnbin.floatingcamera.util
 
 import android.graphics.Point
 import android.os.Build
-import android.support.v4.content.LocalBroadcastManager
 import android.view.Surface
 import android.view.WindowManager
 
@@ -50,7 +49,3 @@ fun getNavigationBarXOffset(rotation: Int = displayRotation()): Int {
     val widthDiff = displayRealSize.width(rotation) - displaySize.width(rotation)
     return if (rotation == 3 && widthDiff > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) -widthDiff else 0
 }
-
-//*********************************************************************************************************************
-
-val localBroadcastManager by lazy { LocalBroadcastManager.getInstance(app) }

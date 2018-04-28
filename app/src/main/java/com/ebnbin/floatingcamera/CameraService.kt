@@ -1,42 +1,39 @@
 package com.ebnbin.floatingcamera
 
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Gravity
 import android.view.WindowManager
+import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
 import com.ebnbin.floatingcamera.util.displayRotation
-import com.ebnbin.floatingcamera.util.localBroadcastManager
 import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.CameraLayout
 
 /**
  * 相机服务.
  */
-class CameraService : Service() {
+class CameraService : Service(), LocalBroadcastHelper.Receiver {
     private lateinit var cameraLayout: CameraLayout
 
-    private val postStopReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            cameraLayout.finish()
+    override fun onReceive(context: Context, intent: Intent, action: String) {
+        when (action) {
+            ACTION_POST_STOP -> cameraLayout.finish()
         }
     }
 
     override fun onCreate() {
         super.onCreate()
 
-        localBroadcastManager.registerReceiver(postStopReceiver, IntentFilter(ACTION_POST_STOP))
+        LocalBroadcastHelper.register(this, ACTION_POST_STOP)
 
         isRunning = true
-        localBroadcastManager.sendBroadcast(Intent(ACTION_CAMERA_SERVICE_IS_RUNNING)
-                .putExtra(KEY_IS_RUNNING, isRunning))
+        LocalBroadcastHelper.send(ACTION_CAMERA_SERVICE_IS_RUNNING, Intent().putExtra(KEY_IS_RUNNING, isRunning))
 
         RotationHelper.registerAndEnable(this)
 
@@ -71,10 +68,9 @@ class CameraService : Service() {
         RotationHelper.unregister(this)
 
         isRunning = false
-        localBroadcastManager.sendBroadcast(Intent(ACTION_CAMERA_SERVICE_IS_RUNNING)
-                .putExtra(KEY_IS_RUNNING, isRunning))
+        LocalBroadcastHelper.send(ACTION_CAMERA_SERVICE_IS_RUNNING, Intent().putExtra(KEY_IS_RUNNING, isRunning))
 
-        localBroadcastManager.unregisterReceiver(postStopReceiver)
+        LocalBroadcastHelper.unregister(this)
 
         super.onDestroy()
     }
@@ -98,7 +94,7 @@ class CameraService : Service() {
         }
 
         fun postStop() {
-            localBroadcastManager.sendBroadcast(Intent(ACTION_POST_STOP))
+            LocalBroadcastHelper.send(ACTION_POST_STOP)
         }
     }
 }
