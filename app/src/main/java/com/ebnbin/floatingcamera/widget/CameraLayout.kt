@@ -13,6 +13,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.MainActivity
+import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.DebugHelper
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
@@ -96,7 +97,7 @@ class CameraLayout : FrameLayout,
             WindowPreferenceFragment.KEY_WINDOW_SIZE -> invalidateWindowSizeAndPosition()
             WindowPreferenceFragment.KEY_WINDOW_X -> invalidateWindowSizeAndPosition(true)
             WindowPreferenceFragment.KEY_WINDOW_Y -> invalidateWindowSizeAndPosition(true)
-            WindowPreferenceFragment.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
+            CameraPreferenceFragment.KEY_PREVIEW -> invalidateWindowSizeAndPosition()
             WindowPreferenceFragment.KEY_ENABLE_GESTURE_MOVE ->
                 enableGestureMove = WindowPreferenceFragment.enableGestureMove
             WindowPreferenceFragment.KEY_ENABLE_GESTURE_SCALE ->

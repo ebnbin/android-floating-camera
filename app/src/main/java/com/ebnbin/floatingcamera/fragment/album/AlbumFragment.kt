@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import com.bumptech.glide.Glide
+import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.displaySize
@@ -89,19 +90,23 @@ class AlbumFragment : Fragment() {
                     .into(holder.imageView)
 
             holder.imageView.setOnClickListener {
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.addCategory(Intent.CATEGORY_DEFAULT)
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                val uri = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) Uri.fromFile(file) else
-                    FileProvider.getUriForFile(context, "com.ebnbin.floatingcamera.fileprovider", file)
-                val type = when {
-                    name.endsWith(".mp4") -> "video/*"
-                    name.endsWith(".jpg") -> "image/*"
-                    else -> "*/*"
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.addCategory(Intent.CATEGORY_DEFAULT)
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val uri = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) Uri.fromFile(file) else
+                        FileProvider.getUriForFile(context, "com.ebnbin.floatingcamera.fileprovider", file)
+                    val type = when {
+                        name.endsWith(".mp4") -> "video/*"
+                        name.endsWith(".jpg") -> "image/*"
+                        else -> "*/*"
+                    }
+                    intent.setDataAndType(uri, type)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Crashlytics.logException(e)
                 }
-                intent.setDataAndType(uri, type)
-                startActivity(intent)
             }
         }
 

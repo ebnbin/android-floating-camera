@@ -95,7 +95,7 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
         var landscapeWidth = displayRealSize.landscapeWidth * windowSizeValue / 100f
         var landscapeHeight = displayRealSize.landscapeHeight * windowSizeValue / 100f
 
-        when (Preview.values()[WindowPreferenceFragment.preview.toInt()]) {
+        when (Preview.values()[CameraPreferenceFragment.preview.toInt()]) {
             Preview.CAPTURE -> {
                 val resolution = resolution()
                 if (landscapeWidth < landscapeHeight * resolution.landscapeWidth / resolution.landscapeHeight) {

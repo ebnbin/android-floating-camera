@@ -10,6 +10,7 @@ import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.CameraHelper
+import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 import com.ebnbin.floatingcamera.util.sp
@@ -241,8 +242,23 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
             }
         }
 
+        /**
+         * 预览.
+         */
+        private val previewPreference by lazy {
+            ListPreference(context).apply {
+                key = KEY_PREVIEW
+                setDefaultValue(DEF_VALUE_PREVIEW)
+                setTitle(R.string.preview_title)
+                setEntriesAndEntryValues(Preview.entries)
+                summaries = Preview.entries
+                setDialogTitle(R.string.preview_title)
+            }
+        }
+
         override fun onCreatePreferences(savedInstanceState: Bundle?) = arrayOf(
-                devicePreferenceGroup)
+                devicePreferenceGroup,
+                previewPreference)
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             when (key) {
@@ -276,6 +292,7 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         const val KEY_FRONT_IS_PHOTO = "front_is_photo"
         const val KEY_FRONT_VIDEO_PROFILE = "front_video_profile"
         const val KEY_FRONT_PHOTO_RESOLUTION = "front_photo_resolution"
+        const val KEY_PREVIEW = "preview"
 
         // TODO: 暂时不允许只有单个摄像头的设备.
 //        private val DEF_VALUE_IS_FRONT get() = !CameraHelper.hasBothDevices && CameraHelper.hasFrontDevice
@@ -286,6 +303,7 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
         private const val DEF_VALUE_FRONT_IS_PHOTO = false
         private const val DEF_VALUE_FRONT_VIDEO_PROFILE = "0"
         private const val DEF_VALUE_FRONT_PHOTO_RESOLUTION = "0"
+        private val DEF_VALUE_PREVIEW = Preview.CAPTURE.indexString
 
         val isFront get() = sp.get(KEY_IS_FRONT, DEF_VALUE_IS_FRONT)
         val backIsPhoto get() = sp.get(KEY_BACK_IS_PHOTO, DEF_VALUE_BACK_IS_PHOTO)
@@ -297,5 +315,6 @@ class CameraPreferenceFragment : PreferenceFragment<CameraPreferenceFragment.Cam
                 DEF_VALUE_FRONT_VIDEO_PROFILE)
         val frontPhotoResolution get() = sp.get(KEY_FRONT_PHOTO_RESOLUTION,
                 DEF_VALUE_FRONT_PHOTO_RESOLUTION)
+        val preview get() = sp.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
     }
 }

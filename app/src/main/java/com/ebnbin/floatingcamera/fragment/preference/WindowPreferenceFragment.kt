@@ -7,13 +7,10 @@ import android.support.v14.preference.SwitchPreference
 import android.support.v7.preference.Preference
 import android.support.v7.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.preference.ListPreference
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
-import com.ebnbin.floatingcamera.util.Preview
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
-import com.ebnbin.floatingcamera.util.extension.setEntriesAndEntryValues
 import com.ebnbin.floatingcamera.util.sp
 
 /**
@@ -68,20 +65,6 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 setSummary(R.string.window_y_summary)
                 min = -99
                 max = 199
-            }
-        }
-
-        /**
-         * 预览.
-         */
-        private val previewPreference by lazy {
-            ListPreference(context).apply {
-                key = KEY_PREVIEW
-                setDefaultValue(DEF_VALUE_PREVIEW)
-                setTitle(R.string.preview_title)
-                setEntriesAndEntryValues(Preview.entries)
-                summaries = Preview.entries
-                setDialogTitle(R.string.preview_title)
             }
         }
 
@@ -155,8 +138,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 gestureDoubleTap,
                 gestureLongPress,
                 enableGestureMove,
-                enableGestureScale,
-                previewPreference)
+                enableGestureScale)
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             when (key) {
@@ -184,19 +166,16 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         const val KEY_WINDOW_X = "window_x"
         const val KEY_WINDOW_Y = "window_y"
         const val KEY_WINDOW_ALPHA = "window_alpha"
-        const val KEY_PREVIEW = "preview"
         const val KEY_ENABLE_GESTURE_MOVE = "enable_gesture_move"
         const val KEY_ENABLE_GESTURE_SCALE = "enable_gesture_scale"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
         private const val DEF_VALUE_WINDOW_Y = 50
-        private val DEF_VALUE_PREVIEW = Preview.CAPTURE.indexString
         private const val DEF_ENABLE_GESTURE_MOVE = true
         private const val DEF_ENABLE_GESTURE_SCALE = false
         private const val DEF_WINDOW_ALPHA = 100
 
-        val preview get() = sp.get(KEY_PREVIEW, DEF_VALUE_PREVIEW)
         val windowSize get() = sp.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
         val windowX get() = sp.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
         val windowY get() = sp.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
