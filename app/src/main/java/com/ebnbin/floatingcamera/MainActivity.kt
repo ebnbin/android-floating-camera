@@ -1,5 +1,6 @@
 package com.ebnbin.floatingcamera
 
+import android.Manifest
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
+import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.util.CameraException
 import com.ebnbin.floatingcamera.util.CameraHelper
@@ -20,7 +22,10 @@ import com.ebnbin.floatingcamera.util.extension.dpInt
 import com.ebnbin.floatingcamera.util.res
 import com.ebnbin.floatingcamera.util.sp
 
-class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
+class MainActivity :
+        AppCompatActivity(),
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        PermissionFragment.Callback {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTaskDescription(taskDescription)
 
@@ -42,7 +47,20 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             return
         }
 
-        supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+        PermissionFragment.request(supportFragmentManager, REQUEST_CODE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+
+    override fun onPermissionsResult(requestCode: Int, granted: Boolean) {
+        when (requestCode) {
+            REQUEST_CODE_EXTERNAL_STORAGE -> {
+                if (granted) {
+                    supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+                } else {
+                    finish()
+                }
+            }
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -96,6 +114,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     companion object {
+        private const val REQUEST_CODE_EXTERNAL_STORAGE = 0x1
+
         fun start(context: Context = app) {
             context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
