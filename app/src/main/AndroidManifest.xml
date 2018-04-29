@@ -36,6 +36,16 @@
         <service
             android:name=".CameraService"/>
 
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.ebnbin.floatingcamera.fileprovider"
+            android:grantUriPermissions="true"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths"/>
+        </provider>
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="2bd37b451d5c4c0f5a28eb7df22a0011259df148"/>
