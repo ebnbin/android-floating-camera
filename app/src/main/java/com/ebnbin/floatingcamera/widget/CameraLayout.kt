@@ -102,6 +102,8 @@ class CameraLayout : FrameLayout,
                 enableGestureMove = WindowPreferenceFragment.enableGestureMove
             WindowPreferenceFragment.KEY_ENABLE_GESTURE_SCALE ->
                 enableGestureScale = WindowPreferenceFragment.enableGestureScale
+            WindowPreferenceFragment.KEY_ENABLE_GESTURE_TAP ->
+                enableGestureTap = WindowPreferenceFragment.enableGestureTap
             WindowPreferenceFragment.KEY_WINDOW_ALPHA -> invalidateWindowAlpha()
             RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
         }
@@ -139,6 +141,7 @@ class CameraLayout : FrameLayout,
 
     private var enableGestureMove = WindowPreferenceFragment.enableGestureMove
     private var enableGestureScale = WindowPreferenceFragment.enableGestureScale
+    private var enableGestureTap = WindowPreferenceFragment.enableGestureTap
 
     private var downX = 0
     private var downY = 0
@@ -265,7 +268,9 @@ class CameraLayout : FrameLayout,
 
         DebugHelper.log("onSingleTapConfirmed")
 
-        if (cameraView.isAttachedToWindow) cameraView.onTap()
+        if (enableGestureTap) {
+            if (cameraView.isAttachedToWindow) cameraView.onTap()
+        }
 
         return false
     }

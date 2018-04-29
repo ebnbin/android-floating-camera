@@ -108,10 +108,13 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
             }
         }
 
-        private val gestureTap by lazy {
-            Preference(context).apply {
+        private val enableGestureTap by lazy {
+            SwitchPreference(context).apply {
+                key = KEY_ENABLE_GESTURE_TAP
+                setDefaultValue(DEF_ENABLE_GESTURE_TAP)
                 setTitle(R.string.gesture_tap_title)
-                setSummary(R.string.gesture_tap_summary)
+                setSummaryOff(R.string.gesture_tap_summary_off)
+                setSummaryOn(R.string.gesture_tap_summary_on)
             }
         }
 
@@ -134,7 +137,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 windowXPreference,
                 windowYPreference,
                 windowAlpha,
-                gestureTap,
+                enableGestureTap,
                 gestureDoubleTap,
                 gestureLongPress,
                 enableGestureMove,
@@ -168,12 +171,14 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         const val KEY_WINDOW_ALPHA = "window_alpha"
         const val KEY_ENABLE_GESTURE_MOVE = "enable_gesture_move"
         const val KEY_ENABLE_GESTURE_SCALE = "enable_gesture_scale"
+        const val KEY_ENABLE_GESTURE_TAP = "enable_gesture_tap"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
         private const val DEF_VALUE_WINDOW_Y = 50
         private const val DEF_ENABLE_GESTURE_MOVE = true
         private const val DEF_ENABLE_GESTURE_SCALE = false
+        private const val DEF_ENABLE_GESTURE_TAP = true
         private const val DEF_WINDOW_ALPHA = 100
 
         val windowSize get() = sp.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
@@ -181,6 +186,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         val windowY get() = sp.get(KEY_WINDOW_Y, DEF_VALUE_WINDOW_Y)
         val enableGestureMove get() = sp.get(KEY_ENABLE_GESTURE_MOVE, DEF_ENABLE_GESTURE_MOVE)
         val enableGestureScale get() = sp.get(KEY_ENABLE_GESTURE_SCALE, DEF_ENABLE_GESTURE_SCALE)
+        val enableGestureTap get() = sp.get(KEY_ENABLE_GESTURE_TAP, DEF_ENABLE_GESTURE_TAP)
         val windowAlpha get() = sp.get(KEY_WINDOW_ALPHA, DEF_WINDOW_ALPHA)
 
         fun putWindowSize(windowSize: Int) {

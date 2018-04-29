@@ -58,7 +58,8 @@
     <string name="window_alpha_summary">悬浮窗透明度</string>
 
     <string name="gesture_tap_title">单击拍摄</string>
-    <string name="gesture_tap_summary">视频模式下单击开始/结束拍摄视频，照片模式下单击拍摄照片</string>
+    <string name="gesture_tap_summary_off">视频模式下单击开始/结束拍摄视频，照片模式下单击拍摄照片，已禁用</string>
+    <string name="gesture_tap_summary_on">视频模式下单击开始/结束拍摄视频，照片模式下单击拍摄照片，已启用</string>
 
     <string name="gesture_double_tap_title">双击回到应用</string>
     <string name="gesture_double_tap_summary">在任意窗口下双击回到应用</string>
