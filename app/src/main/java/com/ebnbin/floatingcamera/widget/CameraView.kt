@@ -448,7 +448,14 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         videoPreviewCameraCaptureSession?.close()
         videoPreviewCameraCaptureSession = null
 
-        setUpMediaRecorder(mediaRecorder!!)
+        try {
+            setUpMediaRecorder(mediaRecorder!!)
+        } catch (e: Exception) {
+            Crashlytics.logException(e)
+            Toast.makeText(context, R.string.camera_exception, Toast.LENGTH_SHORT).show()
+            error("setUpMediaRecorder")
+            return
+        }
 
         val outputs = listOf(Surface(surfaceTexture), mediaRecorder!!.surface)
         cameraDevice!!.createCaptureSession(outputs, object : CameraCaptureSession.StateCallback() {
