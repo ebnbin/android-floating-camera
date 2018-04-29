@@ -15,6 +15,7 @@
 
     <attr name="colorIcon" format="color"/>
     <attr name="colorCard" format="color"/>
+    <attr name="colorPlaceholder" format="color"/>
 
     <!-- ********************************************************************************************************** -->
     <!-- 亮色主题. -->
@@ -25,6 +26,7 @@
     <color name="light_color_primary_dark">#0097a7</color>
     <color name="light_color_accent">#ff4081</color>
     <color name="light_icon">#8a000000</color>
+    <color name="light_placeholder">#0f263238</color>
 
     <style name="LightTheme" parent="Theme.Design.Light.NoActionBar">
         <item name="android:windowBackground">@color/light_window_background</item>
@@ -35,6 +37,7 @@
         <item name="preferenceTheme">@style/PreferenceTheme</item>
         <item name="colorIcon">@color/light_icon</item>
         <item name="colorCard">@color/cardview_light_background</item>
+        <item name="colorPlaceholder">@color/light_placeholder</item>
     </style>
 
     <!-- ********************************************************************************************************** -->
@@ -46,6 +49,7 @@
     <color name="dark_color_primary_dark">#006064</color>
     <color name="dark_color_accent">#ff80ab</color>
     <color name="dark_icon">#fff</color>
+    <color name="dark_placeholder">#0feceff1</color>
 
     <style name="DarkTheme" parent="Theme.Design.NoActionBar">
         <item name="android:windowBackground">@color/dark_window_background</item>
@@ -56,6 +60,7 @@
         <item name="preferenceTheme">@style/PreferenceTheme</item>
         <item name="colorIcon">@color/dark_icon</item>
         <item name="colorCard">@color/cardview_dark_background</item>
+        <item name="colorPlaceholder">@color/dark_placeholder</item>
     </style>
 
     <!-- ********************************************************************************************************** -->

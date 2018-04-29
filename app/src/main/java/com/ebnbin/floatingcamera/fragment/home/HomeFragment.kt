@@ -3,6 +3,7 @@ package com.ebnbin.floatingcamera.fragment.home
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.view.ViewPager
@@ -14,8 +15,10 @@ import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.extension.dpInt
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
+import com.ebnbin.floatingcamera.util.getColorAttr
 import com.ebnbin.floatingcamera.util.sp
 import kotlinx.android.synthetic.main.home_fragment.cameraFab
 import kotlinx.android.synthetic.main.home_fragment.tabLayout
@@ -48,12 +51,16 @@ class HomeFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val context = context ?: return
+
         tabLayout.setupWithViewPager(viewPager)
 
         val adapter = HomePagerAdapter(childFragmentManager)
         viewPager.adapter = adapter
         viewPager.addOnPageChangeListener(this)
         viewPager.offscreenPageLimit = adapter.count
+        viewPager.pageMargin = 16.dpInt
+        viewPager.setPageMarginDrawable(ColorDrawable(getColorAttr(context, R.attr.colorPlaceholder)))
 
         cameraFab.setOnClickListener {
             cameraFab.isEnabled = false
