@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.content.FileProvider
+import android.support.v7.app.AlertDialog
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -15,6 +16,7 @@ import android.widget.ImageView
 import com.bumptech.glide.Glide
 import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.displaySize
 import com.ebnbin.floatingcamera.util.getColorAttr
@@ -67,6 +69,11 @@ class AlbumFragment : Fragment() {
 
             val name = files[position]
             val file = File(FileUtil.getPath(), name)
+            val isPhoto = when {
+                name.endsWith(".mp4") -> false
+                name.endsWith(".jpg") -> true
+                else -> throw BaseRuntimeException()
+            }
 
             Glide.with(context)
                     .load(file)
@@ -80,16 +87,29 @@ class AlbumFragment : Fragment() {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     val uri = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) Uri.fromFile(file) else
                         FileProvider.getUriForFile(context, "com.ebnbin.floatingcamera.fileprovider", file)
-                    val type = when {
-                        name.endsWith(".mp4") -> "video/*"
-                        name.endsWith(".jpg") -> "image/*"
-                        else -> "*/*"
-                    }
+                    val type = if (isPhoto) "image/*" else "video/*"
                     intent.setDataAndType(uri, type)
                     startActivity(intent)
                 } catch (e: Exception) {
                     Crashlytics.logException(e)
                 }
+            }
+            holder.imageView.setOnLongClickListener {
+                AlertDialog.Builder(context)
+                        .setTitle(if (isPhoto) R.string.delete_title_photo else R.string.delete_title_video)
+                        .setMessage(res.getString(R.string.delete_message, name))
+                        .setPositiveButton(R.string.delete_positive) { _, _ ->
+                            try {
+                                file.delete()
+                                invalidateFile()
+                            } catch (e: Exception) {
+                                Crashlytics.logException(e)
+                            }
+                        }
+                        .setNegativeButton(R.string.delete_negative, null)
+                        .create()
+                        .show()
+                true
             }
         }
 
