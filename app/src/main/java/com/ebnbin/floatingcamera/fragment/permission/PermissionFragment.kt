@@ -3,6 +3,7 @@ package com.ebnbin.floatingcamera.fragment.permission
 import android.Manifest
 import android.app.Activity
 import android.app.Dialog
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -18,6 +19,8 @@ import android.support.v4.app.FragmentManager
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatDialogFragment
+import android.widget.Toast
+import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment.Callback
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment.Companion.request
@@ -142,17 +145,29 @@ class PermissionFragment : Fragment() {
     private fun onRequestPermissions(permission: Permission) {
         when (permission) {
             Permission.SYSTEM_ALERT_WINDOW -> {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                        .setData(Uri.parse("package:${app.packageName}"))
-                startActivityForResult(intent, REQUEST_CODE_SYSTEM_ALERT_WINDOW)
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                            .setData(Uri.parse("package:${app.packageName}"))
+                    startActivityForResult(intent, REQUEST_CODE_SYSTEM_ALERT_WINDOW)
+                } catch (e: ActivityNotFoundException) {
+                    Crashlytics.logException(e)
+                    Toast.makeText(context, R.string.permission_exception_system_alert_window, Toast.LENGTH_SHORT)
+                            .show()
+                }
             }
             PermissionFragment.Permission.RUNTIME_PERMISSIONS -> {
                 requestPermissions(runtimePermissions, REQUEST_CODE_RUNTIME_PERMISSIONS)
             }
             PermissionFragment.Permission.RUNTIME_PERMISSIONS_DENIED_FOREVER -> {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        .setData(Uri.parse("package:${app.packageName}"))
-                startActivityForResult(intent, REQUEST_CODE_RUNTIME_PERMISSIONS_DENIED_FOREVER)
+                try {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .setData(Uri.parse("package:${app.packageName}"))
+                    startActivityForResult(intent, REQUEST_CODE_RUNTIME_PERMISSIONS_DENIED_FOREVER)
+                } catch (e: ActivityNotFoundException) {
+                    Crashlytics.logException(e)
+                    Toast.makeText(context, R.string.permission_exception_runtime_permissions, Toast.LENGTH_SHORT)
+                            .show()
+                }
             }
         }
     }
