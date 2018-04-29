@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.FileObserver
 import android.support.v4.app.Fragment
 import android.support.v4.content.FileProvider
 import android.support.v7.widget.GridLayoutManager
@@ -18,35 +17,13 @@ import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.FileUtil
 import com.ebnbin.floatingcamera.util.displaySize
+import com.ebnbin.floatingcamera.util.getColorAttr
 import com.ebnbin.floatingcamera.util.res
 import kotlinx.android.synthetic.main.album_fragment.recyclerView
+import kotlinx.android.synthetic.main.album_fragment.swipeRefreshLayout
 import java.io.File
 
 class AlbumFragment : Fragment() {
-    private lateinit var fileObserver: FileObserver
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        fileObserver = object : FileObserver(FileUtil.getPath().absolutePath, FileObserver.MODIFY) {
-            override fun onEvent(event: Int, path: String?) {
-                when (event) {
-                    FileObserver.MODIFY -> {
-                        if (!isAdded) return
-                        adapter?.invalidateFile()
-                    }
-                }
-            }
-        }
-        fileObserver.startWatching()
-    }
-
-    override fun onDestroy() {
-        fileObserver.stopWatching()
-
-        super.onDestroy()
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.album_fragment, container, false)
     }
@@ -57,6 +34,12 @@ class AlbumFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val context = context ?: return
+
+        swipeRefreshLayout.setColorSchemeColors(getColorAttr(context, R.attr.colorAccent))
+        swipeRefreshLayout.setOnRefreshListener {
+            adapter?.invalidateFile()
+            swipeRefreshLayout.isRefreshing = false
+        }
 
         val spanCount = (displaySize.width().toFloat() / res.displayMetrics.density / 160).toInt()
         recyclerView.layoutManager = GridLayoutManager(context, spanCount)
