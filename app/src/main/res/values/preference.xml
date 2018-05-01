@@ -71,6 +71,10 @@
     <string name="enable_info_summary_off">在窗口边缘显示边框，绿色表示视频模式，红色表示正在拍摄视频，蓝色表示照片模式，已禁用</string>
     <string name="enable_info_summary_on">在窗口边缘显示边框，绿色表示视频模式，红色表示正在拍摄视频，蓝色表示照片模式，已启用</string>
 
+    <string name="is_touchable_title">悬浮窗点击模式</string>
+    <string name="is_touchable_summary_off">不允许点击悬浮窗，悬浮窗只作为展示界面，不可操作</string>
+    <string name="is_touchable_summary_on">允许点击悬浮窗，可以点击悬浮窗控制拍摄</string>
+
     <string name="path_title">存储路径</string>
     <string name="path_summary">%s</string>
 

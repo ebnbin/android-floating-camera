@@ -106,6 +106,15 @@ class CameraLayout : FrameLayout,
                 enableGestureTap = WindowPreferenceFragment.enableGestureTap
             WindowPreferenceFragment.KEY_WINDOW_ALPHA -> invalidateWindowAlpha()
             RotationHelper.KEY_ROTATION -> invalidateWindowSizeAndPosition()
+            WindowPreferenceFragment.KEY_IS_TOUCHABLE -> {
+                val params = layoutParams as WindowManager.LayoutParams
+                if (WindowPreferenceFragment.isTouchable) {
+                    params.flags = params.flags xor WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                } else {
+                    params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                }
+                windowManager.updateViewLayout(this, params)
+            }
         }
     }
 

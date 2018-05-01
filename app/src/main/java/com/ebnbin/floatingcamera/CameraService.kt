@@ -11,6 +11,7 @@ import android.support.v4.app.NotificationCompat
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.Toast
+import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -83,6 +84,9 @@ class CameraService : Service(), LocalBroadcastHelper.Receiver {
         params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        if (!WindowPreferenceFragment.isTouchable) {
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        }
         params.format = PixelFormat.TRANSLUCENT
         params.gravity = Gravity.START or Gravity.TOP
         val windowPosition = PreferenceHelper.windowPosition()
