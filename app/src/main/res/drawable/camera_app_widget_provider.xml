@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape
+            android:shape="oval">
+            <solid
+                android:color="@color/light_color_accent"/>
+        </shape>
+    </item>
+    <item>
+        <inset
+            android:inset="12dp"
+            android:drawable="@drawable/camera_white"/>
+    </item>
+</layer-list>

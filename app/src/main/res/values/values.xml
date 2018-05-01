@@ -28,4 +28,7 @@
     <string name="delete_message">是否要删除 %s ？</string>
     <string name="delete_positive">确定</string>
     <string name="delete_negative">取消</string>
+
+    <string name="stop_camera_service">点击关闭应用</string>
+    <string name="permission_denied">没有权限</string>
 </resources>

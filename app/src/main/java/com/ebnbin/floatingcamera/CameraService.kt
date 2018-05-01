@@ -1,17 +1,24 @@
 package com.ebnbin.floatingcamera
 
+import android.Manifest
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.support.v4.app.NotificationCompat
 import android.view.Gravity
 import android.view.WindowManager
+import android.widget.Toast
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
+import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
 import com.ebnbin.floatingcamera.util.displayRotation
+import com.ebnbin.floatingcamera.util.notificationManager
+import com.ebnbin.floatingcamera.util.res
 import com.ebnbin.floatingcamera.util.windowManager
 import com.ebnbin.floatingcamera.widget.CameraLayout
 
@@ -36,6 +43,31 @@ class CameraService : Service(), LocalBroadcastHelper.Receiver {
         LocalBroadcastHelper.send(ACTION_CAMERA_SERVICE_IS_RUNNING, Intent().putExtra(KEY_IS_RUNNING, isRunning))
 
         RotationHelper.registerAndEnable(this)
+
+        notificationManager
+
+        val pendingIntent = PendingIntent.getBroadcast(this, 0,
+                Intent(this, StopCameraServiceBroadcastReceiver::class.java), 0)
+        val notification = NotificationCompat.Builder(this, "default")
+                .setSmallIcon(R.drawable.logo)
+                .setContentTitle(res.getString(R.string.app_name))
+                .setContentText(res.getString(R.string.stop_camera_service))
+                .setContentIntent(pendingIntent)
+                .build()
+        startForeground(1, notification)
+
+        val recordAudioPermission = if (PreferenceHelper.isPhoto())
+            arrayOf() else
+            arrayOf(Manifest.permission.RECORD_AUDIO)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && PermissionHelper.isPermissionsDenied(
+                        Manifest.permission.SYSTEM_ALERT_WINDOW,
+                        Manifest.permission.CAMERA, *recordAudioPermission,
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show()
+            stop()
+            return
+        }
 
         cameraLayout = CameraLayout(this)
 
@@ -63,7 +95,11 @@ class CameraService : Service(), LocalBroadcastHelper.Receiver {
     }
 
     override fun onDestroy() {
-        windowManager.removeView(cameraLayout)
+        if (::cameraLayout.isInitialized) {
+            windowManager.removeView(cameraLayout)
+        }
+
+        stopForeground(true)
 
         RotationHelper.unregister(this)
 
@@ -86,7 +122,11 @@ class CameraService : Service(), LocalBroadcastHelper.Receiver {
             private set
 
         fun start(context: Context = app) {
-            context.startService(Intent(context, CameraService::class.java))
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                context.startService(Intent(context, CameraService::class.java))
+            } else {
+                context.startForegroundService(Intent(context, CameraService::class.java))
+            }
         }
 
         fun stop(context: Context = app) {

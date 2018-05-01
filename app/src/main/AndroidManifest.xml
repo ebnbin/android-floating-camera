@@ -46,6 +46,21 @@
                 android:resource="@xml/filepaths"/>
         </provider>
 
+        <receiver
+            android:name=".receiver.CameraAppWidgetProvider">
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/camera_app_widget_provider"/>
+
+            <intent-filter>
+                <action
+                    android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".StopCameraServiceBroadcastReceiver"/>
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="2bd37b451d5c4c0f5a28eb7df22a0011259df148"/>

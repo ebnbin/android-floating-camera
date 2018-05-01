@@ -16,6 +16,7 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.TotalCaptureResult
 import android.media.ImageReader
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.AttributeSet
@@ -249,7 +250,8 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
         if (!isAttachedToWindow) return
 
-        if (PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                PermissionHelper.isPermissionsDenied(Manifest.permission.CAMERA)) {
             error("permission denied")
             return
         }
