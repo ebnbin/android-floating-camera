@@ -8,6 +8,7 @@ import android.support.v7.preference.Preference
 import android.support.v7.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
+import com.ebnbin.floatingcamera.preference.PreferenceGroup
 import com.ebnbin.floatingcamera.preference.RootPreferenceGroup
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
@@ -69,6 +70,52 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         }
 
         /**
+         * 悬浮窗透明度.
+         */
+        private val windowAlpha by lazy {
+            SeekBarPreference(context).apply {
+                key = KEY_WINDOW_ALPHA
+                setDefaultValue(DEF_WINDOW_ALPHA)
+                setTitle(R.string.window_alpha_title)
+                setSummary(R.string.window_alpha_summary)
+                min = 1
+                max = 100
+            }
+        }
+
+        private val enableInfo by lazy {
+            SwitchPreference(context).apply {
+                key = KEY_ENABLE_INFO
+                setDefaultValue(DEF_ENABLE_INFO)
+                setTitle(R.string.enable_info_title)
+                setSummaryOff(R.string.enable_info_summary_off)
+                setSummaryOn(R.string.enable_info_summary_on)
+            }
+        }
+
+        private val isTouchablePreference by lazy {
+            SwitchPreference(context).apply {
+                key = KEY_IS_TOUCHABLE
+                setDefaultValue(DEF_IS_TOUCHABLE)
+                setTitle(R.string.is_touchable_title)
+                setSummaryOff(R.string.is_touchable_summary_off)
+                setSummaryOn(R.string.is_touchable_summary_on)
+            }
+        }
+
+        private val gestureGroup by lazy {
+            PreferenceGroup(context).apply {
+                initPreferences(
+                        enableGestureTap,
+                        gestureDoubleTap,
+                        gestureLongPress,
+                        enableGestureMove,
+                        enableGestureScale)
+                initIsGroupVisible { isTouchablePreference.isChecked }
+            }
+        }
+
+        /**
          * 手势移动.
          */
         private val enableGestureMove by lazy {
@@ -91,20 +138,6 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                 setTitle(R.string.enable_gesture_scale_title)
                 setSummaryOff(R.string.enable_gesture_scale_summary_off)
                 setSummaryOn(R.string.enable_gesture_scale_summary_on)
-            }
-        }
-
-        /**
-         * 悬浮窗透明度.
-         */
-        private val windowAlpha by lazy {
-            SeekBarPreference(context).apply {
-                key = KEY_WINDOW_ALPHA
-                setDefaultValue(DEF_WINDOW_ALPHA)
-                setTitle(R.string.window_alpha_title)
-                setSummary(R.string.window_alpha_summary)
-                min = 1
-                max = 100
             }
         }
 
@@ -132,38 +165,14 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
             }
         }
 
-        private val enableInfo by lazy {
-            SwitchPreference(context).apply {
-                key = KEY_ENABLE_INFO
-                setDefaultValue(DEF_ENABLE_INFO)
-                setTitle(R.string.enable_info_title)
-                setSummaryOff(R.string.enable_info_summary_off)
-                setSummaryOn(R.string.enable_info_summary_on)
-            }
-        }
-
-        private val isTouchable by lazy {
-            SwitchPreference(context).apply {
-                key = KEY_IS_TOUCHABLE
-                setDefaultValue(DEF_IS_TOUCHABLE)
-                setTitle(R.string.is_touchable_title)
-                setSummaryOff(R.string.is_touchable_summary_off)
-                setSummaryOn(R.string.is_touchable_summary_on)
-            }
-        }
-
         override fun onCreatePreferences(savedInstanceState: Bundle?) = arrayOf(
                 windowSizePreference,
                 windowXPreference,
                 windowYPreference,
                 windowAlpha,
                 enableInfo,
-                isTouchable,
-                enableGestureTap,
-                gestureDoubleTap,
-                gestureLongPress,
-                enableGestureMove,
-                enableGestureScale)
+                isTouchablePreference,
+                gestureGroup)
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             when (key) {
@@ -181,6 +190,11 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
                     val newValue = windowY
 
                     if (windowYPreference.value != newValue) windowYPreference.value = newValue
+                }
+                KEY_IS_TOUCHABLE -> {
+                    val newValue = isTouchable
+
+                    gestureGroup.isGroupVisible = newValue
                 }
             }
         }
