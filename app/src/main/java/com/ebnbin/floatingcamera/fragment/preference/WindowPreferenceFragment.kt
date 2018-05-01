@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v14.preference.SwitchPreference
 import android.support.v7.preference.Preference
+import android.support.v7.preference.PreferenceCategory
 import android.support.v7.preference.SeekBarPreference
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.preference.PreferenceFragment
@@ -27,6 +28,12 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
      *     PreviewPreference
      */
     class WindowRootPreferenceGroup(context: Context) : RootPreferenceGroup(context) {
+        private val displayPreferenceCategory by lazy {
+            PreferenceCategory(context).apply {
+                setTitle(R.string.display_title)
+            }
+        }
+
         /**
          * 悬浮窗大小.
          */
@@ -72,7 +79,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         /**
          * 悬浮窗透明度.
          */
-        private val windowAlpha by lazy {
+        private val windowAlphaPreference by lazy {
             SeekBarPreference(context).apply {
                 key = KEY_WINDOW_ALPHA
                 setDefaultValue(DEF_WINDOW_ALPHA)
@@ -83,13 +90,29 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
             }
         }
 
-        private val enableInfo by lazy {
+        private val enableInfoPreference by lazy {
             SwitchPreference(context).apply {
                 key = KEY_ENABLE_INFO
                 setDefaultValue(DEF_ENABLE_INFO)
                 setTitle(R.string.enable_info_title)
                 setSummaryOff(R.string.enable_info_summary_off)
                 setSummaryOn(R.string.enable_info_summary_on)
+            }
+        }
+
+        private val enableToastPreference by lazy {
+            SwitchPreference(context).apply {
+                key = KEY_ENABLE_TOAST
+                setDefaultValue(DEF_ENABLE_TOAST)
+                setTitle(R.string.enable_toast_title)
+                setSummaryOff(R.string.enable_toast_summary_off)
+                setSummaryOn(R.string.enable_toast_summary_on)
+            }
+        }
+
+        private val controlPreferenceCategory by lazy {
+            PreferenceCategory(context).apply {
+                setTitle(R.string.control_title)
             }
         }
 
@@ -166,11 +189,14 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?) = arrayOf(
+                displayPreferenceCategory,
                 windowSizePreference,
                 windowXPreference,
                 windowYPreference,
-                windowAlpha,
-                enableInfo,
+                windowAlphaPreference,
+                enableInfoPreference,
+                enableToastPreference,
+                controlPreferenceCategory,
                 isTouchablePreference,
                 gestureGroup)
 
@@ -210,6 +236,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         const val KEY_ENABLE_GESTURE_TAP = "enable_gesture_tap"
         const val KEY_ENABLE_INFO = "enable_info"
         const val KEY_IS_TOUCHABLE = "is_touchable"
+        const val KEY_ENABLE_TOAST = "enable_toast"
 
         private const val DEF_VALUE_WINDOW_SIZE = 50
         private const val DEF_VALUE_WINDOW_X = 50
@@ -220,6 +247,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         private const val DEF_WINDOW_ALPHA = 100
         private const val DEF_ENABLE_INFO = true
         private const val DEF_IS_TOUCHABLE = true
+        private const val DEF_ENABLE_TOAST = true
 
         val windowSize get() = sp.get(KEY_WINDOW_SIZE, DEF_VALUE_WINDOW_SIZE)
         val windowX get() = sp.get(KEY_WINDOW_X, DEF_VALUE_WINDOW_X)
@@ -230,6 +258,7 @@ class WindowPreferenceFragment : PreferenceFragment<WindowPreferenceFragment.Win
         val windowAlpha get() = sp.get(KEY_WINDOW_ALPHA, DEF_WINDOW_ALPHA)
         val enableInfo get() = sp.get(KEY_ENABLE_INFO, DEF_ENABLE_INFO)
         val isTouchable get() = sp.get(KEY_IS_TOUCHABLE, DEF_IS_TOUCHABLE)
+        val enableToast get() = sp.get(KEY_ENABLE_TOAST, DEF_ENABLE_TOAST)
 
         fun putWindowSize(windowSize: Int) {
             sp.put(KEY_WINDOW_SIZE, windowSize)

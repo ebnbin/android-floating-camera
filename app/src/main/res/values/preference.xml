@@ -75,6 +75,14 @@
     <string name="is_touchable_summary_off">不允许点击悬浮窗，悬浮窗只作为展示界面，不可操作</string>
     <string name="is_touchable_summary_on">允许点击悬浮窗，可以点击悬浮窗控制拍摄</string>
 
+    <string name="enable_toast_title">文件保存后弹出提醒</string>
+    <string name="enable_toast_summary_off">已禁用</string>
+    <string name="enable_toast_summary_on">已启用</string>
+
+    <string name="display_title">显示</string>
+
+    <string name="control_title">控制</string>
+
     <string name="path_title">存储路径</string>
     <string name="path_summary">%s</string>
 

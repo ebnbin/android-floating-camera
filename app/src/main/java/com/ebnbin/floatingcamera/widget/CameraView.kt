@@ -28,6 +28,7 @@ import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.CameraService
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.FileUtil
@@ -70,6 +71,8 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
     //*****************************************************************************************************************
 
+    private var enableToast = WindowPreferenceFragment.enableToast
+
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
             CameraPreferenceFragment.KEY_IS_FRONT,
@@ -82,6 +85,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
                 closeCamera()
                 openCamera()
             }
+            WindowPreferenceFragment.KEY_ENABLE_TOAST -> enableToast = WindowPreferenceFragment.enableToast
         }
     }
 
@@ -362,7 +366,9 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
     protected fun toastFile() {
         if (!isAttachedToWindow) return
 
-        toast("$file")
+        if (enableToast) {
+            toast("$file")
+        }
         Log.d("ebnbin", "$file")
     }
 
