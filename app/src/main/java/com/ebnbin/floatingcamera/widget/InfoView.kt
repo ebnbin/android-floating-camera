@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
+import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.extension.dp
@@ -24,6 +25,8 @@ class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int 
         val isPhoto = PreferenceHelper.isPhoto()
         color = if (isPhoto) Color.BLUE else Color.GREEN
     }
+
+    private var enableInfo = WindowPreferenceFragment.enableInfo
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -58,6 +61,10 @@ class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int 
                 paint.color = if (isPhoto) Color.BLUE else Color.GREEN
                 invalidate()
             }
+            WindowPreferenceFragment.KEY_ENABLE_INFO -> {
+                enableInfo = WindowPreferenceFragment.enableInfo
+                invalidate()
+            }
         }
     }
 
@@ -65,6 +72,8 @@ class InfoView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int 
         super.onDraw(canvas)
 
         canvas ?: return
+
+        if (!enableInfo) return
 
         canvas.drawRect(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat(), paint)
     }

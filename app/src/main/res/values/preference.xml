@@ -67,6 +67,10 @@
     <string name="gesture_long_press_title">长按关闭窗口</string>
     <string name="gesture_long_press_summary">长按强制关闭窗口</string>
 
+    <string name="enable_info_title">显示相机状态</string>
+    <string name="enable_info_summary_off">在窗口边缘显示边框，绿色表示视频模式，红色表示正在拍摄视频，蓝色表示照片模式，已禁用</string>
+    <string name="enable_info_summary_on">在窗口边缘显示边框，绿色表示视频模式，红色表示正在拍摄视频，蓝色表示照片模式，已启用</string>
+
     <string name="path_title">存储路径</string>
     <string name="path_summary">%s</string>
 
