@@ -86,6 +86,9 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
                 openCamera()
             }
             WindowPreferenceFragment.KEY_ENABLE_TOAST -> enableToast = WindowPreferenceFragment.enableToast
+            WindowPreferenceFragment.KEY_IS_TOUCHABLE -> {
+                if (!WindowPreferenceFragment.isTouchable && !isPhoto) stopRecord(true)
+            }
         }
     }
 
