@@ -47,6 +47,8 @@ class AlbumFragment : Fragment() {
 
         view.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
+                if (view.measuredWidth <= 0) return
+
                 view.viewTreeObserver.removeOnGlobalLayoutListener(this)
 
                 val spanCount = (view.measuredWidth / res.displayMetrics.density / 160).toInt()
@@ -138,6 +140,8 @@ class AlbumFragment : Fragment() {
         init {
             itemView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
                 override fun onGlobalLayout() {
+                    if (itemView.measuredWidth <= 0) return
+
                     itemView.viewTreeObserver.removeOnGlobalLayoutListener(this)
 
                     val params = itemView.layoutParams
