@@ -3,8 +3,10 @@ package com.ebnbin.floatingcamera
 import android.app.Application
 import com.crashlytics.android.Crashlytics
 import com.crashlytics.android.core.CrashlyticsCore
+import com.ebnbin.floatingcamera.fragment.camera.CameraFragment
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.PreferenceHelper
+import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.sp
 import io.fabric.sdk.android.Fabric
@@ -22,7 +24,10 @@ class AppApplication : Application() {
                 .core(CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
                 .build())
 
-        sp.put(KEY_VERSION_CODE, BuildConfig.VERSION_CODE)
+        if (sp.get(KEY_VERSION_CODE, 0) < BuildConfig.VERSION_CODE) {
+            sp.put(KEY_VERSION_CODE, BuildConfig.VERSION_CODE)
+            sp.put(CameraFragment.KEY_PAGE, null)
+        }
 
         PreferenceHelper
     }

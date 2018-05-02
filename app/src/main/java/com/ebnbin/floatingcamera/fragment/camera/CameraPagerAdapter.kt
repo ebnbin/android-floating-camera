@@ -5,7 +5,6 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import com.ebnbin.floatingcamera.R
-import com.ebnbin.floatingcamera.fragment.album.AlbumFragment
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
@@ -20,7 +19,6 @@ class CameraPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
     companion object {
         private val ITEMS = arrayOf(
-                Item({ AlbumFragment() }, R.string.album_title),
                 Item({ WindowPreferenceFragment() }, R.string.window_title),
                 Item({ CameraPreferenceFragment() }, R.string.camera_title),
                 Item({ OtherPreferenceFragment() }, R.string.other_title))

@@ -1,6 +1,7 @@
 package com.ebnbin.floatingcamera.util
 
 import android.content.SharedPreferences
+import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
@@ -139,5 +140,5 @@ object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
     /**
      * 是否为暗色主题 (or 亮色主题).
      */
-    fun isDarkTheme() = OtherPreferenceFragment.isDarkTheme
+    fun isDarkTheme() = MorePreferenceFragment.isDarkTheme
 }

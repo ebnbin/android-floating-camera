@@ -14,26 +14,15 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:title="@string/app_name"
-            app:layout_scrollFlags="enterAlways|scroll|snap"/>
+            app:title="@string/app_name"/>
 
     </android.support.design.widget.AppBarLayout>
 
-    <android.support.v4.widget.SwipeRefreshLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/swipeRefreshLayout"
+    <fragment
+        android:name="com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment"
+        android:tag="com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/recyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:scrollbars="vertical"
-            android:scrollbarStyle="outsideOverlay"/>
-
-    </android.support.v4.widget.SwipeRefreshLayout>
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
 </android.support.design.widget.CoordinatorLayout>

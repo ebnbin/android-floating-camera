@@ -10,9 +10,9 @@ import android.graphics.Canvas
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
-import com.ebnbin.floatingcamera.fragment.camera.CameraFragment
+import com.ebnbin.floatingcamera.fragment.home.HomeFragment
+import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
-import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.util.CameraException
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -55,7 +55,7 @@ class MainActivity :
         when (requestCode) {
             REQUEST_CODE_EXTERNAL_STORAGE -> {
                 if (granted) {
-                    supportFragmentManager.beginTransaction().add(android.R.id.content, CameraFragment()).commit()
+                    supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
                 } else {
                     finish()
                 }
@@ -93,7 +93,7 @@ class MainActivity :
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
-            OtherPreferenceFragment.KEY_IS_DARK_THEME -> {
+            MorePreferenceFragment.KEY_IS_DARK_THEME -> {
                 recreate()
             }
         }

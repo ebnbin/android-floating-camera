@@ -37,6 +37,8 @@ class AlbumFragment : Fragment() {
 
         val context = context ?: return
 
+        swipeRefreshLayout.setProgressBackgroundColorSchemeColor(getColorAttr(context,
+                android.R.attr.windowBackground))
         swipeRefreshLayout.setColorSchemeColors(getColorAttr(context, R.attr.colorAccent))
         swipeRefreshLayout.setOnRefreshListener {
             adapter?.invalidateFile()

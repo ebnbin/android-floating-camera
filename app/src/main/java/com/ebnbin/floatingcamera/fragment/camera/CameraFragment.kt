@@ -124,7 +124,7 @@ class CameraFragment :
     }
 
     companion object {
-        private const val KEY_PAGE = "page"
+        const val KEY_PAGE = "page"
         private const val DEF_VALUE_PAGE = 1
 
         private const val REQUEST_CODE_PERMISSION = 0x1

@@ -31,4 +31,8 @@
 
     <string name="stop_camera_service">点击关闭应用</string>
     <string name="permission_denied">没有权限</string>
+
+    <string name="title_camera">拍摄</string>
+    <string name="title_album">相册</string>
+    <string name="title_more">更多</string>
 </resources>
