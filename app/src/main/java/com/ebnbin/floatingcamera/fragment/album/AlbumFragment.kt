@@ -12,13 +12,13 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.ImageView
 import com.bumptech.glide.Glide
 import com.crashlytics.android.Crashlytics
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
 import com.ebnbin.floatingcamera.util.FileUtil
-import com.ebnbin.floatingcamera.util.displaySize
 import com.ebnbin.floatingcamera.util.getColorAttr
 import com.ebnbin.floatingcamera.util.res
 import kotlinx.android.synthetic.main.album_fragment.recyclerView
@@ -45,13 +45,21 @@ class AlbumFragment : Fragment() {
             swipeRefreshLayout.isRefreshing = false
         }
 
-        val spanCount = (displaySize.width().toFloat() / res.displayMetrics.density / 160).toInt()
-        recyclerView.layoutManager = GridLayoutManager(context, spanCount)
-        adapter = AlbumAdapter(spanCount)
-        recyclerView.adapter = adapter
+        view.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                view.viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                val spanCount = (view.measuredWidth / res.displayMetrics.density / 160).toInt()
+                val gridLayoutManager = GridLayoutManager(context, spanCount)
+                recyclerView.layoutManager = gridLayoutManager
+                adapter = AlbumAdapter()
+                recyclerView.adapter = adapter
+
+            }
+        })
     }
 
-    private inner class AlbumAdapter(private val spanCount: Int) : RecyclerView.Adapter<AlbumViewHolder>() {
+    private inner class AlbumAdapter : RecyclerView.Adapter<AlbumViewHolder>() {
         private lateinit var files: Array<String>
         init {
             invalidateFile()
@@ -59,7 +67,7 @@ class AlbumFragment : Fragment() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
             val itemView = LayoutInflater.from(context).inflate(R.layout.album_item, parent, false)
-            return AlbumViewHolder(itemView, spanCount)
+            return AlbumViewHolder(itemView)
         }
 
         override fun getItemCount(): Int {
@@ -73,6 +81,7 @@ class AlbumFragment : Fragment() {
             val file = File(FileUtil.getPath(), name)
             val isPhoto = when {
                 name.endsWith(".mp4") -> false
+                name.endsWith(".3gp") -> false
                 name.endsWith(".jpg") -> true
                 else -> throw BaseRuntimeException()
             }
@@ -117,18 +126,25 @@ class AlbumFragment : Fragment() {
 
         fun invalidateFile() {
             files = FileUtil.getPath().list { _, name ->
-                return@list name.endsWith(".mp4") || name.endsWith(".jpg")
+                return@list name.endsWith(".mp4") || name.endsWith(".jpg") || name.endsWith(".3gp")
             }.sortedArrayDescending()
             notifyDataSetChanged()
         }
     }
 
-    private inner class AlbumViewHolder(itemView: View, spanCount: Int) : RecyclerView.ViewHolder(itemView) {
+    private inner class AlbumViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val imageView: ImageView = itemView.findViewById(R.id.imageView)
+
         init {
-            val params = imageView.layoutParams
-            params.height = (displaySize.width().toFloat() / spanCount).toInt()
-            imageView.layoutParams = params
+            itemView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    itemView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                    val params = itemView.layoutParams
+                    params.height = itemView.measuredWidth
+                    itemView.layoutParams = params
+                }
+            })
         }
     }
 }

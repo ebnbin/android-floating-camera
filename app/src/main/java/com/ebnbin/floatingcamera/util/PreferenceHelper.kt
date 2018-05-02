@@ -3,7 +3,6 @@ package com.ebnbin.floatingcamera.util
 import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
-import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 
 /**
