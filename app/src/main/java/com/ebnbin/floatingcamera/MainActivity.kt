@@ -1,6 +1,5 @@
 package com.ebnbin.floatingcamera
 
-import android.Manifest
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
@@ -12,7 +11,6 @@ import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import com.ebnbin.floatingcamera.fragment.home.HomeFragment
 import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
-import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.util.CameraException
 import com.ebnbin.floatingcamera.util.CameraHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
@@ -24,8 +22,7 @@ import com.ebnbin.floatingcamera.util.sp
 
 class MainActivity :
         AppCompatActivity(),
-        SharedPreferences.OnSharedPreferenceChangeListener,
-        PermissionFragment.Callback {
+        SharedPreferences.OnSharedPreferenceChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTaskDescription(taskDescription)
 
@@ -47,20 +44,7 @@ class MainActivity :
             return
         }
 
-        PermissionFragment.request(supportFragmentManager, REQUEST_CODE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    }
-
-    override fun onPermissionsResult(requestCode: Int, granted: Boolean) {
-        when (requestCode) {
-            REQUEST_CODE_EXTERNAL_STORAGE -> {
-                if (granted) {
-                    supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
-                } else {
-                    finish()
-                }
-            }
-        }
+        supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
     }
 
     @Suppress("DEPRECATION")
@@ -114,8 +98,6 @@ class MainActivity :
     }
 
     companion object {
-        private const val REQUEST_CODE_EXTERNAL_STORAGE = 0x1
-
         fun start(context: Context = app) {
             context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }

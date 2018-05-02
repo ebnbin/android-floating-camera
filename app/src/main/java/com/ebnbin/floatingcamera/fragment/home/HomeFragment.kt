@@ -48,6 +48,9 @@ class HomeFragment : Fragment() {
                     val transaction = childFragmentManager.beginTransaction()
                     if (foundAlbumFragment != null) {
                         transaction.show(foundAlbumFragment)
+                        if (foundAlbumFragment is AlbumFragment) {
+                            foundAlbumFragment.requestPermissions()
+                        }
                     } else {
                         transaction.add(R.id.fragment_container, AlbumFragment(), AlbumFragment::class.java.name)
                     }
