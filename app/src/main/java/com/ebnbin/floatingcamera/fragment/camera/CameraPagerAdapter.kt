@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera.fragment.home
+package com.ebnbin.floatingcamera.fragment.camera
 
 import android.support.annotation.StringRes
 import android.support.v4.app.Fragment
@@ -11,7 +11,7 @@ import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.res
 
-class HomePagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
+class CameraPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
     override fun getItem(position: Int) = ITEMS[position].createFragment()
 
     override fun getCount() = ITEMS.size

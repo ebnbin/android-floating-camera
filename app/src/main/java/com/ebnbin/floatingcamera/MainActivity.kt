@@ -10,7 +10,7 @@ import android.graphics.Canvas
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
-import com.ebnbin.floatingcamera.fragment.home.HomeFragment
+import com.ebnbin.floatingcamera.fragment.camera.CameraFragment
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.fragment.preference.OtherPreferenceFragment
 import com.ebnbin.floatingcamera.util.CameraException
@@ -55,7 +55,7 @@ class MainActivity :
         when (requestCode) {
             REQUEST_CODE_EXTERNAL_STORAGE -> {
                 if (granted) {
-                    supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+                    supportFragmentManager.beginTransaction().add(android.R.id.content, CameraFragment()).commit()
                 } else {
                     finish()
                 }

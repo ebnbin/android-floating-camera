@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera.fragment.home
+package com.ebnbin.floatingcamera.fragment.camera
 
 import android.Manifest
 import android.content.Context
@@ -20,14 +20,14 @@ import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.getColorAttr
 import com.ebnbin.floatingcamera.util.sp
-import kotlinx.android.synthetic.main.home_fragment.cameraFab
-import kotlinx.android.synthetic.main.home_fragment.tabLayout
-import kotlinx.android.synthetic.main.home_fragment.viewPager
+import kotlinx.android.synthetic.main.camera_fragment.cameraFab
+import kotlinx.android.synthetic.main.camera_fragment.tabLayout
+import kotlinx.android.synthetic.main.camera_fragment.viewPager
 
 /**
  * 首页.
  */
-class HomeFragment :
+class CameraFragment :
         Fragment(),
         ViewPager.OnPageChangeListener,
         PermissionFragment.Callback,
@@ -45,7 +45,7 @@ class HomeFragment :
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.home_fragment, container, false)
+        return inflater.inflate(R.layout.camera_fragment, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -55,7 +55,7 @@ class HomeFragment :
 
         tabLayout.setupWithViewPager(viewPager)
 
-        val adapter = HomePagerAdapter(childFragmentManager)
+        val adapter = CameraPagerAdapter(childFragmentManager)
         viewPager.adapter = adapter
         viewPager.addOnPageChangeListener(this)
         viewPager.offscreenPageLimit = adapter.count
