@@ -20,9 +20,10 @@ class AppApplication : Application() {
 
         singleton = this
 
-        Fabric.with(this, Crashlytics.Builder()
+        val crashlytics = Crashlytics.Builder()
                 .core(CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
-                .build())
+                .build()
+        Fabric.with(this, crashlytics)
 
         if (sp.get(KEY_VERSION_CODE, 0) < BuildConfig.VERSION_CODE) {
             sp.put(KEY_VERSION_CODE, BuildConfig.VERSION_CODE)
