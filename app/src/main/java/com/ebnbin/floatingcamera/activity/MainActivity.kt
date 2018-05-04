@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera
+package com.ebnbin.floatingcamera.activity
 
 import android.app.ActivityManager
 import android.content.Context
@@ -9,7 +9,8 @@ import android.graphics.Canvas
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
-import com.ebnbin.floatingcamera.fragment.home.HomeFragment
+import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.fragment.main.MainFragment
 import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
 import com.ebnbin.floatingcamera.util.CameraException
 import com.ebnbin.floatingcamera.util.CameraHelper
@@ -44,7 +45,7 @@ class MainActivity :
             return
         }
 
-        supportFragmentManager.beginTransaction().add(android.R.id.content, HomeFragment()).commit()
+        supportFragmentManager.beginTransaction().add(android.R.id.content, MainFragment()).commit()
     }
 
     @Suppress("DEPRECATION")

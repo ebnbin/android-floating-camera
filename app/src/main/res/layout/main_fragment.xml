@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?android:attr/windowBackground"
-        app:menu="@menu/home_navigation"
+        app:menu="@menu/main_navigation"
         app:itemIconTint="@color/home_navigation"
         app:itemTextColor="@color/home_navigation"/>
 

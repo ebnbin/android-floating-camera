@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera.widget
+package com.ebnbin.floatingcamera.view
 
 import android.content.Context
 import android.content.Intent

@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera
+package com.ebnbin.floatingcamera.service
 
 import android.Manifest
 import android.app.PendingIntent
@@ -11,6 +11,8 @@ import android.support.v4.app.NotificationCompat
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.Toast
+import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.receiver.StopCameraServiceBroadcastReceiver
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PermissionHelper
@@ -21,7 +23,7 @@ import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.notificationManager
 import com.ebnbin.floatingcamera.util.res
 import com.ebnbin.floatingcamera.util.windowManager
-import com.ebnbin.floatingcamera.widget.CameraLayout
+import com.ebnbin.floatingcamera.view.CameraLayout
 
 /**
  * 相机服务.

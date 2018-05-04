@@ -10,7 +10,7 @@ import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.ebnbin.floatingcamera.CameraService
+import com.ebnbin.floatingcamera.service.CameraService
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.permission.PermissionFragment
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper

@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera.widget
+package com.ebnbin.floatingcamera.view
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -25,7 +25,7 @@ import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
 import com.crashlytics.android.Crashlytics
-import com.ebnbin.floatingcamera.CameraService
+import com.ebnbin.floatingcamera.service.CameraService
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment

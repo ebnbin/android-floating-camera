@@ -1,4 +1,4 @@
-package com.ebnbin.floatingcamera.fragment.home
+package com.ebnbin.floatingcamera.fragment.main
 
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -12,11 +12,11 @@ import com.ebnbin.floatingcamera.fragment.more.MoreFragment
 import com.ebnbin.floatingcamera.util.extension.get
 import com.ebnbin.floatingcamera.util.extension.put
 import com.ebnbin.floatingcamera.util.sp
-import kotlinx.android.synthetic.main.home_fragment.bottomNavigationView
+import kotlinx.android.synthetic.main.main_fragment.bottomNavigationView
 
-class HomeFragment : Fragment() {
+class MainFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.home_fragment, container, false)
+        return inflater.inflate(R.layout.main_fragment, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
