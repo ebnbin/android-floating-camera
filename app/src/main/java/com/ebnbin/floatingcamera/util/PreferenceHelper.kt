@@ -1,6 +1,5 @@
 package com.ebnbin.floatingcamera.util
 
-import android.content.SharedPreferences
 import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
@@ -8,15 +7,7 @@ import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 /**
  * 偏好帮助类.
  */
-object PreferenceHelper : SharedPreferences.OnSharedPreferenceChangeListener {
-    init {
-        sp.registerOnSharedPreferenceChangeListener(this)
-    }
-
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        DebugHelper.log(key, "key")
-    }
-
+object PreferenceHelper {
     /**
      * 摄像头.
      */

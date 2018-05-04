@@ -11,11 +11,10 @@ import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
-import com.ebnbin.floatingcamera.service.CameraService
 import com.ebnbin.floatingcamera.activity.MainActivity
 import com.ebnbin.floatingcamera.fragment.preference.CameraPreferenceFragment
 import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
-import com.ebnbin.floatingcamera.util.DebugHelper
+import com.ebnbin.floatingcamera.service.CameraService
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
@@ -168,8 +167,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onShowPress(e: MotionEvent?) {
         e ?: return
-
-        DebugHelper.log("onShowPress")
     }
 
     /**
@@ -177,8 +174,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onSingleTapUp(e: MotionEvent?): Boolean {
         e ?: return false
-
-        DebugHelper.log("onSingleTapUp")
 
         return false
     }
@@ -188,8 +183,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onDown(e: MotionEvent?): Boolean {
         e ?: return false
-
-        DebugHelper.log("onDown")
 
         if (enableGestureMove) {
             val layoutParams = layoutParams as WindowManager.LayoutParams
@@ -211,8 +204,6 @@ class CameraLayout : FrameLayout,
     override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
         if (e1 == null || e2 == null) return false
 
-        DebugHelper.log("onFling")
-
         return false
     }
 
@@ -221,8 +212,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
         if (e1 == null || e2 == null) return false
-
-        DebugHelper.log("onScroll")
 
         if (enableGestureMove) {
             val layoutParams = layoutParams as WindowManager.LayoutParams
@@ -240,8 +229,6 @@ class CameraLayout : FrameLayout,
     override fun onLongPress(e: MotionEvent?) {
         e ?: return
 
-        DebugHelper.log("onLongPress")
-
         finish()
     }
 
@@ -250,8 +237,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onDoubleTap(e: MotionEvent?): Boolean {
         e ?: return false
-
-        DebugHelper.log("onDoubleTap")
 
         MainActivity.start()
 
@@ -264,8 +249,6 @@ class CameraLayout : FrameLayout,
     override fun onDoubleTapEvent(e: MotionEvent?): Boolean {
         e ?: return false
 
-        DebugHelper.log("onDoubleTapEvent")
-
         return false
     }
 
@@ -274,8 +257,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
         e ?: return false
-
-        DebugHelper.log("onSingleTapConfirmed")
 
         if (enableGestureTap) {
             if (cameraView.isAttachedToWindow) cameraView.onTap()
@@ -290,8 +271,6 @@ class CameraLayout : FrameLayout,
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
         detector ?: return true
 
-        DebugHelper.log("onScaleBegin")
-
         if (enableGestureScale) {
             scaleBeginWidth = layoutParams.width
             scaleBeginHeight = layoutParams.height
@@ -305,8 +284,6 @@ class CameraLayout : FrameLayout,
      */
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
         detector ?: return
-
-        DebugHelper.log("onScaleEnd")
 
         if (enableGestureScale) {
             putWindowSize(detector.scaleFactor)
@@ -334,8 +311,6 @@ class CameraLayout : FrameLayout,
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
         detector ?: return false
 
-        DebugHelper.log("onScale")
-
         if (enableGestureScale) {
             val scaleFactor = detector.scaleFactor
             layoutParams.width = (scaleBeginWidth * scaleFactor).toInt()
@@ -355,8 +330,6 @@ class CameraLayout : FrameLayout,
          * 第一个 down 事件 up 时调用, 第二个 down 事件 up 时不会调用.
          */
         if (event.action == MotionEvent.ACTION_UP) {
-            DebugHelper.log("ACTION_UP")
-
             if (enableGestureMove) {
                 val offsetX = event.rawX - downRawX
                 val offsetY = event.rawY - downRawY

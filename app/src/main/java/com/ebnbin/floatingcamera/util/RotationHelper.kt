@@ -89,8 +89,6 @@ object RotationHelper {
     }
 
     private fun onRotationChanged(oldRotation: Int, newRotation: Int) {
-        DebugHelper.log("rotation: $oldRotation -> $newRotation")
-
         sp.put(KEY_ROTATION, newRotation)
 
         listeners.forEach { it.onRotationChanged(oldRotation, newRotation) }
