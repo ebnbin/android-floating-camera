@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "1039010964765",
+    "firebase_url": "https://ebnbin.firebaseio.com",
+    "project_id": "ebnbin",
+    "storage_bucket": "ebnbin.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039010964765:android:4d1190047a3ce731",
+        "android_client_info": {
+          "package_name": "com.ebnbin.floatingcamera"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1039010964765-3larifbtajecmhm5uqru2btcoonkh0gm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUaKYUG7MhXxUD60dpIKTX15rr28TppIM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
