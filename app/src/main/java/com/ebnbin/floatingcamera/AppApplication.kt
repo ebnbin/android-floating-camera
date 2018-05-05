@@ -2,6 +2,7 @@ package com.ebnbin.floatingcamera
 
 import android.app.Application
 import com.crashlytics.android.Crashlytics
+import com.crashlytics.android.answers.Answers
 import com.crashlytics.android.core.CrashlyticsCore
 import com.ebnbin.floatingcamera.fragment.camera.CameraFragment
 import com.ebnbin.floatingcamera.util.BaseRuntimeException
@@ -23,7 +24,8 @@ class AppApplication : Application() {
         val crashlytics = Crashlytics.Builder()
                 .core(CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
                 .build()
-        Fabric.with(this, crashlytics)
+        val answers = Answers()
+        Fabric.with(this, crashlytics, answers)
 
         if (sp.get(KEY_VERSION_CODE, 0) < BuildConfig.VERSION_CODE) {
             sp.put(KEY_VERSION_CODE, BuildConfig.VERSION_CODE)

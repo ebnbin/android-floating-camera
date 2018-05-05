@@ -9,6 +9,7 @@ import android.hardware.camera2.CameraManager
 import android.os.Build
 import android.support.v7.preference.PreferenceManager
 import android.view.WindowManager
+import com.crashlytics.android.answers.Answers
 import com.ebnbin.floatingcamera.AppApplication
 
 /**
@@ -36,3 +37,5 @@ val notificationManager by lazy {
         }
     }
 }
+
+val answers by lazy { Answers.getInstance() }

@@ -18,7 +18,7 @@ class CameraAppWidgetProvider : AppWidgetProvider() {
         appWidgetManager ?: return
         appWidgetIds ?: return
 
-        val intent = Intent(context, CameraService::class.java)
+        val intent = Intent(context, CameraService::class.java).putExtra(KEY_FROM, "widget")
         val pendingIntent = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             PendingIntent.getService(context, 0, intent, 0)
         } else {
@@ -29,5 +29,9 @@ class CameraAppWidgetProvider : AppWidgetProvider() {
         remoteViews.setOnClickPendingIntent(R.id.camera, pendingIntent)
 
         appWidgetManager.updateAppWidget(appWidgetIds, remoteViews)
+    }
+
+    companion object {
+        const val KEY_FROM = "from"
     }
 }

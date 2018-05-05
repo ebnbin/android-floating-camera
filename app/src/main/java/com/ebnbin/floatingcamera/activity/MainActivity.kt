@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.dev.DevHelper
 import com.ebnbin.floatingcamera.fragment.main.MainFragment
 import com.ebnbin.floatingcamera.fragment.more.MorePreferenceFragment
 import com.ebnbin.floatingcamera.util.CameraException
@@ -25,11 +26,13 @@ class MainActivity :
         AppCompatActivity(),
         SharedPreferences.OnSharedPreferenceChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTaskDescription(taskDescription)
-
         initTheme()
 
         super.onCreate(savedInstanceState)
+
+        DevHelper.event("main activity on create")
+
+        setTaskDescription(taskDescription)
 
         sp.registerOnSharedPreferenceChangeListener(this)
 

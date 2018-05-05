@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.dev.DevHelper
 import com.ebnbin.floatingcamera.fragment.album.AlbumFragment
 import com.ebnbin.floatingcamera.fragment.camera.CameraFragment
 import com.ebnbin.floatingcamera.fragment.more.MoreFragment
@@ -28,6 +29,7 @@ class MainFragment : Fragment() {
             val foundMoreFragment = childFragmentManager.findFragmentByTag(MoreFragment::class.java.name)
             when (it.itemId) {
                 R.id.camera -> {
+                    DevHelper.event("navigation", mapOf("item" to "camera"))
                     val transaction = childFragmentManager.beginTransaction()
                     if (foundCameraFragment != null) {
                         transaction.show(foundCameraFragment)
@@ -45,6 +47,7 @@ class MainFragment : Fragment() {
                     return@setOnNavigationItemSelectedListener true
                 }
                 R.id.album -> {
+                    DevHelper.event("navigation", mapOf("item" to "album"))
                     val transaction = childFragmentManager.beginTransaction()
                     if (foundAlbumFragment != null) {
                         transaction.show(foundAlbumFragment)
@@ -65,6 +68,7 @@ class MainFragment : Fragment() {
                     return@setOnNavigationItemSelectedListener true
                 }
                 R.id.more -> {
+                    DevHelper.event("navigation", mapOf("item" to "more"))
                     val transaction = childFragmentManager.beginTransaction()
                     if (foundMoreFragment != null) {
                         transaction.show(foundMoreFragment)

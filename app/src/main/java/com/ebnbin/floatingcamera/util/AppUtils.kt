@@ -8,6 +8,7 @@ import android.support.annotation.AttrRes
 import android.support.annotation.ColorInt
 import android.view.Surface
 import android.view.WindowManager
+import com.ebnbin.floatingcamera.dev.DevHelper
 
 //*********************************************************************************************************************
 // Display.
@@ -34,6 +35,7 @@ fun isDisplayRotationLandscape(rotation: Int = displayRotation()) =
 val displayRealSize by lazy {
     val outSize = Point()
     display.getRealSize(outSize)
+    DevHelper.event("display real size", mapOf("x" to outSize.x, "y" to outSize.y))
     WindowSize(outSize.x, outSize.y)
 }
 
@@ -43,6 +45,7 @@ val displayRealSize by lazy {
 val displaySize by lazy {
     val outSize = Point()
     display.getSize(outSize)
+    DevHelper.event("display size", mapOf("x" to outSize.x, "y" to outSize.y))
     WindowSize(outSize.x, outSize.y)
 }
 

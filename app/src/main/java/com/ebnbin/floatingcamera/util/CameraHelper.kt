@@ -9,10 +9,12 @@ import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.CamcorderProfile
 import android.util.Size
 import com.ebnbin.floatingcamera.R
+import com.ebnbin.floatingcamera.dev.DevHelper
 import com.ebnbin.floatingcamera.util.extension.extensionEquals
 import com.ebnbin.floatingcamera.util.extension.extensionHashCode
 import com.ebnbin.floatingcamera.util.extension.gcd
 import com.ebnbin.floatingcamera.util.extension.qualityString
+import java.util.Arrays
 import kotlin.math.min
 
 /**
@@ -110,6 +112,11 @@ object CameraHelper {
         hasBothDevices = this.hasBackDevice && this.hasFrontDevice
 
         // TODO: 如果摄像头发生变化, 需要删除 "is_front" 偏好.
+
+        DevHelper.event("camera helper", mapOf("back video" to Arrays.toString(backDevice.videoProfileSummaries)))
+        DevHelper.event("camera helper", mapOf("back photo" to Arrays.toString(backDevice.photoResolutionSummaries)))
+        DevHelper.event("camera helper", mapOf("front video" to Arrays.toString(frontDevice.videoProfileSummaries)))
+        DevHelper.event("camera helper", mapOf("front photo" to Arrays.toString(frontDevice.photoResolutionSummaries)))
     }
 
     /**
