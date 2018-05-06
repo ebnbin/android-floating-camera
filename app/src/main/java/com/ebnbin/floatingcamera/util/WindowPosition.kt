@@ -3,7 +3,7 @@ package com.ebnbin.floatingcamera.util
 /**
  * 窗口位置.
  */
-class WindowPosition(xPercent: Int, yPercent: Int, rotation: Int = displayRotation()) {
+class WindowPosition(xPercent: Int, yPercent: Int, rotation: Int = display.rotation) {
     val xPercent0: Int
     val yPercent0: Int
 
@@ -74,7 +74,7 @@ class WindowPosition(xPercent: Int, yPercent: Int, rotation: Int = displayRotati
         }
     }
 
-    fun xPercent(rotation: Int = displayRotation()) = when (rotation) {
+    fun xPercent(rotation: Int = display.rotation) = when (rotation) {
         0 -> xPercent0
         1 -> xPercent90
         2 -> xPercent180
@@ -82,7 +82,7 @@ class WindowPosition(xPercent: Int, yPercent: Int, rotation: Int = displayRotati
         else -> throw BaseRuntimeException()
     }
 
-    fun yPercent(rotation: Int = displayRotation()) = when (rotation) {
+    fun yPercent(rotation: Int = display.rotation) = when (rotation) {
         0 -> yPercent0
         1 -> yPercent90
         2 -> yPercent180
@@ -90,7 +90,7 @@ class WindowPosition(xPercent: Int, yPercent: Int, rotation: Int = displayRotati
         else -> throw BaseRuntimeException()
     }
 
-    fun x(windowSize: WindowSize, rotation: Int = displayRotation()): Int {
+    fun x(windowSize: Size, rotation: Int = display.rotation): Int {
         val navigationBarXOffset = getNavigationBarXOffset(rotation)
 
         val windowWidth = windowSize.width(rotation)
@@ -115,7 +115,7 @@ class WindowPosition(xPercent: Int, yPercent: Int, rotation: Int = displayRotati
         }
     }
 
-    fun y(windowSize: WindowSize, rotation: Int = displayRotation()): Int {
+    fun y(windowSize: Size, rotation: Int = display.rotation): Int {
         val windowHeight = windowSize.height(rotation)
 
         val yRange = displayRealSize.height(rotation) - windowHeight

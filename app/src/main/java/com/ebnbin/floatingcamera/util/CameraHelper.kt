@@ -183,7 +183,7 @@ object CameraHelper {
         /**
          * 获取拍摄方向.
          */
-        fun getOrientation(rotation: Int = displayRotation()) =
+        fun getOrientation(rotation: Int = display.rotation) =
                 if(isFront)
                     (sensorOrientation + (90 * rotation) + 360) % 360 else
                     (sensorOrientation - (90 * rotation) + 360) % 360
@@ -280,8 +280,8 @@ object CameraHelper {
                 val previewResolutionList = ArrayList<Resolution>()
                 previewResolutions.filterTo(previewResolutionList) { it.isRatioEquals(maxResolution) }
 
-                val maxLandscapeWidth = min(1920, displayRealSize.landscapeWidth)
-                val maxLandscapeHeight = min(1080, displayRealSize.landscapeHeight)
+                val maxLandscapeWidth = min(1920, displayRealSize.width(true))
+                val maxLandscapeHeight = min(1080, displayRealSize.height(true))
                 val previewResolutionList2 = ArrayList<Resolution>()
                 if (previewResolutionList.isEmpty()) {
                     previewResolutions.filterTo(previewResolutionList2) {
@@ -422,13 +422,13 @@ object CameraHelper {
              */
             val portraitHeight = landscapeWidth
 
-            fun width(rotation: Int = displayRotation()) = when (rotation) {
+            fun width(rotation: Int = display.rotation) = when (rotation) {
                 0, 2 -> portraitWidth
                 1, 3 -> landscapeWidth
                 else -> throw BaseRuntimeException()
             }
 
-            fun height(rotation: Int = displayRotation()) = when (rotation) {
+            fun height(rotation: Int = display.rotation) = when (rotation) {
                 0, 2 -> portraitHeight
                 1, 3 -> landscapeHeight
                 else -> throw BaseRuntimeException()

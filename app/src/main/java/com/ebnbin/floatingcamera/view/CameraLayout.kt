@@ -18,9 +18,8 @@ import com.ebnbin.floatingcamera.service.CameraService
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
-import com.ebnbin.floatingcamera.util.WindowSize
+import com.ebnbin.floatingcamera.util.Size
 import com.ebnbin.floatingcamera.util.displayRealSize
-import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.sp
 import com.ebnbin.floatingcamera.util.windowManager
 import kotlin.math.max
@@ -60,8 +59,6 @@ class CameraLayout : FrameLayout,
 
         addView(cameraView, params)
         addView(infoView, params)
-
-        invalidateWindowAlpha()
     }
 
     //*****************************************************************************************************************
@@ -72,6 +69,24 @@ class CameraLayout : FrameLayout,
         LocalBroadcastHelper.register(this, CameraView.ACTION_INVALIDATE)
 
         sp.registerOnSharedPreferenceChangeListener(this)
+
+        initParams()
+
+        invalidateWindowSizeAndPosition()
+
+        invalidateWindowAlpha()
+    }
+
+    private fun initParams() {
+        val params = layoutParams as WindowManager.LayoutParams
+        params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        if (!WindowPreferenceFragment.isTouchable) {
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        }
+
+        windowManager.updateViewLayout(this, params)
     }
 
     override fun onReceive(context: Context, intent: Intent, action: String) {
@@ -119,10 +134,10 @@ class CameraLayout : FrameLayout,
 
     private fun invalidateWindowSizeAndPosition(invalidateWindowPositionOnly: Boolean = false) {
         val params = layoutParams as WindowManager.LayoutParams
-        val rotation = displayRotation()
-        val windowSize: WindowSize
+        val rotation = display.rotation
+        val windowSize: Size
         if (invalidateWindowPositionOnly) {
-            windowSize = WindowSize(params.width, params.height, rotation)
+            windowSize = Size(params.width, params.height, rotation)
         } else {
             windowSize = PreferenceHelper.windowSize()
             params.width = windowSize.width(rotation)
@@ -131,11 +146,15 @@ class CameraLayout : FrameLayout,
         val windowPosition = PreferenceHelper.windowPosition()
         params.x = windowPosition.x(windowSize, rotation)
         params.y = windowPosition.y(windowSize, rotation)
+
         windowManager.updateViewLayout(this, params)
     }
 
     private fun invalidateWindowAlpha() {
-        alpha = WindowPreferenceFragment.windowAlpha / 100f
+        val params = layoutParams as WindowManager.LayoutParams
+        params.alpha = WindowPreferenceFragment.windowAlpha / 100f
+
+        windowManager.updateViewLayout(this, params)
     }
 
     //*****************************************************************************************************************
@@ -192,7 +211,7 @@ class CameraLayout : FrameLayout,
             downRawX = e.rawX
             downRawY = e.rawY
 
-            downRotation = displayRotation()
+            downRotation = display.rotation
         }
 
         return false
@@ -335,7 +354,7 @@ class CameraLayout : FrameLayout,
                 val offsetY = event.rawY - downRawY
                 val x = downX + offsetX
                 val y = downY + offsetY
-                val windowSize = WindowSize(layoutParams.width, layoutParams.height, downRotation)
+                val windowSize = Size(layoutParams.width, layoutParams.height, downRotation)
                 putWindowPosition(x, y, downRotation, windowSize)
             }
         }
@@ -348,7 +367,7 @@ class CameraLayout : FrameLayout,
     /**
      * 更新窗口位置.
      */
-    private fun putWindowPosition(x: Float, y: Float, rotation: Int, windowSize: WindowSize) {
+    private fun putWindowPosition(x: Float, y: Float, rotation: Int, windowSize: Size) {
         fun calc(position: Float, offset: Int, range: Int, percentOffset: Int) =
                 ((position + offset) / range * 100).toInt() + percentOffset
 

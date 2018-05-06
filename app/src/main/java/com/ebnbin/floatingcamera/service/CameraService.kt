@@ -13,14 +13,12 @@ import android.view.WindowManager
 import android.widget.Toast
 import com.ebnbin.floatingcamera.R
 import com.ebnbin.floatingcamera.dev.DevHelper
-import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 import com.ebnbin.floatingcamera.receiver.StopCameraServiceBroadcastReceiver
 import com.ebnbin.floatingcamera.util.LocalBroadcastHelper
 import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.app
-import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.notificationManager
 import com.ebnbin.floatingcamera.util.res
 import com.ebnbin.floatingcamera.util.windowManager
@@ -77,27 +75,12 @@ class CameraService : Service(), LocalBroadcastHelper.Receiver {
         cameraLayout = CameraLayout(this)
 
         val params = WindowManager.LayoutParams()
-        val rotation = displayRotation()
-        val windowSize = PreferenceHelper.windowSize()
-        params.width = windowSize.width(rotation)
-        params.height = windowSize.height(rotation)
         @Suppress("DEPRECATION")
         params.type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_PHONE else
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        if (!WindowPreferenceFragment.isTouchable) {
-            params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-        }
         params.format = PixelFormat.TRANSLUCENT
         params.gravity = Gravity.START or Gravity.TOP
-        val windowPosition = PreferenceHelper.windowPosition()
-        val x = windowPosition.x(windowSize, rotation)
-        val y = windowPosition.y(windowSize, rotation)
-        params.x = x
-        params.y = y
 
         windowManager.addView(cameraLayout, params)
     }

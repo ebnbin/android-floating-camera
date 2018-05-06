@@ -38,7 +38,6 @@ import com.ebnbin.floatingcamera.util.PermissionHelper
 import com.ebnbin.floatingcamera.util.PreferenceHelper
 import com.ebnbin.floatingcamera.util.RotationHelper
 import com.ebnbin.floatingcamera.util.cameraManager
-import com.ebnbin.floatingcamera.util.displayRotation
 import com.ebnbin.floatingcamera.util.extension.fileFormatExtension
 import com.ebnbin.floatingcamera.util.sp
 import java.io.File
@@ -179,7 +178,7 @@ open class CameraView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         val viewRectF = RectF(0f, 0f, viewWidth, viewHeight)
         val bufferRectF = RectF(offsetX, offsetY, bufferWidth + offsetX, bufferHeight + offsetY)
 
-        val rotation = displayRotation()
+        val rotation = display.rotation
 
         val matrix = Matrix()
 

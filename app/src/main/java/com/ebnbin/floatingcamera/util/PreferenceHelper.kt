@@ -80,11 +80,11 @@ object PreferenceHelper {
     /**
      * 窗口大小.
      */
-    fun windowSize(): WindowSize {
+    fun windowSize(): Size {
         val windowSizeValue = WindowPreferenceFragment.windowSize
 
-        var landscapeWidth = displayRealSize.landscapeWidth * windowSizeValue / 100f
-        var landscapeHeight = displayRealSize.landscapeHeight * windowSizeValue / 100f
+        var landscapeWidth = displayRealSize.width(true) * windowSizeValue / 100f
+        var landscapeHeight = displayRealSize.height(true) * windowSizeValue / 100f
 
         when (Preview.values()[CameraPreferenceFragment.preview.toInt()]) {
             Preview.CAPTURE -> {
@@ -114,7 +114,7 @@ object PreferenceHelper {
             }
         }
 
-        return WindowSize(landscapeWidth.toInt(), landscapeHeight.toInt(), true)
+        return Size(landscapeWidth.toInt(), landscapeHeight.toInt(), true)
     }
 
     /**

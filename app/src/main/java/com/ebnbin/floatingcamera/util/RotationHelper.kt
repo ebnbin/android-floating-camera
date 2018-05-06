@@ -28,7 +28,7 @@ object RotationHelper {
     fun register(context: Context): OrientationEventListener {
         if (orientationEventListeners.isEmpty) {
             val oldRotation = sp.get(KEY_ROTATION, DEF_VALUE_ROTATION)
-            rotation = displayRotation()
+            rotation = display.rotation
             if (oldRotation != rotation) {
                 onRotationChanged(oldRotation, rotation)
             }
@@ -40,7 +40,7 @@ object RotationHelper {
         orientationEventListener = object : OrientationEventListener(context) {
             override fun onOrientationChanged(orientation: Int) {
                 val oldRotation = this@RotationHelper.rotation
-                rotation = displayRotation()
+                rotation = display.rotation
                 if (oldRotation != rotation) {
                     onRotationChanged(oldRotation, this@RotationHelper.rotation)
                 }
