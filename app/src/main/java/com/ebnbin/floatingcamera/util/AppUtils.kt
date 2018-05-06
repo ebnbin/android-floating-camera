@@ -7,16 +7,10 @@ import android.os.Build
 import android.support.annotation.AttrRes
 import android.support.annotation.ColorInt
 import android.view.Surface
-import android.view.WindowManager
 import com.ebnbin.floatingcamera.dev.DevHelper
 
 //*********************************************************************************************************************
 // Display.
-
-/**
- * [WindowManager.getDefaultDisplay].
- */
-private val display by lazy { windowManager.defaultDisplay!! }
 
 /**
  * 返回屏幕旋转方向.
