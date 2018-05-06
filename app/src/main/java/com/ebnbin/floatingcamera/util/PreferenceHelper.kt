@@ -120,11 +120,11 @@ object PreferenceHelper {
     /**
      * 窗口位置.
      */
-    fun windowPosition(): WindowPosition {
+    fun windowPosition(): Position {
         val windowX = WindowPreferenceFragment.windowX
         val windowY = WindowPreferenceFragment.windowY
         val rotation = RotationHelper.getRotation()
-        return WindowPosition(windowX, windowY, rotation)
+        return Position(windowX, windowY, rotation)
     }
 
     /**

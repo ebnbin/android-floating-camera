@@ -11,7 +11,7 @@ import android.view.Surface
  *
  * @param isLandscape 当前屏幕方向是否为横向.
  */
-class Size(private val width: Int, private val height: Int, private val isLandscape: Boolean = isDisplayLandscape()) {
+class Size(private val width: Int, private val height: Int, private val isLandscape: Boolean) {
     /**
      * @param width 宽.
      *
@@ -27,7 +27,7 @@ class Size(private val width: Int, private val height: Int, private val isLandsc
      *
      * @param isLandscape 屏幕方向是否为横向.
      */
-    fun width(isLandscape: Boolean = isDisplayLandscape()) = if (isLandscape) {
+    fun width(isLandscape: Boolean) = if (isLandscape) {
         if (this.isLandscape) width else height
     } else {
         if (this.isLandscape) height else width
@@ -39,14 +39,14 @@ class Size(private val width: Int, private val height: Int, private val isLandsc
      * @param rotation 屏幕方向. [Surface.ROTATION_0], [Surface.ROTATION_90], [Surface.ROTATION_180],
      * [Surface.ROTATION_270] 之一.
      */
-    fun width(rotation: Int = display.rotation) = width(isDisplayLandscape(rotation))
+    fun width(rotation: Int) = width(isDisplayLandscape(rotation))
 
     /**
      * 返回指定屏幕方向的高.
      *
      * @param isLandscape 屏幕方向是否为横向.
      */
-    fun height(isLandscape: Boolean = isDisplayLandscape()) = if (isLandscape) {
+    fun height(isLandscape: Boolean) = if (isLandscape) {
         if (this.isLandscape) height else width
     } else {
         if (this.isLandscape) width else height
@@ -58,5 +58,5 @@ class Size(private val width: Int, private val height: Int, private val isLandsc
      * @param rotation 屏幕方向. [Surface.ROTATION_0], [Surface.ROTATION_90], [Surface.ROTATION_180],
      * [Surface.ROTATION_270] 之一.
      */
-    fun height(rotation: Int = display.rotation) = height(isDisplayLandscape(rotation))
+    fun height(rotation: Int) = height(isDisplayLandscape(rotation))
 }

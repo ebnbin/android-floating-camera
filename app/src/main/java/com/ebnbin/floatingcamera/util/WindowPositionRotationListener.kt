@@ -9,7 +9,7 @@ import com.ebnbin.floatingcamera.fragment.preference.WindowPreferenceFragment
 object WindowPositionRotationListener : RotationHelper.Listener {
     override fun onRotationChanged(oldRotation: Int, newRotation: Int) {
         DevHelper.event("rotation", mapOf("rotation" to "$oldRotation -> $newRotation"))
-        val windowPosition = WindowPosition(WindowPreferenceFragment.windowX, WindowPreferenceFragment.windowY,
+        val windowPosition = Position(WindowPreferenceFragment.windowX, WindowPreferenceFragment.windowY,
                 oldRotation)
         WindowPreferenceFragment.putWindowPosition(windowPosition.xPercent(newRotation),
                 windowPosition.yPercent(newRotation))

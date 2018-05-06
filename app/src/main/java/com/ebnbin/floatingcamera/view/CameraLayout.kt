@@ -144,8 +144,8 @@ class CameraLayout : FrameLayout,
             params.height = windowSize.height(rotation)
         }
         val windowPosition = PreferenceHelper.windowPosition()
-        params.x = windowPosition.x(windowSize, rotation)
-        params.y = windowPosition.y(windowSize, rotation)
+        params.x = windowPosition.x(windowSize, rotation, true)
+        params.y = windowPosition.y(windowSize, rotation, true)
 
         windowManager.updateViewLayout(this, params)
     }
