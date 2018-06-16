@@ -1,3 +1,29 @@
+buildscript {
+    ext.kotlin_version = '1.2.41' // https://github.com/JetBrains/kotlin
+
+    repositories {
+        google()
+        jcenter()
+        maven { url 'https://maven.fabric.io/public' }
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.1.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:3.3.0' // https://bintray.com/android/android-tools/com.google.gms.google-services/
+        classpath 'io.fabric.tools:gradle:1.25.3' // https://docs.fabric.io/android/changelog.html
+    }
+}
+
+ext {
+    version = '0.5.1'
+}
+
+repositories {
+    google()
+    jcenter()
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
@@ -9,15 +35,15 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 27
-        def split = rootProject.version.toString().split('\\.')
+        def split = project.ext.version.toString().split('\\.')
         versionCode = (split[0].toInteger() << 16) + (split[1].toInteger() << 8) + (split[2].toInteger())
-        versionName rootProject.version.toString()
+        versionName project.ext.version.toString()
     }
 
     signingConfigs {
         release {
             def localProperties = new Properties()
-            localProperties.load(new FileInputStream(rootProject.file('local.properties')))
+            localProperties.load(new FileInputStream(project.file('local.properties')))
             storeFile file(localProperties['storeFile'])
             storePassword localProperties['storePassword']
             keyAlias localProperties['keyAlias']

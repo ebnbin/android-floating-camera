@@ -3,7 +3,6 @@
 /.gradle/
 /.idea/
 /app/build/
-/app/fabric.properties
 /build/
 /gitignore/
 /local.properties
